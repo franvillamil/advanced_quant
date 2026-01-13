@@ -1,111 +1,243 @@
-\documentclass[11pt,a4paper]{article}
-
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{hyperref}
-\usepackage{enumitem}
-\usepackage{booktabs}
-\usepackage{graphicx}
-
-\hypersetup{
-    colorlinks=true,
-    linkcolor=blue,
-    urlcolor=blue,
-    citecolor=blue
-}
-
-\title{\textbf{Problem Set 1: Introduction and Review}}
-\author{Applied Quantitative Methods for the Social Sciences II}
-\date{Due: February 12, 2026}
+\input{preamble.tex}
 
 \begin{document}
 
-\maketitle
+\thispagestyle{empty}
 
-\noindent\textit{Note: Please prepare your answers using R Markdown or Quarto and submit a PDF file. Include all code and R output used to answer the questions. You are encouraged to work together, but each person must submit their own responses. Identical submissions will not be accepted.}
+\begin{center}
+\textbf{\Large Problem Set 1: Introduction to Git and GitHub}\\\vspace{10pt}
+{\Large Applied Quantitative Methods for the Social Sciences II}\\\vspace{10pt}
+Carlos III--Juan March Institute, Spring 2026
+\end{center}
 
-\section{Conceptual Questions}
+\vspace{10pt}
+\noindent
+\textbf{\large Instructions:}
 
-\subsection{Question 1: Data Generating Processes}
+\vspace{10pt}
+\begin{itemize}
+\setlength\itemsep{0pt}
+  \item {\color{red}{\textbf{Deadline}}}: \textbf{February 12, before class}
+  \item This problem set introduces you to Git and GitHub, which you will use throughout the course to submit your work
+  \item For this course, you will submit all assignments as plain \code{.R} files in a public GitHub repository
+  \item Complete all the tasks below and send me the link to your GitHub repository
+\end{itemize}
 
-Consider the following research question: ``Does foreign aid promote economic growth in developing countries?''
+\vspace{20pt}
 
-\begin{enumerate}[label=\alph*)]
-    \item Describe the data generating process (DGP) that would produce data on foreign aid and economic growth. What are the key components of this DGP?
-    \item Identify at least three sources of uncertainty in this DGP. For each, explain whether it represents sampling uncertainty, theoretical uncertainty, or fundamental uncertainty.
-    \item Why is it important to think about the DGP when conducting statistical analysis? How does understanding the DGP help us interpret regression results?
+\section{What is Version Control?}
+
+Version control is a system that records changes to files over time. It allows you to:
+
+\begin{itemize}
+  \item Track the history of your project
+  \item Revert to previous versions if something goes wrong
+  \item Collaborate with others without overwriting each other's work
+  \item Keep a backup of your work in the cloud
+\end{itemize}
+
+\textbf{Git} is the most widely used version control system. It tracks changes locally on your computer.
+
+\textbf{GitHub} is a web platform that hosts Git repositories online, making it easy to share code, collaborate, and back up your work.
+
+\vspace{10pt}
+
+\section{Why Use Git and GitHub?}
+
+In research and data analysis, version control is essential for:
+
+\begin{itemize}
+  \item \textbf{Reproducibility}: Others (and your future self) can see exactly what you did
+  \item \textbf{Collaboration}: Multiple people can work on the same project
+  \item \textbf{Backup}: Your work is safely stored online
+  \item \textbf{Transparency}: Open science practices require sharing code and data
+\end{itemize}
+
+Many journals and research groups now require or encourage sharing code via GitHub.
+
+\vspace{10pt}
+
+\section{The Basic Git Workflow}
+
+Git works with three main concepts:
+
+\begin{enumerate}
+  \item \textbf{Working directory}: The files on your computer
+  \item \textbf{Staging area}: Files you've marked to be included in the next snapshot
+  \item \textbf{Repository}: The history of all snapshots (commits)
 \end{enumerate}
 
-\subsection{Question 2: Statistical Inference}
+The basic workflow is:
 
-\begin{enumerate}[label=\alph*)]
-    \item Explain in your own words the difference between probability theory and statistical inference. How are they related?
-    \item A researcher estimates that the effect of democracy on economic growth is $\beta = 0.5$ with a standard error of $SE = 0.2$. They report a p-value of 0.012. Explain what each of these quantities means. What can the researcher conclude?
-    \item Another researcher studying the same question with a much larger sample finds $\beta = 0.05$ with $SE = 0.01$ and p-value $< 0.001$. Compare this result to the previous one. Which finding is more important? Explain your reasoning.
+\begin{enumerate}
+  \item Make changes to your files
+  \item \textbf{Stage} the changes you want to save: \code{git add filename}
+  \item \textbf{Commit} the staged changes with a message: \code{git commit -m "description"}
+  \item \textbf{Push} your commits to GitHub: \code{git push}
 \end{enumerate}
 
-\section{Applied Analysis: World Development Indicators}
+\vspace{10pt}
 
-For this section, you will work with data from the World Bank's World Development Indicators. You can download the data using the \texttt{WDI} package in R:
+\section{Ways to Use Git}
 
-\begin{verbatim}
-install.packages("WDI")
-library(WDI)
+There are several ways to interact with Git and GitHub. All of them do the same thing---choose whichever you find most comfortable, or mix and match.
 
-# Download data for year 2019
-wdi <- WDI(country = "all",
-           indicator = c("NY.GDP.PCAP.CD",     # GDP per capita
-                        "SP.DYN.LE00.IN",      # Life expectancy
-                        "SE.ADT.LITR.ZS",      # Literacy rate
-                        "SP.POP.TOTL"),        # Population
-           start = 2019, end = 2019)
-\end{verbatim}
+\subsection{Option 1: GitHub Web Interface}
 
-\subsection{Question 3: Exploring the Data}
+The simplest way to get started. You can create repositories, upload files, and make commits directly on \url{https://github.com}. Good for beginners, but limited for complex workflows.
 
-\begin{enumerate}[label=\alph*)]
-    \item Load the data and clean it appropriately (remove missing values, select relevant countries, etc.). How many countries remain in your analysis sample? Report basic summary statistics (mean, standard deviation, min, max) for each variable.
-    \item Create a scatter plot of GDP per capita (x-axis) against life expectancy (y-axis). Describe the relationship you observe. Is it linear? Are there any outliers?
-    \item Transform GDP per capita using the natural logarithm. Create a new scatter plot with log(GDP per capita) on the x-axis. How does the relationship change? Why might this transformation be appropriate?
+\subsection{Option 2: Command Line (Terminal)}
+
+The most powerful and flexible option. You use commands like \code{git add}, \code{git commit}, and \code{git push} in your terminal (Terminal on Mac, Git Bash on Windows). This is what most experienced users prefer.
+
+\subsection{Option 3: RStudio Integration}
+
+If you use RStudio, it has built-in Git support. You can stage, commit, and push using buttons in the Git pane (top-right by default). This is convenient if you're already working in RStudio. To enable it, you need to have Git installed and configure RStudio to recognize it (Tools $\rightarrow$ Global Options $\rightarrow$ Git/SVN).
+
+\vspace{15pt}
+
+\section{Tasks}
+
+Complete the following tasks. You can use any of the methods described above (web, command line, or RStudio).
+
+\vspace{10pt}
+
+\subsection{Task 1: Create a GitHub Account}
+
+If you don't already have one, create a free account at \url{https://github.com}.
+
+\begin{itemize}
+  \item Choose a professional username (you may use this for years)
+  \item Add a profile picture and brief bio if you like
+\end{itemize}
+
+\vspace{10pt}
+
+\subsection{Task 2: Create a Repository}
+
+Create a new \textbf{public} repository for this course. Call it something like \code{aqmss2} or \code{quant-methods-2026}.
+
+\textbf{Via the web interface:}
+\begin{enumerate}
+  \item Click the ``+'' icon in the top right, then ``New repository''
+  \item Enter a name and description
+  \item Make sure ``Public'' is selected
+  \item Check ``Add a README file''
+  \item Click ``Create repository''
 \end{enumerate}
 
-\subsection{Question 4: Simple Regression}
+\textbf{Via the command line:}
+\begin{lstlisting}
+mkdir aqmss2
+cd aqmss2
+git init
+echo "# AQMSS II" > README.md
+git add README.md
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/YOUR-USERNAME/aqmss2.git
+git push -u origin main
+\end{lstlisting}
 
-\begin{enumerate}[label=\alph*)]
-    \item Estimate a linear regression with life expectancy as the outcome and log(GDP per capita) as the predictor. Report the results in a well-formatted table.
-    \item Interpret the slope coefficient. What does it tell us about the relationship between wealth and health?
-    \item Is this a causal relationship? What would we need to assume for a causal interpretation? List at least three potential confounders that might bias this estimate.
+\vspace{10pt}
+
+\subsection{Task 3: Edit the README}
+
+The README file is the ``front page'' of your repository. Edit it to include:
+
+\begin{itemize}
+  \item Your name
+  \item A brief description of the repository (e.g., ``Problem sets for AQMSS II, Spring 2026'')
+  \item Optionally, a table of contents or list of files
+\end{itemize}
+
+\textbf{Via the web:} Click on \code{README.md}, then the pencil icon to edit. When done, scroll down and click ``Commit changes.''
+
+\textbf{Via command line:} Edit the file locally, then:
+\begin{lstlisting}
+git add README.md
+git commit -m "Update README with course info"
+git push
+\end{lstlisting}
+
+\vspace{10pt}
+
+\subsection{Task 4: Create a Folder for Problem Sets}
+
+Create a folder called \code{problem\_sets} (or similar) in your repository. Inside it, create a file called \code{ps1.R} with a comment header:
+
+\begin{lstlisting}
+# Problem Set 1
+# AQMSS II, Spring 2026
+# [Your Name]
+
+# This file will contain my solutions for PS1
+\end{lstlisting}
+
+Commit this file to your repository.
+
+\vspace{10pt}
+
+\subsection{Task 5: Explore the History}
+
+Look at the commit history of your repository:
+
+\textbf{Via the web:} Click on ``Commits'' (or the clock icon) to see all your commits.
+
+\textbf{Via command line:}
+\begin{lstlisting}
+git log --oneline
+\end{lstlisting}
+
+Take a screenshot of your commit history showing at least 2--3 commits.
+
+\vspace{15pt}
+
+\section{Submission}
+
+Send me an email with:
+
+\begin{enumerate}
+  \item The URL of your GitHub repository (e.g., \code{https://github.com/username/aqmss2})
+  \item The screenshot of your commit history
 \end{enumerate}
 
-\subsection{Question 5: Multiple Regression}
+I will check that your repository is public and contains a README and at least one \code{.R} file.
 
-\begin{enumerate}[label=\alph*)]
-    \item Now add literacy rate as a control variable. Estimate the new model and report the results.
-    \item How does the coefficient on log(GDP per capita) change when you add literacy rate? Why might this happen?
-    \item What is the interpretation of the coefficient on literacy rate? Is literacy rate a good control variable in this context? Explain your reasoning.
+\vspace{15pt}
+
+\section{Optional: Setting Up Git Locally}
+
+If you want to use Git from the command line or RStudio, you'll need to set it up on your computer:
+
+\begin{enumerate}
+  \item \textbf{Install Git}: Download from \url{https://git-scm.com/downloads}
+  \item \textbf{Configure your identity}:
+\begin{lstlisting}
+git config --global user.name "Your Name"
+git config --global user.email "your@email.com"
+\end{lstlisting}
+  \item \textbf{Clone your repository} (download it to your computer):
+\begin{lstlisting}
+git clone https://github.com/YOUR-USERNAME/aqmss2.git
+\end{lstlisting}
 \end{enumerate}
 
-\subsection{Question 6: Predictions}
+\textbf{For RStudio users}: Go to File $\rightarrow$ New Project $\rightarrow$ Version Control $\rightarrow$ Git, and paste your repository URL. RStudio will clone the repository and set up a project for you.
 
-\begin{enumerate}[label=\alph*)]
-    \item Using your multiple regression model, predict life expectancy for a country with:
-    \begin{itemize}
-        \item GDP per capita of \$5,000 and literacy rate of 80\%
-        \item GDP per capita of \$50,000 and literacy rate of 99\%
-    \end{itemize}
-    \item Calculate the 95\% confidence interval for each prediction.
-    \item Discuss the limitations of these predictions. What sources of uncertainty are captured by the confidence intervals? What sources are not?
-\end{enumerate}
+\vspace{15pt}
 
-\section{Reflection}
+\section{Resources}
 
-\subsection{Question 7}
+\begin{itemize}
+  \item GitHub's official guides: \url{https://docs.github.com/en/get-started}
+  \item Happy Git with R (excellent for R users): \url{https://happygitwithr.com}
+  \item Git cheat sheet: \url{https://education.github.com/git-cheat-sheet-education.pdf}
+  \item Pro Git book (free online): \url{https://git-scm.com/book/en/v2}
+\end{itemize}
 
-In about 200 words, reflect on the relationship between statistical modeling and causal inference. Based on your analysis of the World Bank data, what can we conclude about the relationship between economic development and health? What would we need to do to establish a causal relationship?
-
-\vspace{1cm}
-
-\noindent\textbf{Submission:} Submit your PDF file through Aula Global by the start of class on February 12, 2026.
+\vspace{10pt}
+\noindent
+\textit{We will cover more advanced Git workflows and reproducible computing practices later in the course (Session 5). For now, just get comfortable with the basics!}
 
 \end{document}

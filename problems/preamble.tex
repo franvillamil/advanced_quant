@@ -1,0 +1,36 @@
+% Preamble for problem sets, exams, and project descriptions
+% Applied Quantitative Methods for the Social Sciences II
+
+\documentclass[12pt, a4paper]{article}
+\usepackage[margin = 2cm]{geometry}
+\usepackage{graphicx}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[colorlinks = TRUE, linkcolor = blue, urlcolor = blue, citecolor = blue]{hyperref}
+\usepackage{setspace}
+\setstretch{1.25}
+\renewcommand*\rmdefault{ppl}
+
+\usepackage[]{titlesec}
+    \titleformat*{\section}{\large\bf}
+    \titleformat*{\subsection}{\normalsize\bf}
+    \titleformat*{\subsubsection}{\normalsize\it}
+
+% For code blocks
+\usepackage{listings}
+\usepackage{xcolor}
+\lstset{
+    basicstyle=\ttfamily\small,
+    backgroundcolor=\color{gray!10},
+    frame=single,
+    framerule=0pt,
+    breaklines=true,
+    columns=fullflexible,
+    keepspaces=true
+}
+
+% For inline code
+\newcommand{\code}[1]{\texttt{#1}}
+
+% Enumerate with letters
+\usepackage{enumitem}

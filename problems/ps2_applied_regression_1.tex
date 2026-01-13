@@ -1,31 +1,33 @@
-\documentclass[11pt,a4paper]{article}
-
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{hyperref}
-\usepackage{enumitem}
-\usepackage{booktabs}
-\usepackage{graphicx}
-
-\hypersetup{
-    colorlinks=true,
-    linkcolor=blue,
-    urlcolor=blue,
-    citecolor=blue
-}
-
-\title{\textbf{Problem Set 2: Applied Regression (I)}}
-\author{Applied Quantitative Methods for the Social Sciences II}
-\date{Due: February 19, 2026}
+\input{preamble.tex}
 
 \begin{document}
 
-\maketitle
+\thispagestyle{empty}
 
-\noindent\textit{Note: Please prepare your answers using R Markdown or Quarto and submit a PDF file. Include all code and R output used to answer the questions. You are encouraged to work together, but each person must submit their own responses.}
+\begin{center}
+\textbf{\Large Problem Set 2: Applied Regression (I)}\\\vspace{10pt}
+{\Large Applied Quantitative Methods for the Social Sciences II}\\\vspace{10pt}
+Carlos III--Juan March Institute, Spring 2026
+\end{center}
+
+\vspace{10pt}
+\noindent
+\textbf{\large Instructions:}
+
+\vspace{10pt}
+\begin{itemize}
+\setlength\itemsep{0pt}
+  \item {\color{red}{\textbf{Deadline}}}: \textbf{February 19, before class}
+  \item Submit your work as a \code{.R} file called \code{ps2.R} in your GitHub repository
+  \item Use comments in your R code to answer conceptual questions and explain your analysis
+  \item You are encouraged to work together, but each person must submit their own code
+\end{itemize}
+
+\vspace{20pt}
 
 \section{Conceptual Questions}
+
+Answer these questions using comments in your R script. You don't need to run any code for this section---just write your answers as comments.
 
 \subsection{Question 1: Conditional Expectations}
 
@@ -56,56 +58,58 @@ For each of the following scenarios, identify whether the proposed control varia
     \item \textbf{Research question:} Effect of democracy on economic growth. \textbf{Proposed control:} Colonial history.
 \end{enumerate}
 
+\vspace{15pt}
+
 \section{Applied Analysis: European Social Survey}
 
 For this problem set, you will use data from the European Social Survey (ESS). The ESS is a cross-national survey that collects data on attitudes, beliefs, and behavior patterns of diverse populations in Europe.
 
 You can download the data from: \url{https://www.europeansocialsurvey.org/data/}
 
-Alternatively, use the \texttt{essurvey} package in R:
+Alternatively, use the \code{essurvey} package in R:
 
-\begin{verbatim}
+\begin{lstlisting}
 install.packages("essurvey")
 library(essurvey)
 set_email("your@email.com")  # Register at ESS website first
 
 # Download ESS Round 10 (2020-2022)
 ess <- import_rounds(10)
-\end{verbatim}
+\end{lstlisting}
 
 We will examine the determinants of support for redistribution. Key variables include:
 
 \begin{itemize}
-    \item \texttt{gincdif}: Government should reduce income differences (1-5 scale, 5 = strongly agree)
-    \item \texttt{hinctnta}: Household income decile (1 = lowest, 10 = highest)
-    \item \texttt{eduyrs}: Years of education
-    \item \texttt{agea}: Age in years
-    \item \texttt{gndr}: Gender (1 = male, 2 = female)
-    \item \texttt{cntry}: Country
+    \item \code{gincdif}: Government should reduce income differences (1--5 scale, 5 = strongly agree)
+    \item \code{hinctnta}: Household income decile (1 = lowest, 10 = highest)
+    \item \code{eduyrs}: Years of education
+    \item \code{agea}: Age in years
+    \item \code{gndr}: Gender (1 = male, 2 = female)
+    \item \code{cntry}: Country
 \end{itemize}
 
 \subsection{Question 4: Data Exploration}
 
 \begin{enumerate}[label=\alph*)]
     \item Select a subset of countries (at least 3) and prepare the data for analysis. Remove missing values and recode variables as needed. Report sample sizes by country.
-    \item Create a histogram of the redistribution variable (\texttt{gincdif}). What is the distribution of preferences?
+    \item Create a histogram of the redistribution variable (\code{gincdif}). Describe the distribution of preferences in a comment.
     \item Create a scatter plot of income (x-axis) versus support for redistribution (y-axis), using jittering to show the distribution. Describe the relationship you observe.
 \end{enumerate}
 
 \subsection{Question 5: Bivariate Regression}
 
 \begin{enumerate}[label=\alph*)]
-    \item Estimate a bivariate regression with support for redistribution as the outcome and household income decile as the predictor. Report the results.
-    \item Interpret the coefficient on income. What is the predicted difference in redistribution support between someone in the lowest income decile and someone in the highest?
-    \item Calculate and report the 95\% confidence interval for the income coefficient. Is the effect statistically significant? Is it practically significant?
+    \item Estimate a bivariate regression with support for redistribution as the outcome and household income decile as the predictor. Print a summary of the results.
+    \item Interpret the coefficient on income in a comment. What is the predicted difference in redistribution support between someone in the lowest income decile and someone in the highest?
+    \item Calculate and print the 95\% confidence interval for the income coefficient. Is the effect statistically significant? Is it practically significant?
 \end{enumerate}
 
 \subsection{Question 6: Multiple Regression}
 
 \begin{enumerate}[label=\alph*)]
-    \item Estimate a model that includes income, education (years), age, and gender. Report the results in a well-formatted table.
-    \item Compare the coefficient on income in this model to the bivariate model. Does it change? In what direction? What does this suggest about the role of the control variables?
-    \item Interpret each of the coefficients in the multiple regression model.
+    \item Estimate a model that includes income, education (years), age, and gender. Print a summary of the results.
+    \item Compare the coefficient on income in this model to the bivariate model. Does it change? In what direction? Explain what this suggests about the role of the control variables.
+    \item Interpret each of the coefficients in the multiple regression model (in comments).
 \end{enumerate}
 
 \subsection{Question 7: Country Differences}
@@ -113,10 +117,12 @@ We will examine the determinants of support for redistribution. Key variables in
 \begin{enumerate}[label=\alph*)]
     \item Add country fixed effects to your model (include country as a factor variable). How do the results change?
     \item Calculate the predicted support for redistribution for a 40-year-old woman with median income and 14 years of education in each of the countries you selected.
-    \item Discuss: Why might there be country-level differences in support for redistribution even after controlling for individual characteristics?
+    \item Discuss in a comment: Why might there be country-level differences in support for redistribution even after controlling for individual characteristics?
 \end{enumerate}
 
 \subsection{Question 8: Thinking Causally}
+
+Answer these questions in comments:
 
 \begin{enumerate}[label=\alph*)]
     \item Can we interpret the coefficient on income as the causal effect of income on redistribution preferences? What would we need to assume?
@@ -124,8 +130,18 @@ We will examine the determinants of support for redistribution. Key variables in
     \item List at least three potential confounders that might bias the relationship between income and redistribution preferences in the ESS data.
 \end{enumerate}
 
-\vspace{1cm}
+\vspace{15pt}
 
-\noindent\textbf{Submission:} Submit your PDF file through Aula Global by the start of class on February 19, 2026.
+\section{Submission}
+
+Commit your \code{ps2.R} file to your GitHub repository before the deadline. Make sure your repository is public so I can access it.
+
+Your R script should:
+\begin{itemize}
+  \item Be well-organized with clear section headers (using comments)
+  \item Include all code needed to reproduce your analysis
+  \item Include your answers to conceptual questions as comments
+  \item Run without errors from top to bottom
+\end{itemize}
 
 \end{document}
