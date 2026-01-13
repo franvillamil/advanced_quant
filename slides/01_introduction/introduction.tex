@@ -1,0 +1,339 @@
+\documentclass[aspectratio=43]{beamer}
+% \documentclass[aspectratio=169]{beamer}
+
+% Title --------------------------------------------
+\title{\Huge Introduction}
+\author{Francisco Villamil}
+\date{Applied Quantitative Methods II\\IC3JM, Spring 2026}
+
+\input{../beamer_preamble.tex}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Course overview}
+\centering
+
+\begin{itemize}[<+->]
+\item This is the second part of the quantitative methods sequence
+\item Focus on \textbf{applying} statistical tools in practice
+\item Less theory, more hands-on work with data
+\item Goal: go from research question to answer
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{What will you learn?}
+\centering
+
+\begin{itemize}[<+->]
+\item How to choose the right model for your question
+\item How to interpret and visualize model results
+\item How to evaluate whether a model is appropriate
+\item How to work with different types of data (panel, spatial, etc.)
+\item Best practices in computing and reproducibility
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Course structure}
+\centering
+
+\begin{tabular}{ll}
+  \textbf{Feb 5} & \asher{Introduction} \\
+  \textbf{Feb 12-19} & \BGyellow<2>{Applied regression} \\
+  \textbf{Feb 26} & \BGyellow<3>{Model interpretation and diagnostics} \\
+  \textbf{Mar 5} & \BGyellow<4>{Best practices in computing} \\
+  \textbf{Mar 12-19} & \BGyellow<5>{Panel data} \\
+  \textbf{Mar 26 \& Apr 9} & \BGyellow<6>{Spatial data} \\
+  \textbf{Apr 16} & \BGyellow<7>{Other outcomes} \\
+  \textbf{Apr 23} & Project presentations \\
+  \textbf{Apr 30} & Advanced topics \\
+\end{tabular}
+
+\end{frame}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Evaluation}
+\centering
+
+\begin{itemize}
+\item Problem sets (20\%)
+  \begin{itemize}
+  \item Started in class, finished at home
+  \item Short deadlines
+  \end{itemize}
+\item Proposal presentation and peer review (10\% + 10\%)
+\item Final essay (30\%)
+  \begin{itemize}
+  \item Small research note (max 3,000 words)
+  \item Original data analysis using R
+  \end{itemize}
+\item Exam (30\%)
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{transitionframe}
+The Big Picture
+\end{transitionframe}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The research process}
+\centering
+
+\vspace{10pt}
+
+\Large
+\textbf{Theory} $\longleftrightarrow$ \textbf{Data Generating Process} $\longleftrightarrow$ \textbf{Data}
+
+\vspace{20pt}
+
+\normalsize
+\begin{itemize}[<+->]
+\item Theories make claims about how the world works
+\item These claims imply certain patterns in data
+\item We observe data and try to learn about the underlying process
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{What is a Data Generating Process (DGP)?}
+\centering
+
+\begin{itemize}[<+->]
+\item The rules that govern how data comes to exist
+\item Includes:
+  \begin{itemize}
+  \item The social or political process we study
+  \item How observations end up in our dataset
+  \end{itemize}
+\item We never observe the DGP directly
+\item We use statistical models to make inferences about it
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Why do we need statistics?}
+\centering
+
+\begin{itemize}[<+->]
+\item Our theories deal with processes, not just data
+\item Data is a window into the underlying process
+\item Statistics helps us:
+  \begin{itemize}
+  \item Separate signal from noise
+  \item Quantify uncertainty
+  \item Make valid inferences
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Sources of uncertainty}
+\centering
+
+\begin{itemize}[<+->]
+\item \textbf{Sampling uncertainty}: We observe a sample, not the population
+\item \textbf{Theoretical uncertainty}: Our theories are simplifications
+\item \textbf{Fundamental uncertainty}: Some processes are inherently random
+\item[]
+\item All of these create ``noise'' in our data
+\item Statistical models help us deal with this noise
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The logic of statistical inference}
+\centering
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item \textbf{Probability theory}: Given a known process, what data will we see?
+\item[]
+\item \textbf{Statistical inference}: Given observed data, what can we learn about the process?
+\item[]
+\item We're doing the reverse: from data back to process
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{transitionframe}
+Review: Key Concepts from AQMSS-I
+\end{transitionframe}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The regression model}
+\centering
+
+\vspace{10pt}
+
+The most common tool in social science:
+
+\vspace{10pt}
+
+$$Y = \beta_0 + \beta_1 X + \varepsilon$$
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item $Y$: outcome we want to explain
+\item $X$: explanatory variable(s)
+\item $\beta$: coefficients (what we estimate)
+\item $\varepsilon$: error term (what we can't explain)
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{What regression tells us}
+\centering
+
+\begin{itemize}[<+->]
+\item Regression estimates \textbf{conditional expectations}
+\item ``What is the average $Y$ for units with a given value of $X$?''
+\item[]
+\item The slope $\beta_1$ tells us:
+  \begin{itemize}
+  \item How much $Y$ changes, on average
+  \item When comparing units that differ by 1 in $X$
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Descriptive vs. Causal interpretation}
+\centering
+
+\begin{itemize}
+\item \textbf{Descriptive}: How do units with different $X$ values compare?
+  \begin{itemize}
+  \item ``People with more education earn more, on average''
+  \end{itemize}
+\item[]
+\item \textbf{Causal}: What happens if we change $X$ for a given unit?
+  \begin{itemize}
+  \item ``If we give someone more education, they will earn more''
+  \end{itemize}
+\item[]
+\item Same coefficient, very different claims!
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The challenge of causal inference}
+\centering
+
+\begin{itemize}[<+->]
+\item Causal effects are about \textbf{counterfactuals}
+\item ``What would have happened if things were different?''
+\item[]
+\item The problem: we can't observe counterfactuals
+\item We need strategies to infer them
+\item This will be a recurring theme throughout the course
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{What makes a good analysis?}
+\centering
+
+\begin{itemize}[<+->]
+\item Clear research question
+\item Appropriate data for the question
+\item Right statistical model for the data
+\item Correct interpretation of results
+\item Honest about limitations and uncertainty
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Looking ahead}
+\centering
+
+\begin{itemize}[<+->]
+\item Next session: Applied regression in depth
+\item How to set up a regression analysis
+\item How to interpret coefficients correctly
+\item Common pitfalls and how to avoid them
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{For next week}
+\centering
+
+\begin{itemize}
+\item Read Urdinez \& Cruz (2020), chapters 1-5
+\item Review your notes on OLS from AQMSS-I
+\item Start Problem Set 1
+\item[]
+\item Check Aula Global for additional materials
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{}
+\centering
+
+Questions?
+
+\end{frame}
+% ----------------------------------------------------
+
+
+\end{document}

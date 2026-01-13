@@ -1,0 +1,111 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{graphicx}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+}
+
+\title{\textbf{Problem Set 1: Introduction and Review}}
+\author{Applied Quantitative Methods for the Social Sciences II}
+\date{Due: February 12, 2026}
+
+\begin{document}
+
+\maketitle
+
+\noindent\textit{Note: Please prepare your answers using R Markdown or Quarto and submit a PDF file. Include all code and R output used to answer the questions. You are encouraged to work together, but each person must submit their own responses. Identical submissions will not be accepted.}
+
+\section{Conceptual Questions}
+
+\subsection{Question 1: Data Generating Processes}
+
+Consider the following research question: ``Does foreign aid promote economic growth in developing countries?''
+
+\begin{enumerate}[label=\alph*)]
+    \item Describe the data generating process (DGP) that would produce data on foreign aid and economic growth. What are the key components of this DGP?
+    \item Identify at least three sources of uncertainty in this DGP. For each, explain whether it represents sampling uncertainty, theoretical uncertainty, or fundamental uncertainty.
+    \item Why is it important to think about the DGP when conducting statistical analysis? How does understanding the DGP help us interpret regression results?
+\end{enumerate}
+
+\subsection{Question 2: Statistical Inference}
+
+\begin{enumerate}[label=\alph*)]
+    \item Explain in your own words the difference between probability theory and statistical inference. How are they related?
+    \item A researcher estimates that the effect of democracy on economic growth is $\beta = 0.5$ with a standard error of $SE = 0.2$. They report a p-value of 0.012. Explain what each of these quantities means. What can the researcher conclude?
+    \item Another researcher studying the same question with a much larger sample finds $\beta = 0.05$ with $SE = 0.01$ and p-value $< 0.001$. Compare this result to the previous one. Which finding is more important? Explain your reasoning.
+\end{enumerate}
+
+\section{Applied Analysis: World Development Indicators}
+
+For this section, you will work with data from the World Bank's World Development Indicators. You can download the data using the \texttt{WDI} package in R:
+
+\begin{verbatim}
+install.packages("WDI")
+library(WDI)
+
+# Download data for year 2019
+wdi <- WDI(country = "all",
+           indicator = c("NY.GDP.PCAP.CD",     # GDP per capita
+                        "SP.DYN.LE00.IN",      # Life expectancy
+                        "SE.ADT.LITR.ZS",      # Literacy rate
+                        "SP.POP.TOTL"),        # Population
+           start = 2019, end = 2019)
+\end{verbatim}
+
+\subsection{Question 3: Exploring the Data}
+
+\begin{enumerate}[label=\alph*)]
+    \item Load the data and clean it appropriately (remove missing values, select relevant countries, etc.). How many countries remain in your analysis sample? Report basic summary statistics (mean, standard deviation, min, max) for each variable.
+    \item Create a scatter plot of GDP per capita (x-axis) against life expectancy (y-axis). Describe the relationship you observe. Is it linear? Are there any outliers?
+    \item Transform GDP per capita using the natural logarithm. Create a new scatter plot with log(GDP per capita) on the x-axis. How does the relationship change? Why might this transformation be appropriate?
+\end{enumerate}
+
+\subsection{Question 4: Simple Regression}
+
+\begin{enumerate}[label=\alph*)]
+    \item Estimate a linear regression with life expectancy as the outcome and log(GDP per capita) as the predictor. Report the results in a well-formatted table.
+    \item Interpret the slope coefficient. What does it tell us about the relationship between wealth and health?
+    \item Is this a causal relationship? What would we need to assume for a causal interpretation? List at least three potential confounders that might bias this estimate.
+\end{enumerate}
+
+\subsection{Question 5: Multiple Regression}
+
+\begin{enumerate}[label=\alph*)]
+    \item Now add literacy rate as a control variable. Estimate the new model and report the results.
+    \item How does the coefficient on log(GDP per capita) change when you add literacy rate? Why might this happen?
+    \item What is the interpretation of the coefficient on literacy rate? Is literacy rate a good control variable in this context? Explain your reasoning.
+\end{enumerate}
+
+\subsection{Question 6: Predictions}
+
+\begin{enumerate}[label=\alph*)]
+    \item Using your multiple regression model, predict life expectancy for a country with:
+    \begin{itemize}
+        \item GDP per capita of \$5,000 and literacy rate of 80\%
+        \item GDP per capita of \$50,000 and literacy rate of 99\%
+    \end{itemize}
+    \item Calculate the 95\% confidence interval for each prediction.
+    \item Discuss the limitations of these predictions. What sources of uncertainty are captured by the confidence intervals? What sources are not?
+\end{enumerate}
+
+\section{Reflection}
+
+\subsection{Question 7}
+
+In about 200 words, reflect on the relationship between statistical modeling and causal inference. Based on your analysis of the World Bank data, what can we conclude about the relationship between economic development and health? What would we need to do to establish a causal relationship?
+
+\vspace{1cm}
+
+\noindent\textbf{Submission:} Submit your PDF file through Aula Global by the start of class on February 12, 2026.
+
+\end{document}
