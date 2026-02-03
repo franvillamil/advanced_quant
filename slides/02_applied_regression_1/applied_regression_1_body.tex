@@ -1,0 +1,581 @@
+% ----------------------------------------------------
+\begin{frame}
+  \titlepage
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ====================================================
+\section{Review: Key Concepts}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{transitionframe}
+Review: Key Concepts from AQMSS-I
+\end{transitionframe}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The regression model}
+\centering
+
+\vspace{10pt}
+
+The most common tool in social science:
+
+\vspace{10pt}
+
+$$Y = \beta_0 + \beta_1 X + \varepsilon$$
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item $Y$: outcome we want to explain
+\item $X$: explanatory variable(s)
+\item $\beta$: coefficients (what we estimate)
+\item $\varepsilon$: error term (what we can't explain)
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{What regression tells us}
+\centering
+
+\begin{itemize}[<+->]
+\item Regression estimates \textbf{conditional expectations}
+\item ``What is the average $Y$ for units with a given value of $X$?''
+\item[]
+\item The slope $\beta_1$ tells us:
+  \begin{itemize}
+  \item How much $Y$ changes, on average
+  \item When comparing units that differ by 1 in $X$
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Descriptive vs. Causal interpretation}
+\centering
+
+\begin{itemize}
+\item \textbf{Descriptive}: How do units with different $X$ values compare?
+  \begin{itemize}
+  \item ``People with more education earn more, on average''
+  \end{itemize}
+\item[]
+\item \textbf{Causal}: What happens if we change $X$ for a given unit?
+  \begin{itemize}
+  \item ``If we give someone more education, they will earn more''
+  \end{itemize}
+\item[]
+\item Same coefficient, very different claims!
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The challenge of causal inference}
+\centering
+
+\begin{itemize}[<+->]
+\item Causal effects are about \textbf{counterfactuals}
+\item ``What would have happened if things were different?''
+\item[]
+\item The problem: we can't observe counterfactuals
+\item We need strategies to infer them
+\item This will be a recurring theme throughout the course
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Today's goals}
+\centering
+
+\begin{itemize}[<+->]
+\item Understand regression as modeling conditional expectations
+\item Review the logic of OLS
+\item Discuss when regression can tell us about causation
+\item Learn how to think about control variables
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ====================================================
+\section{Regression as Conditional Expectations}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{transitionframe}
+Regression as Conditional Expectations
+\end{transitionframe}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{What question does regression answer?}
+\centering
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item ``What is the average value of $Y$ for different values of $X$?''
+\item[]
+\item This is the \textbf{conditional expectation function} (CEF)
+\item[]
+\item Written as: $E[Y | X]$
+\item[]
+\item Regression approximates this function
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Example: Income and support for redistribution}
+\centering
+
+\begin{itemize}[<+->]
+\item Research question: How does income relate to support for redistribution?
+\item[]
+\item CEF: ``What is the average support for redistribution among people earning \$50k? Among those earning \$100k?''
+\item[]
+\item We can estimate this with regression
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Linear regression as approximation}
+\centering
+
+\begin{itemize}[<+->]
+\item The true CEF might be complicated
+\item Linear regression fits the \textbf{best linear approximation}
+\item[]
+\item Even if the true relationship is non-linear
+\item The linear fit is still the best predictor among linear functions
+\item[]
+\item Why linear? Simple, interpretable, often good enough
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The OLS formula}
+\centering
+
+\vspace{10pt}
+
+$$\hat{\beta} = \frac{Cov(X, Y)}{Var(X)}$$
+
+\vspace{20pt}
+
+\begin{itemize}[<+->]
+\item This gives us the slope that minimizes squared errors
+\item Intuition: how much does $Y$ move when $X$ moves?
+\item Scaled by how much $X$ varies
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Interpreting the slope coefficient}
+\centering
+
+\vspace{10pt}
+
+$$Y = \beta_0 + \beta_1 X + \varepsilon$$
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item $\beta_1$ represents:
+  \begin{itemize}
+  \item The difference in average $Y$
+  \item Between groups that differ by 1 unit in $X$
+  \end{itemize}
+\item[]
+\item This is a \textbf{comparison}, not necessarily a causal effect
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ====================================================
+\section{From Description to Causation}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{transitionframe}
+From Description to Causation
+\end{transitionframe}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{When can we interpret regression causally?}
+\centering
+
+\begin{itemize}[<+->]
+\item Descriptive interpretation: always valid
+  \begin{itemize}
+  \item ``Higher income is associated with less support for redistribution''
+  \end{itemize}
+\item[]
+\item Causal interpretation: requires additional assumptions
+  \begin{itemize}
+  \item ``Increasing someone's income would decrease their support''
+  \end{itemize}
+\item[]
+\item The difference is crucial!
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The potential outcomes framework}
+\centering
+
+\begin{itemize}[<+->]
+\item Every unit has two potential outcomes:
+  \begin{itemize}
+  \item $Y(1)$: outcome if treated
+  \item $Y(0)$: outcome if not treated
+  \end{itemize}
+\item[]
+\item Causal effect for unit $i$: $\tau_i = Y_i(1) - Y_i(0)$
+\item[]
+\item The fundamental problem: we only observe one of these
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Why experiments work}
+\centering
+
+\begin{itemize}[<+->]
+\item In an experiment, treatment is randomly assigned
+\item[]
+\item This means treated and control groups are comparable
+\item[]
+\item We can use the control group's outcomes as counterfactual
+\item[]
+\item The simple difference in means estimates the causal effect
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The challenge with observational data}
+\centering
+
+\begin{itemize}[<+->]
+\item Most social science data is observational
+\item Treatment is not randomly assigned
+\item[]
+\item Problem: treated and control groups may differ
+\item Not just in treatment, but in other ways too
+\item[]
+\item These differences can bias our estimates
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Confounding}
+\centering
+
+\vspace{10pt}
+
+A \textbf{confounder} is a variable that:
+
+\begin{itemize}
+\item Affects both the treatment and the outcome
+\item Creates a spurious association between them
+\end{itemize}
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item Example: Education, income, and political preferences
+\item Education affects both income and political views
+\item Income-politics relationship may be partly spurious
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The logic of controlling}
+\centering
+
+\begin{itemize}[<+->]
+\item If we can identify the confounders...
+\item ...we can ``control'' for them in regression
+\item[]
+\item The idea: compare units with same confounder values
+\item This eliminates the spurious part of the association
+\item[]
+\item But: this requires knowing what the confounders are
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ====================================================
+\section{Control Variables in Practice}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{transitionframe}
+Control Variables in Practice
+\end{transitionframe}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Multiple regression}
+\centering
+
+\vspace{10pt}
+
+$$Y = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \varepsilon$$
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item $\beta_1$ now represents:
+  \begin{itemize}
+  \item The difference in average $Y$
+  \item Between groups that differ by 1 in $X_1$
+  \item \textbf{Holding $X_2$ constant}
+  \end{itemize}
+\item[]
+\item This is the ``controlled'' effect of $X_1$
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{How controlling works}
+\centering
+
+\begin{itemize}[<+->]
+\item OLS with multiple variables ``partials out'' the controls
+\item[]
+\item Technically: we look at variation in $X_1$ that is unrelated to $X_2$
+\item[]
+\item This isolates the unique contribution of $X_1$
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Omitted variable bias}
+\centering
+
+\begin{itemize}[<+->]
+\item If we omit a confounder, our estimate will be biased
+\item[]
+\item The bias formula:
+$$\text{Bias} = \beta_{\text{confounder}} \times \delta_{X, \text{confounder}}$$
+\item[]
+\item Depends on:
+  \begin{itemize}
+  \item How strongly the confounder affects $Y$
+  \item How strongly the confounder relates to $X$
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{What makes a good control?}
+\centering
+
+Good controls are variables that:
+
+\begin{itemize}[<+->]
+\item Affect both the treatment and the outcome
+\item Are determined \textbf{before} the treatment
+\item Are not affected by the treatment
+\end{itemize}
+
+\vspace{10pt}
+
+\pause
+\textbf{Pre-treatment confounders} are the key!
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Bad controls: Post-treatment variables}
+\centering
+
+\begin{itemize}[<+->]
+\item Never control for variables caused by the treatment
+\item[]
+\item Example: Studying effect of job training on wages
+  \begin{itemize}
+  \item Don't control for job type (affected by training)
+  \item Do control for education (determined before training)
+  \end{itemize}
+\item[]
+\item Controlling for post-treatment variables can \textit{introduce} bias
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Bad controls: Colliders}
+\centering
+
+\begin{itemize}[<+->]
+\item A \textbf{collider} is caused by both $X$ and $Y$
+\item Controlling for it creates a spurious association
+\item[]
+\item Example: NBA players
+  \begin{itemize}
+  \item Height and skill both affect being in NBA
+  \item Among NBA players, height and skill are negatively correlated
+  \item But not in the general population!
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The limitations of controlling}
+\centering
+
+\begin{itemize}[<+->]
+\item We can only control for what we observe and measure
+\item[]
+\item Unobserved confounders will still bias our estimates
+\item[]
+\item There's no purely statistical solution to this
+\item[]
+\item Need theory + research design, not just more controls
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Summary: Key takeaways}
+\centering
+
+\begin{itemize}[<+->]
+\item Regression estimates conditional expectations
+\item Causal interpretation requires additional assumptions
+\item Control variables help only if chosen correctly
+\item Controlling for the wrong variables can make things worse
+\item Always think about what you're comparing
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{For next week}
+\centering
+
+\begin{itemize}
+\item Read Angrist \& Pischke (2008), chapters 1-3
+\item Read Urdinez \& Cruz (2020), chapter 5
+\item Work on Problem Set 1
+\item[]
+\item Next session: More on regression in practice
+  \begin{itemize}
+  \item Interactions
+  \item Non-linear relationships
+  \item Standard errors and inference
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{}
+\centering
+
+Questions?
+
+\end{frame}
+% ----------------------------------------------------
+\note{}

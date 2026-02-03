@@ -1,0 +1,429 @@
+% ----------------------------------------------------
+\begin{frame}
+  \titlepage
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Course overview}
+\centering
+
+\begin{itemize}[<+->]
+\item This is the second part of the quantitative methods sequence
+\item Focus on \textbf{applying} statistical tools in practice
+\item Less theory, more hands-on work with data
+\item Goal: go from research question to answer
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{What will you learn?}
+\centering
+
+\begin{itemize}[<+->]
+\item How to choose the right model for your question
+\item How to interpret and visualize model results
+\item How to evaluate whether a model is appropriate
+\item How to work with different types of data (panel, spatial, etc.)
+\item Best practices in computing and reproducibility
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Course structure}
+\centering
+
+\begin{tabular}{ll}
+  \textbf{Feb 5} & \asher{Introduction} \\
+  \textbf{Feb 12-19} & \BGyellow<2>{Applied regression} \\
+  \textbf{Feb 26} & \BGyellow<3>{Model interpretation and diagnostics} \\
+  \textbf{Mar 5} & \BGyellow<4>{Best practices in computing} \\
+  \textbf{Mar 12-19} & \BGyellow<5>{Panel data} \\
+  \textbf{Mar 26 \& Apr 9} & \BGyellow<6>{Spatial data} \\
+  \textbf{Apr 16} & \BGyellow<7>{Other outcomes} \\
+  \textbf{Apr 23} & Project presentations \\
+  \textbf{Apr 30} & Advanced topics \\
+\end{tabular}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Evaluation}
+\centering
+
+\begin{itemize}
+\item Problem sets (20\%)
+  \begin{itemize}
+  \item Started in class, finished at home
+  \item Short deadlines
+  \end{itemize}
+\item Proposal presentation and peer review (10\% + 10\%)
+\item Final essay (30\%)
+  \begin{itemize}
+  \item Small research note (max 3,000 words)
+  \item Original data analysis using R
+  \end{itemize}
+\item Exam (30\%)
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ====================================================
+\section{The Big Picture}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{transitionframe}
+The Big Picture
+\end{transitionframe}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The research process}
+\centering
+
+\vspace{10pt}
+
+\Large
+\textbf{Theory} $\longleftrightarrow$ \textbf{Data Generating Process} $\longleftrightarrow$ \textbf{Data}
+
+\vspace{20pt}
+
+\normalsize
+\begin{itemize}[<+->]
+\item Theories make claims about how the world works
+\item These claims imply certain patterns in data
+\item We observe data and try to learn about the underlying process
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{What is a Data Generating Process (DGP)?}
+\centering
+
+\begin{itemize}[<+->]
+\item The rules that govern how data comes to exist
+\item Includes:
+  \begin{itemize}
+  \item The social or political process we study
+  \item How observations end up in our dataset
+  \end{itemize}
+\item We never observe the DGP directly
+\item We use statistical models to make inferences about it
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Why do we need statistics?}
+\centering
+
+\begin{itemize}[<+->]
+\item Our theories deal with processes, not just data
+\item Data is a window into the underlying process
+\item Statistics helps us:
+  \begin{itemize}
+  \item Separate signal from noise
+  \item Quantify uncertainty
+  \item Make valid inferences
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Sources of uncertainty}
+\centering
+
+\begin{itemize}[<+->]
+\item \textbf{Sampling uncertainty}: We observe a sample, not the population
+\item \textbf{Theoretical uncertainty}: Our theories are simplifications
+\item \textbf{Fundamental uncertainty}: Some processes are inherently random
+\item[]
+\item All of these create ``noise'' in our data
+\item Statistical models help us deal with this noise
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The logic of statistical inference}
+\centering
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item \textbf{Probability theory}: Given a known process, what data will we see?
+\item[]
+\item \textbf{Statistical inference}: Given observed data, what can we learn about the process?
+\item[]
+\item We're doing the reverse: from data back to process
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ====================================================
+\section{Version Control and Git}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{transitionframe}
+Version Control and Git
+\end{transitionframe}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The problem: managing files over time}
+\centering
+
+\begin{itemize}[<+->]
+\item Have you ever had files like this?
+  \begin{itemize}
+  \item \texttt{thesis\_v1.docx}
+  \item \texttt{thesis\_v2\_final.docx}
+  \item \texttt{thesis\_v2\_final\_REAL.docx}
+  \item \texttt{thesis\_v2\_final\_REAL\_submitted.docx}
+  \end{itemize}
+\item[]
+\item What changed between versions?
+\item Which version has the correct analysis?
+\item How do you collaborate without overwriting each other's work?
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Version control: a better way}
+\centering
+
+\vspace{10pt}
+
+\textbf{Version control} is a system that records changes to files over time
+
+\vspace{15pt}
+
+\begin{itemize}[<+->]
+\item One file, complete history
+\item Every change is recorded with a description
+\item Can go back to any previous state
+\item Multiple people can work simultaneously
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Why version control for research?}
+\centering
+
+\begin{itemize}[<+->]
+\item \textbf{Reproducibility}: Track exactly what you did and when
+\item \textbf{Backup}: Your work is safely stored, even if your laptop dies
+\item \textbf{Collaboration}: Work with others without email chains of files
+\item \textbf{Transparency}: Share your code with the research community
+\item[]
+\item Many journals now require or encourage sharing code via GitHub
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Git and GitHub}
+\centering
+
+\vspace{10pt}
+
+\textbf{Git}
+\begin{itemize}
+\item A version control system
+\item Runs locally on your computer
+\item Tracks changes to files
+\end{itemize}
+
+\vspace{15pt}
+
+\textbf{GitHub}
+\begin{itemize}
+\item A web platform that hosts Git repositories
+\item Stores your code online
+\item Enables sharing and collaboration
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The basic Git workflow}
+\centering
+
+\begin{enumerate}[<+->]
+\item \textbf{Make changes} to your files (write code, edit text)
+\item \textbf{Stage} the changes you want to save
+  \begin{itemize}
+  \item ``These are the files I want to include in my next snapshot''
+  \end{itemize}
+\item \textbf{Commit} the staged changes with a message
+  \begin{itemize}
+  \item A snapshot of your project at this moment
+  \end{itemize}
+\item \textbf{Push} your commits to GitHub
+  \begin{itemize}
+  \item Upload your local changes to the cloud
+  \end{itemize}
+\end{enumerate}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Ways to use Git}
+\centering
+
+\begin{itemize}[<+->]
+\item \textbf{GitHub web interface}: Create repos, upload files, edit directly
+  \begin{itemize}
+  \item Simple but limited
+  \end{itemize}
+\item \textbf{Command line}: Most powerful and flexible
+  \begin{itemize}
+  \item \texttt{git add}, \texttt{git commit}, \texttt{git push}
+  \end{itemize}
+\item \textbf{RStudio}: Built-in Git integration
+  \begin{itemize}
+  \item Point-and-click interface
+  \end{itemize}
+\item[]
+\item All do the same thing---choose what works for you
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Problem Set 1}
+\centering
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item Create a GitHub account (if you don't have one)
+\item Create a \textbf{public} repository for this course
+\item Set up your README and folder structure
+\item Create a simple \texttt{.R} file
+\item[]
+\item This repository is where you'll submit all your assignments
+\item Detailed instructions in the problem set document
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{What makes a good analysis?}
+\centering
+
+\begin{itemize}[<+->]
+\item Clear research question
+\item Appropriate data for the question
+\item Right statistical model for the data
+\item Correct interpretation of results
+\item Honest about limitations and uncertainty
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Looking ahead}
+\centering
+
+\begin{itemize}[<+->]
+\item Next session: Applied regression in depth
+\item How to set up a regression analysis
+\item How to interpret coefficients correctly
+\item Common pitfalls and how to avoid them
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{For next week}
+\centering
+
+\begin{itemize}
+\item Read Urdinez \& Cruz (2020), chapters 1-5
+\item Review your notes on OLS from AQMSS-I
+\item Start Problem Set 1
+\item[]
+\item Check Aula Global for additional materials
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{}
+\centering
+
+Questions?
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
