@@ -12,7 +12,7 @@ layout: default
 
 | Date        | Topic  | Slides | Exercises |
 | :---        | :---   | :--- | :--- |
-| Feb 5    | [Introduction](./sessions.md) | [[PDF](./slides/01_introduction/introduction.pdf)] | [[Ex 1](./problems/ps1_introduction.pdf)] |
+| Feb 5    | [Introduction](./sessions.md) | [[PDF](./slides/01_introduction/introduction.pdf)] | [[Ex 1](./assignments/assign1_introduction.pdf)] |
 | Feb 12  | [Applied regression](./sessions.md) | | |
 | Feb 19  | [Binary outcomes](./sessions.md) | | |
 | Feb 26  | [Model interpretation and diagnostics](./sessions.md) | | |
