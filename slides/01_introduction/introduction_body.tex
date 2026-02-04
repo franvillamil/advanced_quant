@@ -3,7 +3,7 @@
   \titlepage
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Welcome everyone. Introduce yourself briefly. Mention this is the second part of the quantitative methods sequence -- they already have the foundations from AQMSS-I, now we build on that.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -19,7 +19,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Emphasize the contrast with AQMSS-I: less abstract theory, more applied work. The goal is that by the end they can take a research question, find or collect data, choose an appropriate method, and present results. Mention that we will also spend time on computing skills and workflow.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -36,7 +36,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Go through each point briefly. Stress that ``choosing the right model'' means matching the model to the question and the data -- not just running the fanciest thing available. Panel and spatial data are new types they probably haven't seen. Computing and reproducibility will be a recurring theme.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -61,7 +61,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Walk through the schedule session by session. Mention that the order might change slightly (e.g.\ the computing session could move). Highlight that the course alternates between learning new models and applying them in problem sets. Note the Easter break and that project presentations happen right after.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -85,7 +85,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Problem sets are mostly graded on completion -- the point is to practice, not to get everything perfect. The final essay is the main individual assessment: they pick a question, find data, and do an original analysis. Emphasize that the proposal presentation is also a chance to get feedback from peers before writing. The exam will cover both concepts and applied interpretation.}
 
 % ====================================================
 \section{The Big Picture}
@@ -113,7 +113,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This is the key conceptual diagram for the course. Spend some time here. Theory tells us what the world should look like; the DGP is the actual mechanism generating the data we observe; data is what we get to see. The double arrows mean we go back and forth: theory informs what patterns to expect, and data helps us refine our theories. The last point (research strategy connects theory to data) sets up the next slide.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -134,7 +134,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This is a crucial point, especially for students who might be tempted to learn a fancy method and then look for a problem to apply it to. Give a concrete example: if your theory is about individual-level behavior, you need individual-level data and a strategy that captures individual variation -- running a country-level regression with a cool estimator doesn't help. Connect to the research design course: the sequence is always question, theory, strategy, then method. This course teaches the tools, but the question ``why this tool?'' should always come first.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -154,7 +154,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Make it concrete. Example: civil war onset. The DGP includes the actual political, economic, and social factors that lead to conflict, but also how conflicts get recorded (coding decisions, media coverage, threshold definitions). We never see the ``true'' process -- we see a dataset with rows and columns that reflect both the real process and a lot of measurement and selection choices. That's why understanding the DGP matters for choosing the right model.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -174,7 +174,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Bridge from the DGP to methodology. We can't just look at raw data and draw conclusions -- data is noisy, incomplete, and shaped by the DGP. Statistics gives us a principled way to learn from data despite this. The three functions (signal vs noise, uncertainty, inference) will come up throughout the course: every model we fit is trying to do these things.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -192,7 +192,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Give examples for each type. Sampling: we survey 1,000 people but want to say something about millions. Theoretical: our model of voting assumes a few variables matter but the real process is much more complex. Fundamental: even if we knew everything, some outcomes have inherent randomness (e.g.\ election margins in very close races). The key takeaway: noise is unavoidable, so we need tools that account for it rather than pretending our data is perfect.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -211,7 +211,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This is a good place to pause and check understanding. Probability theory is the ``forward'' problem: if I know the coin is fair, I can predict roughly 50\% heads. Statistical inference is the ``inverse'' problem: I see 53 heads out of 100 flips, is the coin fair? This inversion is what makes statistics hard -- there's always uncertainty about the answer. Everything we do in this course (confidence intervals, hypothesis tests, model selection) is about managing that uncertainty.}
 
 % ====================================================
 \section{Workflow Basics}
@@ -237,6 +237,7 @@
 
 \end{frame}
 % ----------------------------------------------------
+\note{Set the scene for why we're spending time on computing. AI tools like Claude Code are changing the workflow fast -- students who are comfortable with the command line, file systems, and version control will adapt much more easily. This isn't about becoming programmers, it's about being literate enough to use these tools effectively for research. Mention that we'll dedicate a full session later to project management and reproducibility, but version control is so fundamental that we start with it today.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -259,7 +260,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This usually gets a laugh -- everyone recognizes themselves. Let them share their own horror stories if they want. The point is that this ``system'' of naming files is fragile, unscalable, and doesn't work for collaboration at all. Ask: how would you collaborate on a data analysis project with a co-author using this approach?}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -281,7 +282,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Introduce the concept without jargon. The key idea is that instead of saving multiple copies, you save ``snapshots'' of your project over time, each with a description of what changed. You can always go back. This is like track changes in Word but much more powerful and for any kind of file.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -299,7 +300,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Connect to their future as researchers. Reproducibility is increasingly expected -- some journals won't publish without replication materials. Mention specific examples: AJPS data policy, QJE replication packages. Collaboration is also practical for their MA thesis or co-authored papers. The transparency point matters for their credibility as researchers.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -326,7 +327,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Important distinction: Git is the engine, GitHub is the garage. Git runs on your machine and tracks changes locally. GitHub is where you store and share your work online. You can use Git without GitHub, but GitHub without Git doesn't make much sense. Analogy: Git is like saving versions on your computer; GitHub is like backing them up to the cloud and making them available to others.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -351,7 +352,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Walk through each step slowly. Staging is the step that confuses people most -- explain that it's like putting items on a table before packing a box. You decide what goes in the next snapshot. A commit is the snapshot itself, with a message explaining what you did and why. Pushing uploads everything to GitHub. Emphasize that if they forget to push, their work is only on their laptop.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -377,7 +378,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Reassure them: they don't need to master the command line right now. The web interface is perfectly fine for getting started. The assignment document gives step-by-step instructions for all three approaches. Encourage them to try the command line eventually because it's the most flexible, but there's no penalty for using the web interface or RStudio.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -398,7 +399,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Go through the assignment briefly. The main goal is just to get everyone set up with Git and GitHub -- the actual R work is minimal. Emphasize that the repository must be public so you can check their submissions. Mention they should start early in case they run into setup issues. Point them to the detailed assignment document and the appendices on Windows setup, Positron, and Sublime Text.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -415,7 +416,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Tie back to the Big Picture section. This is the checklist for the entire course: every analysis we do should satisfy these criteria. A clear question means knowing what you're trying to learn. Appropriate data means the data actually lets you answer the question (connects to the ``theory first'' point). Right model means matching the method to the data structure. Correct interpretation means not overclaiming. Honesty about limitations is what distinguishes good research from bad.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -431,7 +432,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Brief preview of what's coming. Next session will be a proper deep dive into regression -- they've seen it before in AQMSS-I but now we'll focus on applying it in R and interpreting results carefully. Mention that interactions and presenting results are things they'll use constantly in their own work.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -446,7 +447,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Remind them to start the assignment early. The readings are optional review if they feel rusty on OLS. The most important thing is to have their GitHub set up and working before next session.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -457,4 +458,4 @@ Questions?
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Open the floor. If no questions, can use this time to start working on Assignment 1 together -- walk them through creating a GitHub account and repository on the projector.}
