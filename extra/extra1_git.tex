@@ -1,0 +1,120 @@
+\input{preamble.tex}
+\textbf{\large Appendix to Assignment 1:\\\vspace{5pt}Setting up Github account}\\\vspace{10pt}
+\end{center}
+
+\tableofcontents
+
+\section{Extra: Installing Git Locally}
+
+If you want to use Git from the command line, you need to install it first.
+
+\subsection{Installation}
+
+\begin{itemize}
+  \item \textbf{Mac}: Git comes pre-installed. Or install via Homebrew: \code{brew install git}
+  \item \textbf{Windows}: Download from \url{https://git-scm.com/download/win}
+  \item \textbf{Linux}: Use your package manager, e.g., \code{sudo apt install git}
+\end{itemize}
+
+\subsection{First-Time Configuration}
+
+After installing, configure your identity (run once):
+
+\begin{lstlisting}
+git config --global user.name "Your Name"
+git config --global user.email "your@email.com"
+\end{lstlisting}
+
+\subsection{Cloning an Existing Repository}
+
+If you created the repository on GitHub first, download it to your computer:
+
+\begin{lstlisting}
+git clone https://github.com/YOUR-USERNAME/aqmss2.git
+cd aqmss2
+\end{lstlisting}
+
+\subsection{Configuring RStudio}
+
+To use Git in RStudio:
+\begin{enumerate}
+  \item Go to Tools $\rightarrow$ Global Options $\rightarrow$ Git/SVN
+  \item Make sure ``Git executable'' points to your Git installation
+  \item Restart RStudio
+\end{enumerate}
+
+\vspace{15pt}
+
+\subsection*{Quick Reference on Common Git Commands}
+
+\begin{tabular}{ll}
+\textbf{Command} & \textbf{What it does} \\
+\hline
+\code{git status} & Show which files have changed \\
+\code{git add <file>} & Stage a file for commit \\
+\code{git add .} & Stage all changed files \\
+\code{git commit -m "msg"} & Save staged changes with a message \\
+\code{git push} & Upload commits to GitHub \\
+\code{git pull} & Download changes from GitHub \\
+\code{git log --oneline} & Show commit history (compact) \\
+\code{git diff} & Show changes not yet staged \\
+\end{tabular}
+
+\clearpage
+\section{Extra: Setting Up the Command Line on Windows}
+
+If you are using Windows and want to follow the command line instructions in this assignment, you need to set up a Unix-like terminal first. The default Windows terminals (Command Prompt and PowerShell) use different commands and syntax from what is shown in this assignment and in most online tutorials.
+
+\subsection{Recommended: Use Git Bash}
+
+When you install Git for Windows (from \url{https://git-scm.com/download/win}), it includes \textbf{Git Bash}---a terminal emulator that provides a Unix-like command line environment on Windows. This is the easiest way to get started.
+
+\begin{enumerate}
+  \item Download and run the Git for Windows installer
+  \item During installation, accept the default options. In particular:
+    \begin{itemize}
+      \item Select ``Use Git from Git Bash only'' (or the default option)
+      \item Select ``Use bundled OpenSSH''
+      \item Select ``Checkout Windows-style, commit Unix-style line endings''
+    \end{itemize}
+  \item After installation, you can open Git Bash by:
+    \begin{itemize}
+      \item Searching for ``Git Bash'' in the Start menu
+      \item Right-clicking in any folder and selecting ``Git Bash Here''
+    \end{itemize}
+\end{enumerate}
+
+Git Bash supports all the commands used in this assignment (\code{mkdir}, \code{cd}, \code{echo}, \code{git}, etc.) with the same syntax as on Mac and Linux.
+
+\subsection{Alternative: Windows Terminal with PowerShell}
+
+If you prefer to use PowerShell, be aware of these differences:
+
+\begin{itemize}
+  \item Most Git commands work the same (\code{git add}, \code{git commit}, etc.)
+  \item File paths use backslashes (\code{\textbackslash}) instead of forward slashes (\code{/}), though Git accepts both
+  \item The \code{echo} command syntax differs: use \code{Set-Content} or \code{Out-File} instead of \code{>} redirection
+  \item Some Unix commands (\code{touch}, \code{cat}) are not available by default
+\end{itemize}
+
+\subsection{Setting up your PATH}
+
+After installing Git, make sure it is accessible from your terminal:
+
+\begin{lstlisting}
+# In Git Bash or PowerShell, run:
+git --version
+\end{lstlisting}
+
+If this returns a version number (e.g., \code{git version 2.43.0}), you are ready to go. If not, you may need to add Git to your system PATH:
+
+\begin{enumerate}
+  \item Open Settings $\rightarrow$ System $\rightarrow$ About $\rightarrow$ Advanced system settings
+  \item Click ``Environment Variables''
+  \item Under ``System variables'', find \code{Path} and click ``Edit''
+  \item Add the path to your Git installation (usually \code{C:\textbackslash Program Files\textbackslash Git\textbackslash cmd})
+  \item Click OK and restart your terminal
+\end{enumerate}
+
+
+\end{document}
