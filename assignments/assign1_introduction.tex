@@ -17,7 +17,6 @@
 
 \vspace{20pt}
 \tableofcontents
-\newpage
 
 \section{Task 1: Create a GitHub Account}
 
@@ -31,8 +30,7 @@ If you don't already have a GitHub account, create one at \url{https://github.co
   % \item Optionally: Add a profile picture and brief bio
 \end{enumerate}
 
-\newpage
-
+\noindent\rule{\textwidth}{1pt}
 \section{Task 2: Create a Repository for This Course}
 
 Create a new \textbf{public} repository. Name it something like \code{aqmss2} or \code{quant-methods-2026}.
@@ -87,8 +85,7 @@ git push -u origin main
   \item Click ``Create Project''
 \end{enumerate}
 
-\newpage
-
+\noindent\rule{\textwidth}{1pt}
 \section{Task 3: Edit the README File}
 
 Your README is the ``front page'' of your repository. Edit it to include:
@@ -129,17 +126,16 @@ git push
   \item Click ``Push'' to upload to GitHub
 \end{enumerate}
 
-\newpage
-
+\noindent\rule{\textwidth}{1pt}
 \section{Task 4: Create a Folder and R File}
 
-Create a folder called \code{problem\_sets} and add your first R file.
+Create a folder called \code{assignment1} and add your first R file.
 
 \subsection{Option A: On the Web}
 
 \begin{enumerate}
   \item Click ``Add file'' $\rightarrow$ ``Create new file''
-  \item In the filename box, type: \code{problem\_sets/ps1.R}
+  \item In the filename box, type: \code{assignment1/assign1.R}
     \begin{itemize}
       \item This creates the folder and file at once
     \end{itemize}
@@ -152,33 +148,32 @@ Create a folder called \code{problem\_sets} and add your first R file.
 # This file will contain my solutions for Assignment 1
 print("Hello, Git!")
 \end{lstlisting}
-  \item Scroll down and commit with message ``Add ps1.R''
+  \item Scroll down and commit with message ``Add assign1.R''
 \end{enumerate}
 
 \subsection{Option B: Command Line}
 
 \begin{lstlisting}
 # Create the folder
-mkdir problem_sets
+mkdir assignment1
 
 # Create the R file (use any text editor)
 # Then stage, commit, and push:
-git add problem_sets/ps1.R
-git commit -m "Add ps1.R"
+git add assignment1/assign1.R
+git commit -m "Add assign1.R"
 git push
 \end{lstlisting}
 
 \subsection{Option C: RStudio}
 
 \begin{enumerate}
-  \item Create a new folder \code{problem\_sets} in the Files pane
+  \item Create a new folder \code{assignment1} in the Files pane
   \item Create a new R script: File $\rightarrow$ New File $\rightarrow$ R Script
-  \item Add the header content and save as \code{problem\_sets/ps1.R}
+  \item Add the header content and save as \code{assignment1/assign1.R}
   \item In the Git pane, stage the new file, commit, and push
 \end{enumerate}
 
-\newpage
-
+\noindent\rule{\textwidth}{1pt}
 \section{Task 5: Load a Dataset and Make a Plot}
 
 In this task, you will download a public dataset, add it to your repository, load it in R, and create a simple plot.
@@ -200,7 +195,7 @@ write.csv(gapminder, "data/gapminder.csv", row.names = FALSE)
 
 \subsection{Load the data and make a plot}
 
-Create a new R script called \code{problem\_sets/ps1\_plot.R} with the following steps:
+Create a new R script called \code{assignment1/ass1\_plot.R} with the following steps:
 
 \begin{enumerate}
   \item Load the data from the CSV file:
@@ -225,7 +220,7 @@ ggplot(df, aes(x = year, y = lifeExp, color = country)) +
        title = "Life expectancy over time") +
   theme_minimal()
 
-ggsave("problem_sets/ps1_plot.png", width = 7, height = 5)
+ggsave("assignment1/ass1_plot.png", width = 7, height = 5)
 \end{lstlisting}
   \item You can choose different countries or a different variable (e.g., \code{gdpPercap} or \code{pop})
 \end{enumerate}
@@ -235,13 +230,12 @@ ggsave("problem_sets/ps1_plot.png", width = 7, height = 5)
 Stage and commit the data file, the R script, and the plot:
 
 \begin{lstlisting}
-git add data/gapminder.csv problem_sets/ps1_plot.R problem_sets/ps1_plot.png
+git add data/gapminder.csv assignment1/ass1_plot.R assignment1/ass1_plot.png
 git commit -m "Add gapminder data and first plot"
 git push
 \end{lstlisting}
 
-\newpage
-
+\noindent\rule{\textwidth}{1pt}
 \section{Task 6: View Your Commit History}
 
 Check that your commits were recorded properly.
@@ -273,30 +267,25 @@ This shows a compact list of your commits.
 
 \textbf{Take a screenshot} of your commit history showing at least 3--4 commits.
 
-\newpage
-
-\section{Submission}
-
-Send me an email with:
+\noindent\rule{\textwidth}{1pt}
+\section{SUBMISSION}
 
 \begin{enumerate}
-  \item The URL of your GitHub repository\\
+\item Send me an email with the URL of your GitHub repository\\
         (e.g., \code{https://github.com/username/aqmss2})
-  \item A screenshot of your commit history
+\item Requirements:
+
 \end{enumerate}
 
-I will check that:
 \begin{itemize}
   \item Your repository is \textbf{public}
   \item It contains a README with your name
   \item It has a \code{data/} folder with the Gapminder CSV file
-  \item It has a \code{problem\_sets/} folder with your R files and a saved plot
-  \item There are multiple commits in the history
+  \item It has a \code{assignment1/} folder with your R files and a saved plot
 \end{itemize}
 
-\vspace{15pt}
-
-\section{Optional: Installing Git Locally}
+\clearpage
+\section{Extra: Installing Git Locally}
 
 If you want to use Git from the command line, you need to install it first.
 
@@ -337,7 +326,7 @@ To use Git in RStudio:
 
 \vspace{15pt}
 
-\section{Extra: Quick Reference on Common Git Commands}
+\subsection*{Quick Reference on Common Git Commands}
 
 \begin{tabular}{ll}
 \textbf{Command} & \textbf{What it does} \\
@@ -352,20 +341,7 @@ To use Git in RStudio:
 \code{git diff} & Show changes not yet staged \\
 \end{tabular}
 
-\vspace{15pt}
-
-\section{Extra: Resources}
-
-\begin{itemize}
-  \item GitHub's official guides: \url{https://docs.github.com/en/get-started}
-  \item Happy Git with R: \url{https://happygitwithr.com}
-  \item Git cheat sheet: \url{https://education.github.com/git-cheat-sheet-education.pdf}
-  \item Interactive Git exercises: \url{https://gitexercises.fracz.com}
-  \item Pro Git book (free): \url{https://git-scm.com/book/en/v2}
-\end{itemize}
-
-\newpage
-
+\clearpage
 \section{Extra: Setting Up the Command Line on Windows}
 
 If you are using Windows and want to follow the command line instructions in this assignment, you need to set up a Unix-like terminal first. The default Windows terminals (Command Prompt and PowerShell) use different commands and syntax from what is shown in this assignment and in most online tutorials.
@@ -421,8 +397,7 @@ If this returns a version number (e.g., \code{git version 2.43.0}), you are read
   \item Click OK and restart your terminal
 \end{enumerate}
 
-\vspace{15pt}
-
+\clearpage
 \section{Extra: Using Positron Instead of RStudio}
 
 In this course, we recommend using \textbf{Positron} (\url{https://positron.posit.co}) as your IDE instead of RStudio. Positron is a next-generation data science IDE built by Posit (the same company behind RStudio). It is based on VS Code and designed for R and Python. Here is what differs from RStudio when completing this assignment.
