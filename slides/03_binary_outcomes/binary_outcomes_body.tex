@@ -14,12 +14,13 @@
 \item Understand why OLS is problematic for binary outcomes
 \item Learn the linear probability model and its trade-offs
 \item Understand logistic regression and how to estimate it in R
-\item Interpret logit results using predicted probabilities and marginal effects
+\item Interpret logit results using marginal effects and predicted probabilities
+\item Compare LPM and logit in practice
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This session introduces the first major extension beyond standard OLS: what to do when the outcome is binary (0/1). We'll work through two approaches --- the linear probability model (which is just OLS applied to a binary outcome) and logistic regression (which is purpose-built for binary outcomes). The key practical skill is interpretation: logit coefficients are not directly meaningful, so we'll spend significant time on marginal effects and predicted probabilities.}
 
 % ====================================================
 \section{The Problem with Binary Outcomes}
@@ -38,14 +39,14 @@
   \item Did a bill pass?
   \item Did a country democratize?
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item Our outcome $Y \in \{0, 1\}$
-\item We want to model: $P(Y = 1 | X)$
+\item We want to model: $\Pr(Y = 1 \mid X)$
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Start by asking students for examples of binary outcomes in their own research or fields. The key insight is that when $Y$ is binary, $E[Y \mid X] = \Pr(Y = 1 \mid X)$. So modeling the conditional expectation is the same as modeling the probability. This is what makes binary outcomes special: we're modeling a probability, which must be between 0 and 1.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -59,16 +60,49 @@ $$Y = \beta_0 + \beta_1 X + \varepsilon$$
 \vspace{10pt}
 
 \begin{itemize}[<+->]
-\item OLS gives us: $E[Y|X] = \beta_0 + \beta_1 X$
-\item Since $Y \in \{0, 1\}$: $E[Y|X] = P(Y = 1 | X)$
-\item[]
-\item So OLS is modeling a probability as a linear function of $X$
+\item OLS gives us: $E[Y \mid X] = \beta_0 + \beta_1 X$
+\item Since $Y \in \{0, 1\}$: $E[Y \mid X] = \Pr(Y = 1 \mid X)$
+\vspace{8pt}
+\item So OLS is modeling a probability as a \textbf{linear function} of $X$
 \item This is the \textbf{linear probability model} (LPM)
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Walk through this step by step. The LPM is not a new model --- it's literally just OLS applied to a binary outcome. The math works because for a 0/1 variable, the mean equals the proportion of 1s. So the regression line estimates a probability. The name ``linear probability model'' comes from the fact that it models probability as a linear function of the predictors.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The LPM in pictures}
+\centering
+
+\begin{tikzpicture}[scale=0.75]
+  % Axes
+  \draw[->, thick] (-0.5,0) -- (11,0) node[right] {$X$};
+  \draw[->, thick] (0,-1.2) -- (0,5.5) node[above] {$\Pr(Y = 1)$};
+  % Y-axis labels
+  \node[left] at (0,0) {\small 0};
+  \node[left] at (0,4) {\small 1};
+  % Dashed lines at 0 and 1
+  \draw[dashed, gray] (-0.3,4) -- (11,4);
+  \draw[dashed, gray] (-0.3,0) -- (11,0);
+  % Shaded "impossible" regions
+  \fill[accent2, opacity=0.1] (-0.3,4) rectangle (11,5.3);
+  \fill[accent2, opacity=0.1] (-0.3,-1) rectangle (11,0);
+  \node[accent2] at (9,4.8) {\small $P > 1$?};
+  \node[accent2] at (1.5,-0.6) {\small $P < 0$?};
+  % Scatter points (Y=0 and Y=1)
+  \foreach \x/\y in {0.5/0, 1/0, 1.2/0, 1.8/0, 2/0, 2.5/0, 2.8/4, 3/0, 3.2/0, 3.5/4, 4/0, 4.2/4, 4.5/4, 5/0, 5.2/4, 5.5/4, 5.8/4, 6/0, 6.2/4, 6.5/4, 7/4, 7.2/4, 7.5/4, 7.8/0, 8/4, 8.3/4, 8.5/4, 9/4, 9.2/4, 9.5/4, 10/4} {
+    \fill[asher, opacity=0.5] (\x,\y) circle (3pt);
+  }
+  % LPM line (goes below 0 and above 1)
+  \draw[accent2, very thick] (-0.3,-0.8) -- (10.5,4.8);
+  \node[accent2, right] at (10.2,5.1) {\small LPM};
+\end{tikzpicture}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This is the fundamental problem with the LPM visualized. The data points can only be at 0 or 1, but the linear fit extends beyond both bounds. For low values of $X$, the model predicts negative probabilities; for high values, it predicts probabilities greater than 1. Both are nonsensical. Draw attention to the shaded regions. This motivates the need for a model that naturally constrains predictions to $[0, 1]$.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -80,16 +114,17 @@ $$Y = \beta_0 + \beta_1 X + \varepsilon$$
   \begin{itemize}
   \item A one-unit increase in $X$ changes the probability of $Y = 1$ by $\beta_1$
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item Easy to estimate: just \texttt{lm(y \textasciitilde{} x, data = df)}
 \item Easy to interpret: same as OLS
-\item[]
+\vspace{8pt}
 \item Many applied researchers use the LPM in practice
+\item Especially common in economics and political science
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Despite the problems, the LPM is widely used because of its simplicity. The coefficient is directly interpretable as a change in probability, which is exactly what we want. In economics, the LPM is often the default for binary outcomes, with logit used as a robustness check. The key selling point: you don't need to learn any new interpretation tricks. It's just OLS.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -100,25 +135,25 @@ $$Y = \beta_0 + \beta_1 X + \varepsilon$$
 \item \textbf{Problem 1}: Predictions outside $[0, 1]$
   \begin{itemize}
   \item A linear function can produce $\hat{P} < 0$ or $\hat{P} > 1$
-  \item Probabilities must be between 0 and 1!
+  \item Probabilities must be between 0 and 1
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item \textbf{Problem 2}: Heteroskedasticity by construction
   \begin{itemize}
-  \item $\text{Var}(\varepsilon | X) = P(1-P)$, which varies with $X$
-  \item Standard errors from OLS are wrong (use robust SEs)
+  \item $\text{Var}(\varepsilon \mid X) = P(1-P)$, which varies with $X$
+  \item Always use robust SEs with the LPM
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item \textbf{Problem 3}: Non-linearity at the extremes
   \begin{itemize}
-  \item True relationship between $X$ and $P(Y=1)$ is S-shaped
+  \item True relationship between $X$ and $\Pr(Y=1)$ is S-shaped
   \item LPM forces it to be linear
   \end{itemize}
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Three problems, in order of how much they matter in practice. Problem 1 (out-of-bounds predictions) is the most commonly cited but often the least practically important --- if most predicted probabilities are in a reasonable range, a few going below 0 or above 1 may not change your conclusions. Problem 2 (heteroskedasticity) has a simple fix: always use robust SEs with the LPM, same as we discussed last week. Problem 3 (non-linearity) is arguably the most important: if the true relationship is S-shaped, a linear approximation will be poor at the extremes, biasing your estimates of marginal effects for observations far from the mean.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -135,10 +170,10 @@ $$Y = \beta_0 + \beta_1 X + \varepsilon$$
   \item LPM and logit often give similar AMEs
   \end{itemize}
 \item When simplicity of interpretation matters
-\item[]
+\vspace{8pt}
 \item When is it \textbf{not} good enough?
   \begin{itemize}
-  \item Many observations near 0 or 1
+  \item Rare events (many observations near 0)
   \item You need predicted probabilities to be bounded
   \item The relationship is clearly non-linear
   \end{itemize}
@@ -146,7 +181,16 @@ $$Y = \beta_0 + \beta_1 X + \varepsilon$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This is a practical question that students will face in their own research. The honest answer is: in many applied settings, the LPM and logit give very similar answers, especially for average marginal effects. The difference matters most when (a) the outcome is rare (e.g., civil war onset, which happens in less than 2\% of country-years), (b) you need to make predictions that are valid probabilities, or (c) you care about how effects vary across the probability scale. Angrist and Pischke (2009) make a strong case for the LPM; other methodologists disagree. Students should know both approaches.}
+
+% ----------------------------------------------------
+\begin{frame}
+\centering
+\vspace{30pt}
+{\large You estimate an LPM predicting civil war onset. You find that 8\% of predicted probabilities are negative.\\\vspace{15pt}Is this a problem? What would you do?}
+\end{frame}
+% ----------------------------------------------------
+\note{Discussion prompt. Let students debate. Key points to draw out: (1) It depends on what you're using the model for. If you just want average effects, the out-of-bounds predictions may not matter much. (2) If you need actual predicted probabilities (e.g., for a risk score), then yes, it's a serious problem. (3) The percentage of out-of-bounds predictions gives you a sense of how bad the linear approximation is. 8\% is moderate. (4) The practical solution: estimate both LPM and logit and see if the key conclusions change. If they agree, use whichever is easier to communicate.}
 
 % ====================================================
 \section{Logistic Regression}
@@ -159,7 +203,7 @@ $$Y = \beta_0 + \beta_1 X + \varepsilon$$
 
 \vspace{10pt}
 
-$$P(Y = 1 | X) = \frac{e^{X\beta}}{1 + e^{X\beta}} = \frac{1}{1 + e^{-X\beta}}$$
+$$\Pr(Y = 1 \mid X) = \frac{e^{\beta_0 + \beta_1 X}}{1 + e^{\beta_0 + \beta_1 X}} = \frac{1}{1 + e^{-(\beta_0 + \beta_1 X)}}$$
 
 \vspace{20pt}
 
@@ -172,11 +216,41 @@ $$P(Y = 1 | X) = \frac{e^{X\beta}}{1 + e^{X\beta}} = \frac{1}{1 + e^{-X\beta}}$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This is the key formula of the lecture. Emphasize that the logistic function takes any real number and maps it to the interval $(0, 1)$. When $\beta_0 + \beta_1 X$ is very negative, the probability approaches 0; when it's very positive, it approaches 1. The S-shape captures the intuition that going from 0.01 to 0.02 is a bigger deal than going from 0.50 to 0.51, and that probabilities can't keep increasing linearly forever.}
 
 % ----------------------------------------------------
 \begin{frame}
-\frametitle{The logit model}
+\frametitle{The sigmoid curve}
+\centering
+
+\begin{tikzpicture}[scale=0.8]
+  % Axes
+  \draw[->, thick] (-5.5,0) -- (5.5,0) node[right] {$X\beta$};
+  \draw[->, thick] (-5,-0.5) -- (-5,5) node[above] {$\Pr(Y = 1)$};
+  % Y-axis labels
+  \node[left] at (-5,0) {\small 0};
+  \node[left] at (-5,4) {\small 1};
+  \node[left] at (-5,2) {\small 0.5};
+  % Dashed reference lines
+  \draw[dashed, gray!60] (-5,4) -- (5.3,4);
+  \draw[dashed, gray!60] (-5,2) -- (0,2) -- (0,0);
+  % Sigmoid curve: P = 4 / (1 + exp(-x))
+  \draw[accent, very thick, domain=-5:5, samples=100] plot (\x, {4/(1+exp(-\x))});
+  % Annotations
+  \draw[<->, accent2, thick] (4.5,0.3) -- (4.5,3.7);
+  \node[accent2, right] at (4.5,2) {\small Bounded};
+  % Steepest point
+  \fill[accent] (0,2) circle (3pt);
+  \node[accent, above right] at (0.2,2.2) {\small Steepest here};
+\end{tikzpicture}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Walk through the shape of the curve. At the center ($X\beta = 0$), the probability is exactly 0.5 and the curve is steepest. As $X\beta$ becomes very positive, the probability approaches 1 but never reaches it. As $X\beta$ becomes very negative, the probability approaches 0 but never reaches it. This S-shape solves the LPM's main problem: predictions are always valid probabilities. Contrast with the straight line from the LPM diagram.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The logit transformation}
 \centering
 
 \vspace{10pt}
@@ -192,12 +266,14 @@ $$\log\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X$$
 \begin{itemize}[<+->]
 \item The left side is the \textbf{log-odds} (or ``logit'')
 \item $\frac{P}{1-P}$ is the \textbf{odds} of the event
+\vspace{8pt}
 \item The model is linear in the log-odds, not in the probability
+\item This is why we call it ``logistic regression'' or ``logit''
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{The logit transformation is the inverse of the logistic function. It maps probabilities in $(0, 1)$ to the entire real line $(-\infty, +\infty)$. This is the key mathematical trick: we take a bounded quantity (probability) and transform it to an unbounded quantity (log-odds), then model the unbounded quantity as a linear function of $X$. The word ``logit'' comes from ``log'' + ``unit'' (as in probability unit). The odds $P/(1-P)$ are familiar from betting: if $P = 0.75$, the odds are 3 to 1.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -207,20 +283,20 @@ $$\log\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X$$
 \begin{itemize}[<+->]
 \item We can't use OLS for logistic regression
 \item Instead, we use \textbf{maximum likelihood estimation} (MLE)
-\item[]
+\vspace{8pt}
 \item The intuition:
   \begin{itemize}
-  \item For each observation, the model predicts $P(Y_i = 1)$
+  \item For each observation, the model predicts $\Pr(Y_i = 1)$
   \item MLE finds the coefficients that make the observed data most likely
-  \item The ``likelihood'' is the product of these predicted probabilities
   \end{itemize}
-\item[]
-\item No need to derive this---R does it for us
+\vspace{8pt}
+\item No need to derive this --- R does it for us
+\item The math is different, but the workflow is the same
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Keep this brief --- students don't need the derivation. The key idea is that MLE is a different estimation method from OLS, but conceptually similar: OLS minimizes the sum of squared residuals, MLE maximizes the probability of observing the data we actually observed. The likelihood function for a binary model is the product of predicted probabilities for the 1s and predicted (1-probability) for the 0s. R's \texttt{glm()} does all the computation. What matters for students is understanding the output, not the optimization algorithm.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -231,17 +307,17 @@ $$\log\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X$$
 
 \begin{itemize}[<+->]
 \item The function: \texttt{glm(y \textasciitilde{} x, family = binomial, data = df)}
-\item[]
+\vspace{8pt}
 \item \texttt{glm}: generalized linear model
 \item \texttt{family = binomial}: tells R to use logistic regression
-\item[]
-\item The syntax is identical to \texttt{lm()}, just change to \texttt{glm()}
+\vspace{8pt}
+\item The syntax is identical to \texttt{lm()}, just swap to \texttt{glm()}
 \item Works with \texttt{broom::tidy()}, \texttt{modelsummary()}, etc.
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Emphasize the simplicity. The only change from OLS is replacing \texttt{lm()} with \texttt{glm(..., family = binomial)}. Everything else --- formula syntax, \texttt{tidy()}, \texttt{modelsummary()} --- works the same. The \texttt{family = binomial} argument tells R that the outcome is binary and it should use the logistic link function. Technically, \texttt{family = binomial(link = "logit")} is the full specification, but logit is the default for binomial so we can omit it. Mention that \texttt{family = binomial(link = "probit")} gives probit regression, which we'll briefly mention later.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -250,19 +326,19 @@ $$\log\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X$$
 
 \begin{itemize}[<+->]
 \item The direct output gives coefficients in \textbf{log-odds}
-\item[]
+\vspace{8pt}
 \item $\beta_1 = 0.5$ means:
   \begin{itemize}
   \item A one-unit increase in $X$ increases the log-odds by 0.5
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item This is hard to interpret!
 \item Nobody thinks in log-odds
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Be honest with students: log-odds coefficients are the ``native'' output of logistic regression, but they are not intuitive. A log-odds of 0.5 doesn't map onto any natural quantity that people understand. You can't say ``the probability increases by 0.5'' because that's not what it means. This is the central interpretation challenge of logistic regression and why we need additional tools (odds ratios, marginal effects, predicted probabilities).}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -274,20 +350,54 @@ $$\log\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X$$
 \begin{itemize}[<+->]
 \item Exponentiate the coefficient: $e^{\beta_1}$ = odds ratio
 \item In R: \texttt{exp(coef(model))}
-\item[]
+\vspace{8pt}
 \item $e^{0.5} \approx 1.65$ means:
   \begin{itemize}
   \item A one-unit increase in $X$ \textbf{multiplies} the odds by 1.65
   \item Or: the odds increase by 65\%
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item Slightly more intuitive, but still not probabilities
 \item The change in probability depends on where you start
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Odds ratios are commonly reported in epidemiology and public health, but they can be misleading. The key subtlety: ``the odds increase by 65\%'' is NOT the same as ``the probability increases by 65 percentage points.'' For rare events, odds ratios approximate relative risk ratios, so they're somewhat interpretable. For common events, the connection between odds and probability is non-linear and confusing. Many methodologists recommend against reporting odds ratios as the primary result. We'll learn better tools in the next section.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Worked example: From log-odds to probability}
+\centering
+
+\vspace{5pt}
+
+{\small Logit model: $\log\left(\frac{P}{1-P}\right) = -2 + 0.5 \cdot \text{Education}$}
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item For someone with Education $= 4$:
+  \begin{itemize}
+  \item Log-odds $= -2 + 0.5 \times 4 = 0$
+  \item Odds $= e^{0} = 1$ \quad (50-50 chance)
+  \item Probability $= \frac{1}{1 + e^{0}} = 0.50$
+  \end{itemize}
+\vspace{8pt}
+\item For someone with Education $= 8$:
+  \begin{itemize}
+  \item Log-odds $= -2 + 0.5 \times 8 = 2$
+  \item Odds $= e^{2} \approx 7.4$
+  \item Probability $= \frac{1}{1 + e^{-2}} \approx 0.88$
+  \end{itemize}
+\vspace{8pt}
+\item Going from 4 to 8 years: $P$ goes from 0.50 to 0.88
+\item The same 4-unit change gives $\Delta P = 0.38$
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Walk through each step carefully. This is the slide where the abstraction becomes concrete. The key lesson: even though $\beta_1 = 0.5$ is constant, the change in probability depends on where you start. Going from Education = 0 to 4 gives a different $\Delta P$ than going from 4 to 8. You can compute $P$ at Education $= 0$: log-odds $= -2$, $P = 1/(1+e^{2}) \approx 0.12$. So going from 0 to 4, $\Delta P = 0.50 - 0.12 = 0.38$. Going from 4 to 8, $\Delta P = 0.88 - 0.50 = 0.38$. Actually similar here, but try Education = 12: log-odds $= 4$, $P \approx 0.98$, so from 8 to 12: $\Delta P = 0.10$. The effect diminishes at the extremes.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -296,29 +406,38 @@ $$\log\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X$$
 
 \begin{itemize}[<+->]
 \item In OLS: $\beta_1$ = change in $Y$ for one-unit change in $X$ (always)
-\item[]
+\vspace{8pt}
 \item In logit: the change in \textbf{probability} depends on:
   \begin{itemize}
   \item The current value of $X$
   \item The values of all other variables
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item A coefficient of $\beta_1 = 0.5$ could mean:
   \begin{itemize}
   \item Going from $P = 0.01$ to $P = 0.016$ (tiny change)
   \item Going from $P = 0.50$ to $P = 0.62$ (large change)
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item We need better tools to interpret logit models
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This slide hammers home the core message. In OLS, the coefficient IS the marginal effect, everywhere, always. In logit, the coefficient is the marginal effect on the log-odds scale, but on the probability scale --- which is what we actually care about --- the effect varies. This is not just a mathematical curiosity; it has real implications. A researcher who reports ``education has a log-odds coefficient of 0.5'' has told you almost nothing about the substantive size of the effect. You need to know where on the curve you are. This motivates the next section on marginal effects and predicted probabilities.}
 
 % ====================================================
 \section{Interpreting Logit Results}
 % ====================================================
+
+% ----------------------------------------------------
+\begin{frame}
+\centering
+\vspace{30pt}
+{\large A logit model estimates $\hat{\beta}_1 = 0.8$ for education.\\\vspace{15pt}Your colleague says: ``Education increases the probability of voting by 0.8.''\\\vspace{15pt}What's wrong with this statement?}
+\end{frame}
+% ----------------------------------------------------
+\note{Discussion prompt. Key errors to identify: (1) The coefficient 0.8 is in log-odds, not probability. A log-odds change of 0.8 is NOT a probability change of 0.8. (2) Even if they meant ``0.8 percentage points'' or ``80 percentage points,'' it would still be wrong because the effect on probability varies depending on where you are on the curve. (3) The correct statement requires either specifying the baseline (``for someone at the mean of all variables, education increases the probability by...'') or reporting the average marginal effect. This motivates the tools we're about to learn.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -327,20 +446,20 @@ $$\log\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X$$
 
 \begin{itemize}[<+->]
 \item The most intuitive way to interpret logit models
-\item[]
+\vspace{8pt}
 \item ``What is the predicted probability of $Y = 1$ for a person with these characteristics?''
-\item[]
+\vspace{8pt}
 \item In R:
   \begin{itemize}
   \item \texttt{marginaleffects::predictions(model)}
   \item Returns predicted probabilities for each observation
-  \item Or at specific values: \texttt{predictions(model, newdata = ...)}
+  \item Or at specific values: \texttt{predictions(model, newdata = datagrid(...))}
   \end{itemize}
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Predicted probabilities are the most natural and intuitive quantity to report from a logit model. Instead of saying ``the coefficient is 0.8,'' you can say ``a college-educated 40-year-old woman has a 78\% predicted probability of voting, compared to 52\% for a high-school-educated 40-year-old woman.'' These are quantities that any audience can understand. The \texttt{predictions()} function from the \texttt{marginaleffects} package makes this easy. You can compute predictions for every observation in your data, or for specific hypothetical profiles using \texttt{datagrid()}.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -348,22 +467,54 @@ $$\log\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X$$
 \centering
 
 \begin{itemize}[<+->]
-\item The marginal effect varies across observations
-\item The AME averages across all observations
-\item[]
+\item The marginal effect of $X$ on $\Pr(Y = 1)$ varies across observations
+\item The \textbf{AME} averages across all observations in the sample
+\vspace{8pt}
 \item In R: \texttt{marginaleffects::avg\_slopes(model)}
-\item[]
-\item Interpretation (like OLS):
+\vspace{8pt}
+\item Interpretation (just like OLS):
   \begin{itemize}
-  \item ``On average, a one-unit increase in $X$ changes the probability of $Y = 1$ by $\Delta P$''
+  \item ``On average, a one-unit increase in $X$ changes $\Pr(Y = 1)$ by $\Delta P$''
   \end{itemize}
-\item[]
-\item This is often comparable to the LPM coefficient
+\vspace{8pt}
+\item AMEs from logit are often similar to LPM coefficients
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{The AME is the most direct analog to the OLS coefficient: it gives you a single number summarizing the effect of $X$ on the probability of $Y = 1$, averaged across the sample. The computation works as follows: for each observation, compute the marginal effect (the slope of the probability curve at that point), then average across all observations. This is why AMEs from logit and LPM coefficients are often similar: both are averaging the effect across the sample, just using different functional forms. The \texttt{avg\_slopes()} function does all this automatically. Use it.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Why marginal effects vary}
+\centering
+
+\begin{tikzpicture}[scale=0.8]
+  % Axes
+  \draw[->, thick] (-5.5,0) -- (5.5,0) node[right] {$X\beta$};
+  \draw[->, thick] (-5,-0.5) -- (-5,5) node[above] {$\Pr(Y = 1)$};
+  \node[left] at (-5,0) {\small 0};
+  \node[left] at (-5,4) {\small 1};
+  \draw[dashed, gray!60] (-5,4) -- (5.3,4);
+  % Sigmoid curve
+  \draw[accent, very thick, domain=-5:5, samples=100] plot (\x, {4/(1+exp(-\x))});
+  % Tangent at x = -3 (shallow)
+  \draw[accent2, thick] (-4.5,{4/(1+exp(3)) - 1.5*4*exp(3)/((1+exp(3))*(1+exp(3)))}) -- (-1.5,{4/(1+exp(3)) + 1.5*4*exp(3)/((1+exp(3))*(1+exp(3)))});
+  \fill[accent2] (-3,{4/(1+exp(3))}) circle (3pt);
+  \node[accent2, below] at (-3,-0.3) {\small Small effect};
+  % Tangent at x = 0 (steep)
+  \draw[jet, thick] (-1.5,{2 - 1.5*1}) -- (1.5,{2 + 1.5*1});
+  \fill[jet] (0,2) circle (3pt);
+  \node[jet, above right] at (0.5,3.3) {\small Large effect};
+  % Tangent at x = 3 (shallow)
+  \draw[accent2, thick] (1.5,{4/(1+exp(-3)) - 1.5*4*exp(-3)/((1+exp(-3))*(1+exp(-3)))}) -- (4.5,{4/(1+exp(-3)) + 1.5*4*exp(-3)/((1+exp(-3))*(1+exp(-3)))});
+  \fill[accent2] (3,{4/(1+exp(-3))}) circle (3pt);
+  \node[accent2, above] at (3,4.3) {\small Small effect};
+\end{tikzpicture}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This diagram shows WHY the marginal effect varies. The tangent line at each point represents the marginal effect --- the instantaneous rate of change in probability. At the extremes (near 0 or 1), the curve is flat, so the marginal effect is small. In the middle (near 0.5), the curve is steepest, so the marginal effect is largest. This is the fundamental difference from OLS, where the marginal effect is the same everywhere (a constant slope). The AME averages across all these different tangent lines, giving a single summary number.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -372,20 +523,21 @@ $$\log\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X$$
 
 \begin{itemize}[<+->]
 \item Instead of averaging, evaluate at specific values
-\item[]
+\vspace{8pt}
 \item Example: ``What is the effect of education on voting for a 40-year-old woman?''
-\item[]
+\vspace{8pt}
 \item In R:
   \begin{itemize}
-  \item \texttt{avg\_slopes(model, newdata = datagrid(age = 40, gender = "F"))}
+  \item \texttt{avg\_slopes(model, newdata = datagrid(age = 40, female = 1))}
   \end{itemize}
-\item[]
-\item Useful when the marginal effect varies a lot across the sample
+\vspace{8pt}
+\item Useful when the effect varies substantially across groups
+\item E.g., the effect may be larger for young people than for old people
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Marginal effects at representative values (MER) let you ask more specific questions than the AME. The AME gives you one number for the whole sample; MER gives you the effect for a specific type of observation. This is especially useful when you have interactions or when the predictor's effect differs substantially across the sample. For example, the marginal effect of income on voting might be large for young people (who are on the steep part of the curve) and small for old people (who already have high voting probabilities).}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -393,23 +545,23 @@ $$\log\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X$$
 \centering
 
 \begin{itemize}[<+->]
-\item The best way to communicate logit results
-\item[]
-\item Show how $P(Y=1)$ changes across values of $X$
+\item The best way to communicate logit results to any audience
+\vspace{8pt}
+\item Show how $\Pr(Y=1)$ changes across values of $X$
 \item Include confidence bands
-\item[]
+\vspace{8pt}
 \item In R:
   \begin{itemize}
   \item \texttt{plot\_predictions(model, condition = "x")}
-  \item Plots the S-curve with uncertainty
+  \item Plots the S-curve with 95\% confidence interval
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item Much more informative than a table of log-odds
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{If students remember one thing from this section, it should be this: always plot predicted probabilities. A table of log-odds coefficients is nearly uninterpretable for a general audience. A plot showing how the predicted probability changes across a predictor is immediately understandable. The \texttt{plot\_predictions()} function from the \texttt{marginaleffects} package makes this trivial. You can also condition on multiple variables: \texttt{plot\_predictions(model, condition = c("education", "female"))} will show separate S-curves for men and women.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -422,20 +574,20 @@ $$\log\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X$$
   \item Especially for average marginal effects
   \item Especially when probabilities are in the 0.2--0.8 range
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item Where they differ:
   \begin{itemize}
   \item Predicted probabilities near 0 or 1
   \item LPM can go outside $[0, 1]$; logit cannot
   \item Marginal effects at extreme values
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item A good practice: estimate both and compare
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Summarize the key practical takeaway: for most applied research, the LPM and logit tell a similar story. When they disagree, the logit is usually more appropriate because it respects the bounded nature of probabilities. A common workflow in applied papers is to present the LPM as the main specification (because the coefficients are easy to interpret) and show logit AMEs as a robustness check, or vice versa. If both give similar results, your findings are robust to the functional form assumption.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -444,22 +596,47 @@ $$\log\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X$$
 
 \begin{itemize}[<+->]
 \item No $R^2$ in the usual sense (MLE, not OLS)
-\item[]
+\vspace{8pt}
 \item Alternative measures:
   \begin{itemize}
-  \item \textbf{Pseudo-$R^2$}: compares model to null model (McFadden)
-  \item \textbf{AIC}: penalized likelihood (lower = better)
-  \item \textbf{Classification}: what percent does the model correctly predict?
-  \item \textbf{ROC curve}: trade-off between true and false positives
+  \item \textbf{Pseudo-$R^2$}: compares model to null model (McFadden's)
+  \item \textbf{AIC / BIC}: penalized likelihood (lower = better)
+  \item \textbf{Classification accuracy}: percent correctly predicted
+  \item \textbf{ROC / AUC}: trade-off between true and false positives
   \end{itemize}
-\item[]
-\item None is perfect; use them as rough guides
+\vspace{8pt}
+\item None is perfect; use as rough guides
 \item Reported automatically by \texttt{modelsummary()} and \texttt{performance::r2()}
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Don't spend too long here. The main point is that the familiar $R^2$ doesn't exist for logit models. McFadden's Pseudo-$R^2$ is the most common substitute, but its values tend to be much lower than OLS $R^2$ (a Pseudo-$R^2$ of 0.2 is considered quite good). AIC is useful for comparing models with different predictors. Classification accuracy (what percent of observations does the model correctly classify as 0 or 1) is intuitive but depends on the threshold you choose. ROC curves show how the true positive rate varies with the false positive rate as you change the threshold. \texttt{modelsummary()} reports several of these automatically.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{A note on probit}
+\centering
+
+\begin{itemize}[<+->]
+\item Logit uses the logistic CDF as the link function
+\item \textbf{Probit} uses the normal (Gaussian) CDF instead
+\vspace{8pt}
+\item In R: \texttt{glm(y \textasciitilde{} x, family = binomial(link = "probit"), data = df)}
+\vspace{8pt}
+\item In practice, logit and probit give very similar results
+  \begin{itemize}
+  \item Probit coefficients $\approx$ logit coefficients $\times 0.625$
+  \item Predicted probabilities are nearly identical
+  \end{itemize}
+\vspace{8pt}
+\item Logit is more common in political science; probit in economics
+\item Use whichever is conventional in your field
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This is a brief mention --- don't dwell on it. The only practical difference between logit and probit is the shape of the link function: logistic has slightly fatter tails than the normal distribution. For applied work, they give virtually indistinguishable results in terms of marginal effects and predicted probabilities. The coefficient scale differs (multiply logit by about 0.625 to get probit, or by 1.6 the other way), but once you convert to marginal effects, the numbers are nearly the same. The choice between them is mostly a matter of disciplinary convention. Some economists prefer probit because it connects to the latent variable interpretation; political scientists tend to use logit because odds ratios are more familiar.}
 
 % ====================================================
 \section{Practice}
@@ -467,7 +644,7 @@ $$\log\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X$$
 
 % ----------------------------------------------------
 \begin{frame}
-\frametitle{Worked example: LPM vs. logit}
+\frametitle{Complete workflow in R}
 \centering
 
 \vspace{5pt}
@@ -478,16 +655,17 @@ $$\log\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X$$
   \texttt{logit <- glm(vote \textasciitilde{} age + income + educ,} \\
   \texttt{\hspace{60pt}family = binomial, data = df)}
 \item[]
-  \texttt{modelsummary(list("LPM" = lpm, "Logit" = logit))}
+  \texttt{modelsummary(list("LPM" = lpm, "Logit" = logit),}\\
+  \texttt{\hspace{60pt}vcov = list("robust", NULL))}
 \item[]
-  \texttt{avg\_slopes(logit)}  \hfill \textit{\# compare to LPM coefficients}
+  \texttt{avg\_slopes(logit)} \hfill \textit{\# compare AMEs to LPM}
 \item[]
   \texttt{plot\_predictions(logit, condition = "income")}
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Walk through this as a template workflow. Step 1: estimate both the LPM and logit with the same predictors. Step 2: present them side by side with \texttt{modelsummary()} --- note that we use robust SEs for the LPM (because of heteroskedasticity) and default SEs for logit. Step 3: compute AMEs for the logit and compare them to the LPM coefficients. Step 4: plot predicted probabilities across a key predictor. This four-step workflow gives you a complete picture of the binary outcome analysis. Students should follow this pattern in the lab and assignment.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -499,24 +677,25 @@ $$\log\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X$$
 \begin{itemize}[<+->]
 \item \textbf{Use LPM when:}
   \begin{itemize}
-  \item You want simple, quick interpretation
+  \item You want simple, direct interpretation
   \item Probabilities are in the middle range
   \item You mainly care about average effects
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item \textbf{Use logit when:}
   \begin{itemize}
   \item You need bounded predicted probabilities
   \item Many observations have extreme probabilities (near 0 or 1)
   \item You want to properly account for the binary nature of $Y$
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item In practice: estimate both, report the one most appropriate
+\item Always report marginal effects, not just log-odds
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This is practical advice for their research. The honest answer is: in most applied settings, it doesn't matter much which one you use, as long as you interpret the results properly. The exception is rare events (civil war onset, corporate bankruptcy, etc.), where the LPM can perform poorly. The last point is crucial: if you use logit, you MUST convert to marginal effects or predicted probabilities. Reporting log-odds coefficients is not informative. If you use the LPM, the coefficients are already in probability units, which is one of its main advantages.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -525,16 +704,16 @@ $$\log\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X$$
 
 \begin{itemize}[<+->]
 \item Binary outcomes require special treatment
-\item LPM is simple but has known limitations
-\item Logit bounds probabilities between 0 and 1
-\item Log-odds and odds ratios are not intuitive---use marginal effects
-\item Predicted probabilities and AMEs are the best way to interpret logit
-\item Compare LPM and logit; they often agree on AMEs
+\item The LPM is simple but has known limitations
+\item Logistic regression bounds probabilities between 0 and 1
+\item Log-odds are not intuitive --- use marginal effects and predicted probabilities
+\item AMEs from logit are often similar to LPM coefficients
+\item Always estimate both and compare; always plot predicted probabilities
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Recap the session. The three most important practical takeaways: (1) Know when and why to use logit instead of LPM. (2) Never interpret logit coefficients on the log-odds scale --- always convert to marginal effects or predicted probabilities using the \texttt{marginaleffects} package. (3) Always plot predicted probabilities --- this is the single most effective way to communicate logit results. These skills will come up again in the sessions on panel data and other outcome types.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -542,22 +721,22 @@ $$\log\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X$$
 \centering
 
 \begin{itemize}
-\item Read Urdinez \& Cruz (2020), chapter 5 (\S 5.6)
 \item Read Gelman et al., chapters 11--12
+\item Read Arel-Bundock, Greifer, and Heiss (2025), chapters 1--4
 \item Complete Assignment 3
 \item[]
 \item Next session: Model interpretation and diagnostics
   \begin{itemize}
   \item Beyond coefficient tables
   \item Visualizing model results
-  \item Publication-quality tables
-  \item Key diagnostics
+  \item Residual diagnostics
+  \item Influence and outliers
   \end{itemize}
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Mention that the Gelman chapters cover model checking and diagnostics, which we'll discuss next week. The Arel-Bundock et al. book (the \texttt{marginaleffects} online textbook) gives practical guidance on interpreting model results, which applies to both the binary outcome models from today and the continuous outcome models from last week. Assignment 3 has two parts: the in-class lab they started today and the take-home exercises due before next session. Encourage them to start the take-home early.}
 
 % ----------------------------------------------------
 \begin{frame}

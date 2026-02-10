@@ -1,5 +1,5 @@
 \input{preamble.tex}
-\textbf{\large Assignment 1: Applied Regression II (Binary)}\\\vspace{10pt}
+\textbf{\large Assignment 3: Binary Outcomes}\\\vspace{10pt}
 \end{center}
 
 \vspace{10pt}
@@ -14,108 +14,170 @@
   \item Use comments in your R code to answer conceptual questions and explain your analysis
   \item For model interpretation, use the \code{marginaleffects} package
   \item You are encouraged to work together, but each person must submit their own code
+  \item Part 1 is started in class; Part 2 is completed at home
 \end{itemize}
 
 \vspace{20pt}
 \tableofcontents
 \newpage
 
-\section{Conceptual Questions}
+% ==========================================================================
+\section{Part 1: In-Class Lab (ANES Voter Turnout)}
+% ==========================================================================
 
-Answer these questions using comments in your R script.
+In this lab, we analyze voter turnout using data from the American National Election Study (ANES). You will practice estimating and comparing the linear probability model and logistic regression, computing marginal effects, and plotting predicted probabilities. Follow along in class.
 
-\subsection{Question 1: The Linear Probability Model}
+\subsection{Setup and data preparation}
+
+Download \code{anes.csv} from the course page.
 
 \begin{enumerate}[label=\alph*)]
-    \item What is the linear probability model (LPM)? How does the interpretation of the coefficient $\beta_1$ differ from standard OLS with a continuous outcome?
-    \item Describe two problems with the LPM. For each, explain why it is a problem and when it matters most.
-    \item Under what circumstances might the LPM be ``good enough'' despite its limitations?
+  \item Load the dataset. Key variables:
+  \begin{itemize}
+    \item \code{voted} --- whether the respondent voted (0/1, our outcome)
+    \item \code{age} --- age in years
+    \item \code{female} --- gender indicator (1 = female, 0 = male)
+    \item \code{education} --- years of education
+    \item \code{income} --- household income (standardized scale)
+    \item \code{party\_id} --- strength of party identification (1--7 scale)
+  \end{itemize}
+  \item Drop observations with missing values on any of these variables. How many observations remain?
+  \item Compute the overall turnout rate (proportion of \code{voted == 1}) and print summary statistics for all variables.
 \end{enumerate}
 
-\subsection{Question 2: Logistic Regression}
+\subsection{Exploratory visualization}
 
 \begin{enumerate}[label=\alph*)]
-    \item Write down the logit model. What is being modeled as a linear function of $X$?
-    \item Explain in your own words why we cannot interpret logit coefficients as changes in probability.
-    \item If a logit model estimates $\beta_1 = 0.8$, what is the odds ratio? Interpret it in words.
+  \item Create a bar chart showing the turnout rate by education level (hint: compute the mean of \code{voted} for each value of \code{education}, then use \code{geom\_col()}).
+  \item In a comment, describe the pattern. Does turnout increase with education?
 \end{enumerate}
 
-\subsection{Question 3: Marginal Effects}
+\subsection{Linear probability model}
 
 \begin{enumerate}[label=\alph*)]
-    \item What is an average marginal effect (AME)? How does it differ from a marginal effect at representative values?
-    \item Why are AMEs often similar to LPM coefficients? When might they diverge?
-    \item A researcher reports only the log-odds coefficients from a logit model. Why is this insufficient for understanding the substantive findings?
+  \item Estimate an LPM with \code{voted} as the outcome and \code{age}, \code{education}, \code{income}, and \code{female} as predictors: \\\code{lpm <- lm(voted \textasciitilde{} age + education + income + female, data = df)}.
+  \item Print the results using \code{broom::tidy()}.
+  \item Interpret the coefficient on \code{education} in a comment. What does it mean in terms of probability?
+  \item Check the predicted probabilities: how many are below 0 or above 1? Report the minimum and maximum predicted values.
+\end{enumerate}
+
+\subsection{Logistic regression}
+
+\begin{enumerate}[label=\alph*)]
+  \item Estimate a logit model with the same predictors: \\\code{logit <- glm(voted \textasciitilde{} age + education + income + female,} \\\code{\hspace{60pt}family = binomial, data = df)}.
+  \item Print the results using \code{broom::tidy()}.
+  \item Compute the odds ratios using \code{exp(coef(logit))}. Interpret the odds ratio for \code{education} in a comment.
+  \item Verify that all predicted probabilities are between 0 and 1.
+\end{enumerate}
+
+\subsection{Comparing LPM and logit}
+
+\begin{enumerate}[label=\alph*)]
+  \item Compute average marginal effects for the logit model using \code{marginaleffects::avg\_slopes(logit)}.
+  \item Compare the AMEs to the LPM coefficients. How similar are they? Discuss in a comment.
+  \item Create a table with \code{modelsummary()} showing the LPM and logit side by side. Use robust standard errors for the LPM: \\\code{modelsummary(list("LPM" = lpm, "Logit" = logit), vcov = list("robust", NULL))}.
+\end{enumerate}
+
+\subsection{Predicted probabilities}
+
+\begin{enumerate}[label=\alph*)]
+  \item Use \code{plot\_predictions(logit, condition = "education")} to plot the predicted probability of voting across education levels. Save the plot.
+  \item Create a second plot showing predicted probabilities across \code{age} for men and women separately: \\\code{plot\_predictions(logit, condition = c("age", "female"))}.
+  \item In a comment, describe the patterns. How does the effect of age differ from the effect of education?
+\end{enumerate}
+
+\subsection{Presenting results}
+
+\begin{enumerate}[label=\alph*)]
+  \item Create a coefficient plot comparing the LPM and logit models using \code{modelplot()}.
+  \item Save the plot.
+  \item In a comment: for this dataset, do the LPM and logit lead to different substantive conclusions? When might the differences matter?
+\end{enumerate}
+
+\newpage
+
+% ==========================================================================
+\section{Part 2: Take-Home Exercises (STAR --- High School Graduation)}
+% ==========================================================================
+
+We return to the STAR experiment data from Assignment 2, but now focus on a \textbf{binary outcome}: whether students graduated from high school. This lets you practice binary outcome methods on a dataset you already know.
+
+Use the same \code{star.csv} from the course page. Key variables for this assignment:
+
+\begin{itemize}
+  \item \code{classtype}: class type (1 = small, 2 = regular, 3 = regular + aide)
+  \item \code{race}: student race (1 = White, 2 = Black, 3 = Asian, 4 = Hispanic, 5 = Native American, 6 = Other)
+  \item \code{yearssmall}: years spent in a small class (0--4)
+  \item \code{hsgrad}: graduated from high school (0/1, our outcome)
+\end{itemize}
+
+\subsection{Data preparation}
+
+\begin{enumerate}[label=\alph*)]
+  \item Load \code{star.csv} and create the same factor variables as in Assignment 2: \code{classtype} with labels \code{"Small"}, \code{"Regular"}, \code{"Regular+Aide"}, and \code{race} with labels \code{"White"}, \code{"Black"}, etc.
+  \item Create a binary variable \code{small} equal to 1 if the student was in a small class and 0 otherwise.
+  \item Drop observations with missing values on \code{hsgrad}. How many observations remain?
+  \item Compute the high school graduation rate overall and by class type. In a comment, describe the differences.
+\end{enumerate}
+
+\subsection{LPM and logit}
+
+\begin{enumerate}[label=\alph*)]
+  \item Estimate an LPM predicting \code{hsgrad} from \code{small}: \\\code{lpm1 <- lm(hsgrad \textasciitilde{} small, data = df)}.
+  \item Estimate a logit model with the same predictor: \\\code{logit1 <- glm(hsgrad \textasciitilde{} small, family = binomial, data = df)}.
+  \item Interpret the LPM coefficient on \code{small}: what is the estimated difference in graduation probability between small and non-small classes?
+  \item Compute the AME from the logit using \code{avg\_slopes(logit1)}. How does it compare to the LPM coefficient?
+\end{enumerate}
+
+\subsection{Adding controls}
+
+\begin{enumerate}[label=\alph*)]
+  \item Estimate both LPM and logit with controls: \\\code{lpm2 <- lm(hsgrad \textasciitilde{} small + race + yearssmall, data = df)} \\\code{logit2 <- glm(hsgrad \textasciitilde{} small + race + yearssmall,} \\\code{\hspace{60pt}family = binomial, data = df)}.
+  \item Compare the coefficient on \code{small} between the bivariate and controlled models. Does it change much? What does this tell you about the randomization?
+  \item Interpret the coefficient on \code{yearssmall} from the logit model. Use \code{avg\_slopes()} to convert to a marginal effect.
+\end{enumerate}
+
+\subsection{Predicted probabilities}
+
+\begin{enumerate}[label=\alph*)]
+  \item Using the controlled logit model, compute predicted graduation probabilities for:
+  \begin{itemize}
+    \item A White student in a small class with 3 years in small classes
+    \item A Black student in a regular class with 0 years in small classes
+  \end{itemize}
+  Use \code{predictions(logit2, newdata = datagrid(...))}. Report the estimates and 95\% CIs.
+  \item Plot predicted graduation probabilities across \code{yearssmall} for small vs.\ non-small classes: \\\code{plot\_predictions(logit2, condition = c("yearssmall", "small"))}. Save the plot.
+\end{enumerate}
+
+\subsection{Interactions}
+
+\begin{enumerate}[label=\alph*)]
+  \item Does the small class effect on graduation differ by race? Estimate: \\\code{logit3 <- glm(hsgrad \textasciitilde{} small * race + yearssmall,} \\\code{\hspace{60pt}family = binomial, data = df)}.
+  \item Use \code{avg\_slopes(logit3, variables = "small", by = "race")} to compute the marginal effect of \code{small} separately for each racial group.
+  \item In a comment, discuss: is the small class effect larger for some groups than others?
+\end{enumerate}
+
+\subsection{Presenting results and discussion}
+
+\begin{enumerate}[label=\alph*)]
+  \item Create a table with \code{modelsummary()} comparing all four models (LPM bivariate, LPM controlled, logit bivariate, logit controlled). Use robust SEs for the LPM models.
+  \item Create a coefficient plot with \code{modelplot()}.
+  \item In a comment (5--10 sentences), discuss:
+  \begin{itemize}
+    \item What does the STAR data suggest about the effect of small class sizes on high school graduation?
+    \item How do the LPM and logit results compare? Do they tell a similar or different story?
+    \item Why is this experimental evidence more credible than an observational study?
+  \end{itemize}
 \end{enumerate}
 
 \vspace{15pt}
 
-\section{Applied Analysis: Voter Turnout}
-
-For this assignment, you will analyze voter turnout using data from the American National Election Study (ANES) or a similar dataset on political participation.
-
-You can use the ANES data available through the \code{poliscidata} package, or download it from: \url{https://electionstudies.org/data-center/}
-
-\begin{lstlisting}
-install.packages("poliscidata")
-library(poliscidata)
-data(nes)
-\end{lstlisting}
-
-Key variables for analysis (variable names may vary depending on data source):
+\section{Data Sources}
 
 \begin{itemize}
-    \item \code{voted}: Whether the respondent voted (binary: 0/1)
-    \item \code{age}: Age in years
-    \item \code{educ}: Education level (years or categories)
-    \item \code{income}: Household income (categories or continuous)
-    \item \code{pid}: Party identification strength
-    \item \code{female}: Gender indicator
+  \item \textbf{ANES dataset}: \code{anes.csv}, provided on the course page. A subset of the American National Election Study with demographic and political participation variables.
+  \item \textbf{STAR dataset}: \code{star.csv}, provided on the course page. Same data as Assignment 2, from the Tennessee STAR experiment (Krueger, 1999).
 \end{itemize}
-
-\subsection{Question 4: Data Exploration}
-
-\begin{enumerate}[label=\alph*)]
-    \item Load and prepare the data. Create a binary turnout variable if needed. Report the overall turnout rate and sample size.
-    \item Create a bar chart showing turnout rates by education level. Comment on the pattern.
-    \item Create a table showing turnout rates by age group (e.g., 18--29, 30--44, 45--64, 65+). Discuss the pattern in a comment.
-\end{enumerate}
-
-\subsection{Question 5: Linear Probability Model}
-
-\begin{enumerate}[label=\alph*)]
-    \item Estimate an LPM with turnout as the outcome and age, education, income, and gender as predictors. Print a summary of the results.
-    \item Interpret the coefficient on education. What does it mean in terms of probability?
-    \item Check how many observations have predicted probabilities outside $[0, 1]$. Report the minimum and maximum predicted values.
-\end{enumerate}
-
-\subsection{Question 6: Logistic Regression}
-
-\begin{enumerate}[label=\alph*)]
-    \item Estimate a logit model with the same predictors as the LPM. Print the results.
-    \item Report the odds ratios for all predictors using \code{exp(coef(model))}. Interpret the odds ratio for education.
-    \item Calculate the average marginal effects using \code{marginaleffects::avg\_slopes()}. Compare these to the LPM coefficients---how similar are they?
-\end{enumerate}
-
-\subsection{Question 7: Predicted Probabilities and Visualization}
-
-\begin{enumerate}[label=\alph*)]
-    \item Using the logit model, calculate the predicted probability of voting for:
-    \begin{itemize}
-        \item A 25-year-old woman with low education and low income
-        \item A 55-year-old man with high education and high income
-    \end{itemize}
-    Report both point estimates and 95\% confidence intervals.
-    \item Use \code{marginaleffects::plot\_predictions()} to plot the predicted probability of voting across values of education, holding other variables at their means. Save the plot.
-    \item Create a similar plot showing predicted probabilities across age for different education levels (hint: use \code{condition = c("age", "educ")}). Save the plot and discuss the patterns in a comment.
-\end{enumerate}
-
-\subsection{Question 8: Model Comparison}
-
-\begin{enumerate}[label=\alph*)]
-    \item Using \code{modelsummary()}, create a table comparing the LPM and logit models side by side.
-    \item Briefly discuss in a comment: For this dataset, do the LPM and logit models lead to different substantive conclusions? When might the differences matter?
-\end{enumerate}
 
 \vspace{15pt}
 
@@ -127,7 +189,7 @@ Your R script should:
 \begin{itemize}
   \item Be well-organized with clear section headers (using comments)
   \item Include all code needed to reproduce your analysis
-  \item Include your answers to conceptual questions as comments
+  \item Include your answers and interpretations as comments
   \item Save any plots to files (e.g., using \code{ggsave()})
   \item Run without errors from top to bottom
 \end{itemize}
