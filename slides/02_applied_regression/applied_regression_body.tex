@@ -35,11 +35,11 @@
 
 \begin{itemize}[<+->]
 \item ``What is the average value of $Y$ for different values of $X$?''
-\item[]
+\vspace{8pt}
 \item This is the \textbf{conditional expectation function} (CEF)
-\item[]
+\vspace{8pt}
 \item Written as: $E[Y | X]$
-\item[]
+\vspace{8pt}
 \item Regression approximates this function
 \end{itemize}
 
@@ -121,10 +121,10 @@ $$\hat{\boldsymbol{\beta}} = (\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\mathbf{y}$$
 \begin{itemize}[<+->]
 \item The true CEF might be complicated
 \item Linear regression fits the \textbf{best linear approximation}
-\item[]
+\vspace{8pt}
 \item Even if the true relationship is non-linear
 \item The linear fit is still the best predictor among linear functions
-\item[]
+\vspace{8pt}
 \item Why linear? Simple, interpretable, often good enough
 \end{itemize}
 
@@ -174,7 +174,7 @@ $$Y = \beta_0 + \beta_1 X + \varepsilon$$
   \item The difference in average $Y$
   \item Between groups that differ by 1 unit in $X$
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item This is a \textbf{comparison}, not necessarily a causal effect
 \end{itemize}
 
@@ -252,13 +252,13 @@ does a randomized experiment give you?
 
 \begin{itemize}[<+->]
 \item The basic function: \texttt{lm(y \textasciitilde{} x, data = df)}
-\item[]
+\vspace{8pt}
 \item Getting tidy output:
   \begin{itemize}
   \item \texttt{broom::tidy(model)} --- coefficients as a data frame
   \item \texttt{broom::glance(model)} --- model-level statistics ($R^2$, etc.)
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item These are much easier to work with than \texttt{summary()}
 \end{itemize}
 
@@ -324,7 +324,7 @@ $$E[\hat{\boldsymbol{\beta}}] = \boldsymbol{\beta}$$
 \begin{itemize}[<+->]
 \item On average, OLS gives us the right answer
 \item Any single estimate might be off, but there is no systematic error
-\item[]
+\vspace{8pt}
 \item \textit{Think of it like an unbiased dart thrower:\\centered on the bullseye, but with some scatter}
 \end{itemize}
 
@@ -389,7 +389,7 @@ $$SE(\hat{\beta}_j) = \sqrt{\frac{\hat{\sigma}^2}{SST_j (1 - R^2_j)}}$$
 \item $\hat{\sigma}^2$: error variance (more noise $\rightarrow$ larger SE)
 \item $SST_j$: variation in $X_j$ (more variation $\rightarrow$ smaller SE)
 \item $R^2_j$: correlation of $X_j$ with other predictors (multicollinearity $\rightarrow$ larger SE)
-\item[]
+\vspace{8pt}
 \item The SE tells us how much $\hat{\beta}$ would vary across samples
 \end{itemize}
 
@@ -413,11 +413,11 @@ This is the formula under homoskedasticity (A5). In practice, A5 is usually viol
 \begin{itemize}[<+->]
 \item Assumption A5 says the error variance is constant
 \item In practice, it almost never is
-\item[]
+\vspace{8pt}
 \item \textbf{Heteroskedasticity}: $\text{Var}(\varepsilon | X)$ changes with $X$
-\item[]
+\vspace{8pt}
 \item Example: income variation is larger for people with more education
-\item[]
+\vspace{8pt}
 \item The estimates $\hat{\beta}$ are still unbiased!
 \item But the standard errors are wrong
 \end{itemize}
@@ -470,17 +470,17 @@ This is the formula under homoskedasticity (A5). In practice, A5 is usually viol
 \begin{itemize}[<+->]
 \item Robust (``sandwich'') SEs are valid even with heteroskedasticity
 \item Also called HC (heteroskedasticity-consistent) standard errors
-\item[]
+\vspace{8pt}
 \item In R with \texttt{modelsummary}:
   \begin{itemize}
   \item \texttt{modelsummary(model, vcov = "robust")}
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item Or using \texttt{lmtest} and \texttt{sandwich}:
   \begin{itemize}
   \item \texttt{coeftest(model, vcov = vcovHC(model))}
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item \textbf{Practical rule}: always use robust SEs
 \item There is no real cost when errors are homoskedastic
 \end{itemize}
@@ -488,6 +488,65 @@ This is the formula under homoskedasticity (A5). In practice, A5 is usually viol
 \end{frame}
 % ----------------------------------------------------
 \note{This is the key practical takeaway from this section. Robust SEs fix the problem of heteroskedasticity without any downside. If the errors happen to be homoskedastic, robust SEs are almost identical to classical SEs. If they are heteroskedastic, robust SEs are correct while classical SEs are wrong. So there is no reason not to use them. Show the modelsummary syntax: vcov = ``robust'' is all you need. We will practice this in the lab.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{When robust SEs are not enough: clustering}
+\centering
+
+\vspace{5pt}
+
+\begin{itemize}[<+->]
+\item Robust SEs fix heteroskedasticity
+\item But what if observations are \textbf{not independent}?
+\vspace{8pt}
+\item Examples of clustered data:
+  \begin{itemize}
+  \item Students within schools
+  \item Citizens within countries
+  \item Repeated observations of the same unit over time
+  \end{itemize}
+\vspace{8pt}
+\item Within a cluster, errors are correlated
+\item Standard SEs (even robust) are \textbf{too small}
+\item This means too many ``significant'' results
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This extends the robust SE discussion. Robust SEs handle the case where the error variance differs across observations, but they still assume observations are independent. When data has a grouped structure -- students nested in schools, people in countries, repeated measures -- the errors within a group tend to be similar. If you ignore this, your SEs will be too small and you'll reject the null too often. The classic example: regressing student test scores on a school-level policy. You have 1,000 students but only 30 schools -- your effective sample size is closer to 30 than 1,000.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Clustered standard errors in practice}
+\centering
+
+\vspace{5pt}
+
+\begin{itemize}[<+->]
+\item \textbf{Rule of thumb}: cluster at the level of treatment assignment
+  \begin{itemize}
+  \item Policy varies by country? Cluster by country
+  \item Treatment assigned by school? Cluster by school
+  \end{itemize}
+\vspace{8pt}
+\item In R with \texttt{modelsummary}:
+  \begin{itemize}
+  \item \texttt{modelsummary(model, vcov = \textasciitilde{}country)}
+  \end{itemize}
+\vspace{8pt}
+\item Clustered SEs $\geq$ robust SEs (always at least as large)
+\item With few clusters ($< 30$--$50$), even clustered SEs can be unreliable
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Two practical points to emphasize:
+\begin{enumerate}
+\item The level of clustering should match the level at which the treatment or key variable varies. If you study a national policy, the ``treatment'' is at the country level, so cluster by country. If treatment is individual, you may not need clustering at all -- robust SEs suffice.
+\item Clustered SEs need a reasonable number of clusters to work well. With fewer than 30--50 clusters, they can be badly behaved. In that case, consider wild cluster bootstrap or other corrections.
+\end{enumerate}
+The modelsummary syntax is very simple: just pass a one-sided formula with the clustering variable. This also works with fixest::feols(), which students will use later for panel data.}
 
 % ====================================================
 \section{Multiple Regression}
@@ -511,7 +570,7 @@ $$Y = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \varepsilon$$
   \item Between groups that differ by 1 in $X_1$
   \item \textbf{Holding $X_2$ constant}
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item This is the ``controlled'' effect of $X_1$
 \end{itemize}
 
@@ -526,9 +585,9 @@ $$Y = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \varepsilon$$
 
 \begin{itemize}[<+->]
 \item OLS with multiple variables ``partials out'' the controls
-\item[]
+\vspace{8pt}
 \item Technically: we look at variation in $X_1$ that is unrelated to $X_2$
-\item[]
+\vspace{8pt}
 \item This isolates the unique contribution of $X_1$
 \end{itemize}
 
@@ -558,7 +617,7 @@ $$\tilde{\beta}_1 = \hat{\beta}_1 + \hat{\beta}_2 \cdot \tilde{\delta}$$
   \begin{itemize}
   \item (coefficient from regressing $X_2$ on $X_1$)
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item Bias $= \hat{\beta}_2 \cdot \tilde{\delta}$
 \item Zero only if $\hat{\beta}_2 = 0$ \textit{or} $\tilde{\delta} = 0$
 \end{itemize}
@@ -596,9 +655,9 @@ Ability ($\beta_2$) & --- & \$5,000 \\
 
 \begin{itemize}[<+->]
 \item Auxiliary regression: $\tilde{\delta} = 0.4$ (ability on education)
-\item[]
+\vspace{8pt}
 \item Check: $\underbrace{\$3{,}000}_{\hat{\beta}_1} + \underbrace{\$5{,}000}_{\hat{\beta}_2} \times \underbrace{0.4}_{\tilde{\delta}} = \underbrace{\$5{,}000}_{\tilde{\beta}_1}$ \checkmark
-\item[]
+\vspace{8pt}
 \item Bias $= \$2{,}000$ --- we overestimate by 67\%!
 \item Because ability $\uparrow$ education \textit{and} ability $\uparrow$ income
 \end{itemize}
@@ -647,13 +706,13 @@ Why?
 
 \begin{itemize}[<+->]
 \item Never control for variables caused by the treatment
-\item[]
+\vspace{8pt}
 \item Example: Studying effect of job training on wages
   \begin{itemize}
   \item Don't control for job type (affected by training)
   \item Do control for education (determined before training)
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item Controlling for post-treatment variables can \textit{introduce} bias
 \end{itemize}
 
@@ -669,7 +728,7 @@ Why?
 \begin{itemize}[<+->]
 \item A \textbf{collider} is caused by both $X$ and $Y$
 \item Controlling for it creates a spurious association
-\item[]
+\vspace{8pt}
 \item Example: NBA players
   \begin{itemize}
   \item Height and skill both affect being in NBA
@@ -689,15 +748,15 @@ Why?
 
 \begin{itemize}[<+->]
 \item What if $X$ is a category (region, party, gender)?
-\item[]
+\vspace{8pt}
 \item R automatically creates \textbf{dummy variables}
   \begin{itemize}
   \item One indicator (0/1) for each category
   \item One category is the \textbf{reference} (omitted)
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item Coefficients represent the difference from the reference
-\item[]
+\vspace{8pt}
 \item Example: \texttt{lm(income \textasciitilde{} factor(region), data = df)}
   \begin{itemize}
   \item If reference is ``North'', the ``South'' coefficient means: average income in South minus average income in North
@@ -719,14 +778,14 @@ Why?
 
 \begin{itemize}[<+->]
 \item Sometimes, the effect of $X$ on $Y$ depends on another variable $Z$
-\item[]
+\vspace{8pt}
 \item Examples:
   \begin{itemize}
   \item Effect of education on income may differ by gender
   \item Effect of campaign spending may differ by incumbency status
   \item Effect of democracy on growth may depend on economic development
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item We model this with \textbf{interaction terms}
 \end{itemize}
 
@@ -769,7 +828,7 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 \begin{itemize}[<+->]
 \item The effect of $X$ is no longer a single number
 \item It's a \textbf{function} of $Z$
-\item[]
+\vspace{8pt}
 \item Need to report effects at meaningful values of $Z$
 \end{itemize}
 
@@ -785,12 +844,12 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 \begin{itemize}[<+->]
 \item When $Z$ is categorical (e.g., gender, regime type)
 \item The interaction gives a \textbf{different slope} for each group
-\item[]
+\vspace{8pt}
 \item Example: \texttt{lm(income \textasciitilde{} education * gender, data = df)}
   \begin{itemize}
   \item One slope for men, a different slope for women
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item Equivalent to fitting separate regressions by group
 \item But estimated jointly (shares the error variance)
 \end{itemize}
@@ -836,9 +895,9 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 \begin{itemize}[<+->]
 \item When both $X$ and $Z$ are continuous
 \item The slope of $X$ varies smoothly with $Z$ (and vice versa)
-\item[]
+\vspace{8pt}
 \item Harder to interpret from coefficients alone
-\item[]
+\vspace{8pt}
 \item Best communicated through plots:
   \begin{itemize}
   \item Predicted values at different combinations of $X$ and $Z$
@@ -861,12 +920,12 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
   \item It's only the effect when $Z = 0$
   \item May not even be meaningful!
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item \textbf{Mistake 2}: Omitting constitutive terms
   \begin{itemize}
   \item Always include $X$ and $Z$ separately, not just $X \times Z$
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item \textbf{Mistake 3}: Not showing how the effect varies
   \begin{itemize}
   \item Plot the marginal effect across values of $Z$
@@ -889,14 +948,14 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 
 \begin{itemize}[<+->]
 \item Tables of coefficients are hard to interpret
-\item[]
+\vspace{8pt}
 \item Better approach:
   \begin{itemize}
   \item Plot predicted values of $Y$ for different combinations of $X$ and $Z$
   \item Plot the marginal effect of $X$ across values of $Z$
   \item Include confidence intervals
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item In R: \texttt{marginaleffects::plot\_predictions()}
 \end{itemize}
 
@@ -916,7 +975,7 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 \begin{itemize}[<+->]
 \item A regression table is not the end of the analysis
 \item Readers need to understand the \textbf{substance} of your findings
-\item[]
+\vspace{8pt}
 \item Good presentation:
   \begin{itemize}
   \item Shows what the results \textbf{mean}, not just what they are
@@ -936,13 +995,13 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 
 \begin{itemize}[<+->]
 \item Creates publication-quality tables from model objects
-\item[]
+\vspace{8pt}
 \item Basic usage:
   \begin{itemize}
   \item \texttt{modelsummary(model)}
   \item \texttt{modelsummary(list(m1, m2, m3))}
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item Output formats: LaTeX, HTML, Word, markdown
 \item Highly customizable: statistics, labels, notes
 \end{itemize}
@@ -958,13 +1017,13 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 
 \begin{itemize}[<+->]
 \item A visual alternative to tables
-\item[]
+\vspace{8pt}
 \item \texttt{modelsummary::modelplot(model)}
   \begin{itemize}
   \item Each coefficient as a point with confidence interval
   \item Easy to compare multiple models
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item Often more effective than tables for communicating results
 \item Readers immediately see which effects are large vs. small
 \end{itemize}
@@ -980,16 +1039,16 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 
 \begin{itemize}[<+->]
 \item Common strategy: show how results change as you add variables
-\item[]
+\vspace{8pt}
 \item Step 1: Bivariate model (just $X$ and $Y$)
 \item Step 2: Add control variables
 \item Step 3: Add interactions
-\item[]
+\vspace{8pt}
 \item Present all three in one table:
   \begin{itemize}
   \item \texttt{modelsummary(list(m1, m2, m3))}
   \end{itemize}
-\item[]
+\vspace{8pt}
 \item Shows robustness and what adding controls does to the estimate
 \end{itemize}
 
