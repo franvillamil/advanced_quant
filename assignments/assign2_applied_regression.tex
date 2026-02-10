@@ -13,118 +13,168 @@
   \item Submit your work as a \code{.R} file called \code{ps2.R} in your GitHub repository
   \item Use comments in your R code to answer conceptual questions and explain your analysis
   \item You are encouraged to work together, but each person must submit their own code
+  \item Part 1 is started in class; Part 2 is completed at home
 \end{itemize}
 
 \vspace{20pt}
 \tableofcontents
 \newpage
 
-\section{Conceptual Questions}
+% ==========================================================================
+\section{Part 1: In-Class Lab (QoG Dataset)}
+% ==========================================================================
 
-Answer these questions using comments in your R script. You don't need to run any code for this section---just write your answers as comments.
+In this lab, we explore cross-country data from the Quality of Government (QoG) dataset. You will practice bivariate and multiple regression, demonstrate omitted variable bias, use robust standard errors, and present results with \code{modelsummary}. Follow along in class.
 
-\subsection{Question 1: Conditional Expectations}
+\subsection{Setup and data preparation}
 
-Consider a study examining the effect of education on income.
+Download the QoG Standard cross-section dataset from \url{https://www.gu.se/en/quality-government/qog-data/data-downloads/standard-dataset} (CSV format), or use the file provided on the course page.
 
 \begin{enumerate}[label=\alph*)]
-    \item Explain in your own words what a conditional expectation function (CEF) is. Write down the CEF for income given education.
-    \item Why is regression considered an approximation to the CEF? Under what conditions is the regression exactly equal to the CEF?
-    \item A researcher finds that, on average, people with a college degree earn \$20,000 more than people with only a high school diploma. Is this a descriptive or causal statement? Explain.
+  \item Load the dataset and select the following variables. Rename them for convenience:
+  \begin{itemize}
+    \item \code{cname} --- country name
+    \item \code{epi\_epi} --- Environmental Performance Index (EPI) score (our outcome)
+    \item \code{wdi\_wip} --- share of women in parliament (\%)
+    \item \code{wbgi\_gee} --- government effectiveness (World Bank governance indicator)
+    \item \code{gpp\_grnst} --- green party seat share in parliament (\%)
+  \end{itemize}
+  Suggested names: \code{country}, \code{epi}, \code{women\_parl}, \code{gov\_eff}, \code{green\_seats}.
+  \item Drop observations with missing values on any of these variables. How many countries remain?
+  \item Print summary statistics for all variables (e.g., using \code{summary()} or \code{skimr::skim()}).
 \end{enumerate}
 
-\subsection{Question 2: Omitted Variable Bias}
+\subsection{Exploratory visualization}
 
 \begin{enumerate}[label=\alph*)]
-    \item State the omitted variable bias formula and explain each component.
-    \item In the education-income example, suppose ``ability'' is an omitted variable that affects both education and income. If ability is positively related to both education and income, what is the sign of the omitted variable bias? Is the effect of education on income over- or under-estimated?
-    \item A researcher argues: ``I cannot measure ability, but I can control for test scores as a proxy.'' Discuss the limitations of this approach.
+  \item Create a scatter plot of \code{women\_parl} (x-axis) vs.\ \code{epi} (y-axis).
+  \item Add a linear fit using \code{geom\_smooth(method = "lm")}.
+  \item In a comment, describe what you see. Is there a relationship? What is its direction?
 \end{enumerate}
 
-\subsection{Question 3: Good and Bad Controls}
-
-For each of the following scenarios, identify whether the proposed control variable is a good control, a bad control (post-treatment), or a collider. Explain your reasoning.
+\subsection{Bivariate regression}
 
 \begin{enumerate}[label=\alph*)]
-    \item \textbf{Research question:} Effect of job training on wages. \textbf{Proposed control:} Current occupation.
-    \item \textbf{Research question:} Effect of smoking on lung cancer. \textbf{Proposed control:} Family history of cancer.
-    \item \textbf{Research question:} Effect of education on income. \textbf{Proposed control:} Being employed (yes/no).
-    \item \textbf{Research question:} Effect of democracy on economic growth. \textbf{Proposed control:} Colonial history.
+  \item Run a bivariate regression: \code{lm(epi \textasciitilde{} women\_parl, data = df)}.
+  \item Extract the results using \code{broom::tidy()}.
+  \item Interpret the coefficient on \code{women\_parl} in a comment. What is the predicted difference in EPI between a country at the 25th percentile and one at the 75th percentile of women in parliament?
 \end{enumerate}
 
-\subsection{Question 4: Interaction Effects}
-
-Consider the model: $Y = \beta_0 + \beta_1 X + \beta_2 Z + \beta_3 (X \times Z) + \varepsilon$
+\subsection{Multiple regression}
 
 \begin{enumerate}[label=\alph*)]
-    \item What is the marginal effect of $X$ on $Y$? Show how it depends on $Z$.
-    \item Suppose $\beta_1 = 0.5$, $\beta_3 = -0.1$, and $Z$ ranges from 0 to 10. At what value of $Z$ does the effect of $X$ become zero?
-    \item Why is it incorrect to interpret $\beta_1$ as ``the effect of $X$'' in this model?
+  \item Run a multiple regression adding \code{gov\_eff} as a control: \\\code{lm(epi \textasciitilde{} women\_parl + gov\_eff, data = df)}.
+  \item Compare the coefficient on \code{women\_parl} between the bivariate and multiple regression. Does it change? In what direction? Explain in a comment what this suggests.
+\end{enumerate}
+
+\subsection{Demonstrating OVB}
+
+The omitted variable bias formula says: $\tilde{\beta}_1 = \hat{\beta}_1 + \hat{\beta}_2 \cdot \tilde{\delta}$, where $\tilde{\beta}_1$ is the bivariate coefficient, $\hat{\beta}_1$ and $\hat{\beta}_2$ are the multiple regression coefficients, and $\tilde{\delta}$ is the coefficient from regressing the omitted variable on the included variable.
+
+\begin{enumerate}[label=\alph*)]
+  \item From the regressions above, write down $\tilde{\beta}_1$ (bivariate), $\hat{\beta}_1$ (multiple), and $\hat{\beta}_2$ (multiple).
+  \item Run the auxiliary regression: \code{lm(gov\_eff \textasciitilde{} women\_parl, data = df)}. Extract $\tilde{\delta}$.
+  \item Verify the OVB formula: check that $\hat{\beta}_1 + \hat{\beta}_2 \times \tilde{\delta} \approx \tilde{\beta}_1$ (up to rounding).
+  \item In a comment, interpret what this means: why did the coefficient on \code{women\_parl} change when we added \code{gov\_eff}?
+\end{enumerate}
+
+\subsection{Robust standard errors}
+
+\begin{enumerate}[label=\alph*)]
+  \item Using \code{modelsummary()}, print the multiple regression results with default (classical) standard errors.
+  \item Now print the same model with robust standard errors: \code{modelsummary(model, vcov = "robust")}.
+  \item Compare the SEs. Do they differ substantially? Do any conclusions change?
+\end{enumerate}
+
+\subsection{Presenting results}
+
+\begin{enumerate}[label=\alph*)]
+  \item Create a table comparing the bivariate and multiple regression models side by side, using robust SEs for both: \\\code{modelsummary(list(m1, m2), vcov = "robust")}.
+  \item Create a coefficient plot using \code{modelsummary::modelplot()} comparing both models.
+  \item Save the plot using \code{ggsave()}.
+\end{enumerate}
+
+\newpage
+
+% ==========================================================================
+\section{Part 2: Take-Home Exercises (STAR Dataset)}
+% ==========================================================================
+
+The Project STAR (Student/Teacher Achievement Ratio) experiment randomly assigned students in Tennessee to small classes (13--17 students), regular classes (22--25 students), or regular classes with a teacher's aide. We use data from this experiment to practice applied regression.
+
+Download \code{star.csv} from the course page. Each observation is a student. Key variables include:
+
+\begin{itemize}
+  \item \code{classtype}: class type (1 = small, 2 = regular, 3 = regular + aide)
+  \item \code{race}: student race (1 = White, 2 = Black, 3 = Asian, 4 = Hispanic, 5 = Native American, 6 = Other)
+  \item \code{yearssmall}: years spent in a small class (0--4)
+  \item \code{hsgrad}: graduated high school (0/1)
+  \item \code{g4math}: 4th grade math test score
+  \item \code{g4reading}: 4th grade reading test score
+\end{itemize}
+
+\subsection{Data preparation}
+
+\begin{enumerate}[label=\alph*)]
+  \item Load \code{star.csv}.
+  \item Create a factor variable for \code{classtype} with labels: \code{"Small"}, \code{"Regular"}, \code{"Regular+Aide"}.
+  \item Create a factor variable for \code{race} with labels: \code{"White"}, \code{"Black"}, \code{"Asian"}, \code{"Hispanic"}, \code{"Native American"}, \code{"Other"}.
+  \item Create a binary variable \code{small} that equals 1 if \code{classtype == "Small"} and 0 otherwise.
+  \item Report the number of observations and the number of non-missing observations for \code{g4reading} and \code{g4math}.
+\end{enumerate}
+
+\subsection{Comparing groups}
+
+\begin{enumerate}[label=\alph*)]
+  \item Calculate the mean 4th grade reading score by class type. Which group scores highest?
+  \item Run a bivariate regression of \code{g4reading} on \code{small}. Interpret the coefficient.
+  \item Verify that the regression coefficient equals the difference in means between small and regular+aide classes. (Hint: compare with the grouped means from part a.)
+  \item Repeat the bivariate regression for \code{g4math}. Is the pattern similar?
+\end{enumerate}
+
+\subsection{Adding controls}
+
+\begin{enumerate}[label=\alph*)]
+  \item Run a multiple regression of \code{g4reading} on \code{small}, \code{race}, and \code{yearssmall}.
+  \item Compare the coefficient on \code{small} with the bivariate model. Does it change much? What does this tell you about the quality of the randomization?
+  \item Interpret the coefficient on \code{yearssmall}. What does it capture?
+\end{enumerate}
+
+\subsection{Interactions}
+
+\begin{enumerate}[label=\alph*)]
+  \item Does the effect of being in a small class differ by race? Fit the following model: \\\code{lm(g4reading \textasciitilde{} small * race + yearssmall, data = df)}.
+  \item Print the results using \code{broom::tidy()}.
+  \item What is the estimated effect of a small class for White students? For Black students? (Use the coefficients to calculate.)
+  \item In a comment, discuss whether the interaction is substantively meaningful.
+\end{enumerate}
+
+\subsection{Presenting results}
+
+\begin{enumerate}[label=\alph*)]
+  \item Create a table with \code{modelsummary()} comparing all your reading score models (bivariate, multiple, interaction), using robust standard errors.
+  \item Create a coefficient plot with \code{modelplot()} for the three models.
+  \item Save both outputs.
+\end{enumerate}
+
+\subsection{Brief discussion}
+
+In a comment (5--10 sentences), discuss:
+
+\begin{enumerate}[label=\alph*)]
+  \item What does the STAR data suggest about the effect of small class sizes on student achievement?
+  \item Why is this evidence more credible than a typical observational study of class size?
+  \item Are there any limitations or caveats based on what you observed in the data?
 \end{enumerate}
 
 \vspace{15pt}
 
-\section{Applied Analysis: European Social Survey}
-
-For this assignment, you will use data from the European Social Survey (ESS). The ESS is a cross-national survey that collects data on attitudes, beliefs, and behavior patterns of diverse populations in Europe.
-
-You can download the data from: \url{https://www.europeansocialsurvey.org/data/}
-
-Alternatively, use the \code{essurvey} package in R:
-
-\begin{lstlisting}
-install.packages("essurvey")
-library(essurvey)
-set_email("your@email.com")  # Register at ESS website first
-
-# Download ESS Round 10 (2020-2022)
-ess <- import_rounds(10)
-\end{lstlisting}
-
-We will examine the determinants of support for redistribution. Key variables include:
+\section{Data Sources}
 
 \begin{itemize}
-    \item \code{gincdif}: Government should reduce income differences (1--5 scale, 5 = strongly agree)
-    \item \code{hinctnta}: Household income decile (1 = lowest, 10 = highest)
-    \item \code{eduyrs}: Years of education
-    \item \code{agea}: Age in years
-    \item \code{gndr}: Gender (1 = male, 2 = female)
-    \item \code{cntry}: Country
+  \item \textbf{QoG Standard dataset}: \url{https://www.gu.se/en/quality-government/qog-data/data-downloads/standard-dataset}. Use the cross-section version (CSV format), or the file provided on the course page.
+  \item \textbf{STAR dataset}: \code{star.csv}, provided on the course page. Original data from the Tennessee STAR experiment (Krueger, 1999).
 \end{itemize}
-
-\subsection{Question 5: Data Exploration and Bivariate Regression}
-
-\begin{enumerate}[label=\alph*)]
-    \item Select a subset of countries (at least 3) and prepare the data for analysis. Remove missing values and recode variables as needed. Report sample sizes by country.
-    \item Create a scatter plot of income (x-axis) versus support for redistribution (y-axis), using jittering to show the distribution.
-    \item Estimate a bivariate regression with support for redistribution as the outcome and household income decile as the predictor. Print a summary of the results using \code{broom::tidy()}.
-    \item Interpret the coefficient on income in a comment. What is the predicted difference in redistribution support between someone in the lowest income decile and someone in the highest?
-\end{enumerate}
-
-\subsection{Question 6: Multiple Regression}
-
-\begin{enumerate}[label=\alph*)]
-    \item Estimate a model that includes income, education (years), age, and gender. Print a summary of the results.
-    \item Compare the coefficient on income in this model to the bivariate model. Does it change? In what direction? Explain what this suggests about the role of the control variables.
-    \item Interpret each of the coefficients in the multiple regression model (in comments).
-\end{enumerate}
-
-\subsection{Question 7: Interactions}
-
-\begin{enumerate}[label=\alph*)]
-    \item Estimate a model that interacts income with gender (e.g., \code{gincdif \textasciitilde{} hinctnta * gndr + eduyrs + agea}). Print the results.
-    \item What is the marginal effect of income on redistribution preferences for men? For women?
-    \item Use \code{marginaleffects::plot\_predictions()} to visualize how the relationship between income and redistribution support differs by gender. Save the plot.
-    \item Discuss your findings in a comment: does the income-redistribution relationship differ between men and women? Is the difference substantively meaningful?
-\end{enumerate}
-
-\subsection{Question 8: Presenting Results}
-
-\begin{enumerate}[label=\alph*)]
-    \item Using \code{modelsummary()}, create a table that presents all three models side by side: bivariate, multiple regression, and interaction model.
-    \item Create a coefficient plot using \code{modelsummary::modelplot()} comparing the three models.
-    \item In a comment, describe how the income coefficient changes across the three models and what this tells us about the relationship between income and redistribution preferences.
-\end{enumerate}
 
 \vspace{15pt}
 
@@ -136,7 +186,7 @@ Your R script should:
 \begin{itemize}
   \item Be well-organized with clear section headers (using comments)
   \item Include all code needed to reproduce your analysis
-  \item Include your answers to conceptual questions as comments
+  \item Include your answers and interpretations as comments
   \item Save any plots to files (e.g., using \code{ggsave()})
   \item Run without errors from top to bottom
 \end{itemize}

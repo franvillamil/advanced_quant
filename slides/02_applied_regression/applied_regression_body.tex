@@ -3,7 +3,7 @@
   \titlepage
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Welcome back. Today we go deeper into regression -- this is the core tool you will use throughout the course and in your final projects. We start with a review, add some formal properties, then move to multiple regression, interactions, and presenting results.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -12,6 +12,7 @@
 
 \begin{itemize}[<+->]
 \item Review regression as modeling conditional expectations
+\item Understand OLS properties: assumptions, bias, standard errors
 \item Understand multiple regression and control variables
 \item Learn how to model conditional relationships (interactions)
 \item Present results effectively with \texttt{modelsummary}
@@ -19,7 +20,7 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Give a quick roadmap of the session. Emphasize that we are building on what they learned in AQMSS-I but making it more applied. The new OLS properties section is a bridge between theory and practice -- just enough to understand what can go wrong and why robust SEs matter.}
 
 % ====================================================
 \section{Regression Review}
@@ -44,7 +45,17 @@
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Start from the intuition: we want to know how the average of one variable changes as we move along another. The CEF is the object of interest. Regression gives us a tractable way to approximate it. Ask students: what does the CEF look like for income given education? It's probably increasing but not linear -- regression still gives the best linear approximation.}
+
+% ----------------------------------------------------
+\begin{frame}
+\centering
+\vspace{30pt}
+\large What does $E[\text{Income} \,|\, \text{Education}]$ look like?\\[15pt]
+Is it linear? Why or why not?
+\end{frame}
+% ----------------------------------------------------
+\note{Pause for 1--2 minutes. Let students think and discuss briefly with a neighbor. The point is that the CEF for income given education is probably increasing but curved -- marginal returns to education may diminish at higher levels, or there may be jumps at degree completion. This motivates why regression is an approximation, not the truth.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -70,7 +81,37 @@ $$Y = \beta_0 + \beta_1 X + \varepsilon$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Remind them of the basic setup. The key point is that $\beta$ captures the systematic relationship and $\varepsilon$ captures everything else. This is a model -- it's an approximation of reality, not reality itself. The goal of OLS is to find the $\beta$ values that make the errors as small as possible (in the squared sense).}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The regression model in matrix form}
+\centering
+
+\vspace{10pt}
+
+With $n$ observations and $k$ variables:
+
+\vspace{10pt}
+
+$$\mathbf{y} = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon}$$
+
+\vspace{15pt}
+
+The OLS estimator:
+
+\vspace{5pt}
+
+$$\hat{\boldsymbol{\beta}} = (\mathbf{X}'\mathbf{X})^{-1}\mathbf{X}'\mathbf{y}$$
+
+\vspace{15pt}
+
+\pause
+\small{Don't memorize -- just know this is what \texttt{lm()} computes for you}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Keep this light. The point is not to derive the formula but to show that regression has a closed-form solution. Mention that $\mathbf{X}$ is a matrix where each row is an observation and each column is a variable. The formula tells us OLS is just matrix algebra -- nothing mysterious. You can mention that this requires $\mathbf{X}'\mathbf{X}$ to be invertible (no perfect multicollinearity). The last line is key: R does this for you.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -89,7 +130,32 @@ $$Y = \beta_0 + \beta_1 X + \varepsilon$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This is an important conceptual point. Even if the world is non-linear, the linear regression is still doing something useful: it gives the best linear predictor. Angrist and Pischke call this the ``regression as approximation'' view. In practice, many relationships are approximately linear over the observed range, and we can always add non-linear terms (polynomials, logs) if needed.}
+
+% ----------------------------------------------------
+\begin{frame}[plain]
+  \begin{tikzpicture}[remember picture, overlay]
+    \node[at=(current page.center)] {%
+      \begin{tikzpicture}[x=1cm, y=1cm]
+        % Axes
+        \draw[->, thick, jet] (-0.3,0) -- (10.5,0) node[below] {$X$};
+        \draw[->, thick, jet] (0,-0.3) -- (0,7.5) node[left] {$Y$};
+        % Scatter dots
+        \foreach \x/\y in {0.5/1.0, 0.8/2.1, 1.2/1.5, 1.5/2.8, 1.8/2.0, 2.2/3.2, 2.5/2.5, 2.8/3.6, 3.2/3.0, 3.5/4.0, 3.8/3.3, 4.2/4.4, 4.5/3.7, 4.8/4.6, 5.2/4.1, 5.5/4.8, 5.8/4.3, 6.2/5.2, 6.5/4.7, 6.8/5.4, 7.2/5.0, 7.5/5.6, 7.8/5.2, 8.2/5.8, 8.5/5.4, 8.8/6.0, 9.2/5.6, 9.5/6.2} {
+          \fill[accent!40] (\x,\y) circle (3pt);
+        }
+        % CEF (curved)
+        \draw[accent2, very thick, smooth, tension=0.7] plot coordinates {(0.3,1.3) (1.5,2.3) (3.0,3.3) (4.5,4.2) (6.0,4.9) (7.5,5.4) (9.0,5.7) (9.8,5.9)};
+        \node[accent2, right] at (9.8,5.9) {\small CEF};
+        % Regression line (straight)
+        \draw[accent, very thick, dashed] (0.2,1.2) -- (9.8,6.0);
+        \node[accent, right] at (9.8,6.3) {\small OLS};
+      \end{tikzpicture}
+    };
+  \end{tikzpicture}
+\end{frame}
+% ----------------------------------------------------
+\note{Point to the two lines. The curved red line is the true CEF -- the actual average of $Y$ at each value of $X$. The dashed blue line is the OLS regression line -- the best linear approximation. They are close over most of the range, but the CEF curves while OLS cannot. This is why we say regression approximates the CEF. Where would the approximation be worst?}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -114,7 +180,45 @@ $$Y = \beta_0 + \beta_1 X + \varepsilon$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This is the predictive or descriptive interpretation: we are comparing groups. People with one more year of education earn, on average, \$X more. This does not tell us what would happen if we gave someone an extra year of education. That's the causal interpretation, which requires additional assumptions. The coefficient is the same number either way -- the interpretation is what changes.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Two framings of $\beta_1$}
+\centering
+
+\vspace{10pt}
+
+\begin{itemize}
+\item \textbf{Predictive framing}:
+  \begin{itemize}
+  \item ``Groups that differ by 1 in $X$ differ by $\beta_1$ in $Y$, on average''
+  \item A comparison across units
+  \end{itemize}
+\item[]
+\item \textbf{Counterfactual framing}:
+  \begin{itemize}
+  \item ``If we changed $X$ by 1, $Y$ would change by $\beta_1$''
+  \item A statement about what would happen
+  \end{itemize}
+\item[]
+\item Same number, very different claims
+\item The counterfactual framing requires \textbf{causal assumptions}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This distinction is crucial and often confused. When we say ``a year of education is worth \$5,000,'' we can mean two very different things. The predictive framing is always valid as a description of the data. The counterfactual framing is only valid if we can argue that all confounders are accounted for. Ask students: which framing does a randomized experiment give you? Both -- because randomization eliminates confounding.}
+
+% ----------------------------------------------------
+\begin{frame}
+\centering
+\vspace{30pt}
+\large Which framing --- predictive or counterfactual ---\\[5pt]
+does a randomized experiment give you?
+\end{frame}
+% ----------------------------------------------------
+\note{Pause and let students discuss for a minute. The answer: both! In an experiment, random assignment ensures that the groups being compared differ only in the treatment, so the predictive comparison IS the causal effect. This is the key insight -- randomization makes the descriptive and causal interpretations equivalent. No other research design does this automatically.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -137,7 +241,7 @@ $$Y = \beta_0 + \beta_1 X + \varepsilon$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Reinforce the previous slide with concrete language. The descriptive statement is about patterns in the world as it is. The causal statement is about what would happen under an intervention. Most applied research wants the causal interpretation, but the regression alone cannot give us that -- we need a research design (experiment, natural experiment, etc.) to close the gap.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -160,7 +264,230 @@ $$Y = \beta_0 + \beta_1 X + \varepsilon$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Quick practical slide. Remind them of the syntax from AQMSS-I. The broom package is essential: tidy() gives a clean data frame of coefficients with standard errors and p-values, glance() gives model-level stats. Show that these outputs can be piped and filtered just like any other data frame. We will use them extensively in the lab later.}
+
+% ====================================================
+\section{OLS Properties}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{OLS assumptions}
+\centering
+
+\vspace{5pt}
+
+For OLS to work well, we need:
+
+\vspace{5pt}
+
+\begin{enumerate}[<+->]
+\item \textbf{Linearity}: $Y = \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon}$
+\item \textbf{Random sampling}: observations are i.i.d.
+\item \textbf{No perfect multicollinearity}: $\mathbf{X}'\mathbf{X}$ is invertible
+\item \textbf{Zero conditional mean}: $E[\varepsilon | \mathbf{X}] = 0$
+\item \textbf{Homoskedasticity}: $\text{Var}(\varepsilon | \mathbf{X}) = \sigma^2$
+\end{enumerate}
+
+\vspace{10pt}
+
+\pause
+\small{A1--A4 are needed for unbiasedness; A5 for efficient SEs}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Go through each assumption briefly:
+\begin{itemize}
+\item Linearity: the model is correctly specified. This is about the functional form, not about the variables themselves being linear (we can include polynomials, logs, etc.).
+\item Random sampling: each observation is drawn independently. Violated with clustered or panel data.
+\item No perfect multicollinearity: we can't have one variable that is an exact linear function of others. R will drop the variable automatically if this happens.
+\item Zero conditional mean: this is the big one. It means the error is unrelated to $X$. Violated when we have omitted variables. This is what makes OVB a problem.
+\item Homoskedasticity: the error variance is constant. Almost always violated in practice -- this is why we use robust SEs.
+\end{itemize}
+Emphasize the last line: A1--A4 give unbiasedness, A5 gives correct SEs.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{OLS is unbiased (under A1--A4)}
+\centering
+
+\vspace{10pt}
+
+If assumptions A1--A4 hold:
+
+\vspace{10pt}
+
+$$E[\hat{\boldsymbol{\beta}}] = \boldsymbol{\beta}$$
+
+\vspace{15pt}
+
+\begin{itemize}[<+->]
+\item On average, OLS gives us the right answer
+\item Any single estimate might be off, but there is no systematic error
+\item[]
+\item \textit{Think of it like an unbiased dart thrower:\\centered on the bullseye, but with some scatter}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The target/bullseye analogy works well here. An unbiased estimator is like a dart thrower whose throws are centered on the target. Individual throws might miss, but on average they hit the center. Contrast with a biased estimator, where the throws cluster away from the center. The key assumption doing the work here is A4 (zero conditional mean) -- if the errors are correlated with X, we get bias. Note: if you have the bullseye image, replace the text reference with the actual image.}
+
+% ----------------------------------------------------
+\begin{frame}[plain]
+  \begin{tikzpicture}[remember picture, overlay]
+    \node[at=(current page.center)] {%
+      \begin{tikzpicture}
+        % LEFT: Unbiased
+        \begin{scope}[shift={(-3.5,0)}]
+          \draw[accent!20, fill=accent!5, thick] (0,0) circle (2.2cm);
+          \draw[accent!30, thick] (0,0) circle (1.5cm);
+          \draw[accent!40, thick] (0,0) circle (0.8cm);
+          \fill[accent2] (0,0) circle (3pt);
+          % Darts clustered at center
+          \foreach \x/\y in {0.15/0.2, -0.25/0.1, 0.1/-0.3, -0.1/0.35, 0.3/-0.1, -0.2/-0.25, 0.05/0.15, -0.15/-0.1, 0.25/0.3, -0.3/0.05, 0.2/-0.2, -0.05/0.4} {
+            \fill[jet] (\x,\y) circle (3.5pt);
+          }
+          \node[below, font=\large\bfseries] at (0,-2.8) {Unbiased};
+          \node[below, font=\small, asher] at (0,-3.3) {centered on target};
+        \end{scope}
+        % RIGHT: Biased
+        \begin{scope}[shift={(3.5,0)}]
+          \draw[accent!20, fill=accent!5, thick] (0,0) circle (2.2cm);
+          \draw[accent!30, thick] (0,0) circle (1.5cm);
+          \draw[accent!40, thick] (0,0) circle (0.8cm);
+          \fill[accent2] (0,0) circle (3pt);
+          % Darts clustered off-center
+          \foreach \x/\y in {1.0/0.8, 0.8/1.0, 1.15/0.65, 0.9/0.85, 1.1/1.05, 0.75/0.7, 0.95/0.95, 1.2/0.8, 0.85/0.9, 1.0/0.7, 1.1/1.0, 0.8/0.8} {
+            \fill[jet] (\x,\y) circle (3.5pt);
+          }
+          \node[below, font=\large\bfseries] at (0,-2.8) {Biased};
+          \node[below, font=\small, asher] at (0,-3.3) {systematically off};
+        \end{scope}
+      \end{tikzpicture}
+    };
+  \end{tikzpicture}
+\end{frame}
+% ----------------------------------------------------
+\note{Point to the two targets. On the left, the darts cluster around the bullseye -- this is an unbiased estimator. Each individual estimate may miss, but on average they hit the center. On the right, the darts cluster tightly but away from the center -- this is a biased estimator (e.g., when we have omitted variable bias). Ask students: which would you prefer? What if the biased one had less scatter? This connects to the bias-variance tradeoff.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Standard errors and uncertainty}
+\centering
+
+\vspace{10pt}
+
+OLS gives us $\hat{\beta}$, but how precise is it?
+
+\vspace{10pt}
+
+$$SE(\hat{\beta}_j) = \sqrt{\frac{\hat{\sigma}^2}{SST_j (1 - R^2_j)}}$$
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item $\hat{\sigma}^2$: error variance (more noise $\rightarrow$ larger SE)
+\item $SST_j$: variation in $X_j$ (more variation $\rightarrow$ smaller SE)
+\item $R^2_j$: correlation of $X_j$ with other predictors (multicollinearity $\rightarrow$ larger SE)
+\item[]
+\item The SE tells us how much $\hat{\beta}$ would vary across samples
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Walk through each component:
+\begin{enumerate}
+\item More noise in the data (larger $\hat{\sigma}^2$) makes estimates less precise.
+\item More variation in $X$ (larger sample, more spread) gives more information and smaller SEs.
+\item When predictors are correlated with each other ($R^2_j$ is high), it's hard to separate their effects, so SEs blow up.
+\end{enumerate}
+This is the formula under homoskedasticity (A5). In practice, A5 is usually violated, which is why we need robust SEs. Key takeaway: SEs quantify our uncertainty about the estimate, and we should always report them.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Heteroskedasticity}
+\centering
+
+\vspace{5pt}
+
+\begin{itemize}[<+->]
+\item Assumption A5 says the error variance is constant
+\item In practice, it almost never is
+\item[]
+\item \textbf{Heteroskedasticity}: $\text{Var}(\varepsilon | X)$ changes with $X$
+\item[]
+\item Example: income variation is larger for people with more education
+\item[]
+\item The estimates $\hat{\beta}$ are still unbiased!
+\item But the standard errors are wrong
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The crucial point is that heteroskedasticity does NOT bias the coefficients -- it biases the standard errors. So your estimates are still centered on the right answer, but the confidence intervals are wrong. This means hypothesis tests and p-values are unreliable.}
+
+% ----------------------------------------------------
+\begin{frame}[plain]
+  \begin{tikzpicture}[remember picture, overlay]
+    \node[at=(current page.center)] {%
+      \begin{tikzpicture}[x=0.55cm, y=0.55cm]
+        % LEFT: Homoskedastic
+        \begin{scope}[shift={(-9,0)}]
+          \draw[->, thick, jet] (-0.5,0) -- (8.5,0) node[below] {\small $X$};
+          \draw[->, thick, jet] (0,-0.5) -- (0,8.5) node[left] {\small $Y$};
+          \draw[accent, thick] (0.5,1.5) -- (8,6.5);
+          \foreach \x/\y in {1/2.3, 1.5/1.8, 2/3.1, 2.5/2.6, 3/3.8, 3.5/3.2, 4/4.5, 4/3.5, 4.5/3.8, 5/5.1, 5/4.2, 5.5/4.6, 6/5.6, 6/4.7, 6.5/5.1, 7/6.2, 7/5.3, 7.5/5.7} {
+            \fill[accent!40] (\x,\y) circle (3pt);
+          }
+          \node[below, font=\bfseries] at (4,-1.5) {Homoskedastic};
+          \node[below, font=\small, asher] at (4,-2.3) {constant spread};
+        \end{scope}
+        % RIGHT: Heteroskedastic
+        \begin{scope}[shift={(2,0)}]
+          \draw[->, thick, jet] (-0.5,0) -- (8.5,0) node[below] {\small $X$};
+          \draw[->, thick, jet] (0,-0.5) -- (0,8.5) node[left] {\small $Y$};
+          \draw[accent, thick] (0.5,1.5) -- (8,6.5);
+          \foreach \x/\y in {1/2.1, 1.5/1.9, 2/2.5, 2/3.3, 2.5/2.8, 3/4.3, 3/2.8, 3.5/3.0, 4/5.2, 4/2.8, 4.5/3.2, 5/6.0, 5/3.3, 5.5/4.0, 6/7.0, 6/3.5, 6.5/4.0, 7/7.5, 7/3.5, 7.5/4.8} {
+            \fill[accent!40] (\x,\y) circle (3pt);
+          }
+          \node[below, font=\bfseries] at (4,-1.5) {Heteroskedastic};
+          \node[below, font=\small, asher] at (4,-2.3) {spread increases with $X$};
+        \end{scope}
+      \end{tikzpicture}
+    };
+  \end{tikzpicture}
+\end{frame}
+% ----------------------------------------------------
+\note{Compare the two panels. On the left, the dots have roughly constant spread around the regression line at every value of $X$ -- this is homoskedasticity (assumption A5). On the right, the spread fans out as $X$ increases -- this is heteroskedasticity. The regression line is the same in both (estimates are unbiased either way), but the standard errors from the classical formula would be wrong for the right panel. This is why we need robust SEs.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Solution: robust standard errors}
+\centering
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item Robust (``sandwich'') SEs are valid even with heteroskedasticity
+\item Also called HC (heteroskedasticity-consistent) standard errors
+\item[]
+\item In R with \texttt{modelsummary}:
+  \begin{itemize}
+  \item \texttt{modelsummary(model, vcov = "robust")}
+  \end{itemize}
+\item[]
+\item Or using \texttt{lmtest} and \texttt{sandwich}:
+  \begin{itemize}
+  \item \texttt{coeftest(model, vcov = vcovHC(model))}
+  \end{itemize}
+\item[]
+\item \textbf{Practical rule}: always use robust SEs
+\item There is no real cost when errors are homoskedastic
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This is the key practical takeaway from this section. Robust SEs fix the problem of heteroskedasticity without any downside. If the errors happen to be homoskedastic, robust SEs are almost identical to classical SEs. If they are heteroskedastic, robust SEs are correct while classical SEs are wrong. So there is no reason not to use them. Show the modelsummary syntax: vcov = ``robust'' is all you need. We will practice this in the lab.}
 
 % ====================================================
 \section{Multiple Regression}
@@ -190,7 +517,7 @@ $$Y = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \varepsilon$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Transition to the core of applied regression: adding control variables. The key idea is ``holding constant'' -- we compare units that have the same value of $X_2$ but differ in $X_1$. This is what makes multiple regression so useful: it lets us approximate an experiment by statistically adjusting for confounders. But it only works if we control for the right things, which is the topic of the next few slides.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -207,29 +534,78 @@ $$Y = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \varepsilon$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This connects to the Frisch-Waugh-Lovell theorem, though you don't need to name it. The intuition: first regress $X_1$ on $X_2$ and get the residuals -- these residuals represent the part of $X_1$ that is ``left over'' after accounting for $X_2$. Then regress $Y$ on those residuals. The slope is the same as $\beta_1$ in the multiple regression. This is why we say OLS ``partials out'' the controls.}
 
 % ----------------------------------------------------
 \begin{frame}
 \frametitle{Omitted variable bias}
 \centering
 
+\vspace{5pt}
+
+If we omit a relevant variable $X_2$, the short regression gives:
+
+\vspace{5pt}
+
+$$\tilde{\beta}_1 = \hat{\beta}_1 + \hat{\beta}_2 \cdot \tilde{\delta}$$
+
+\vspace{10pt}
+
 \begin{itemize}[<+->]
-\item If we omit a confounder, our estimate will be biased
-\item[]
-\item The bias formula:
-$$\text{Bias} = \beta_{\text{confounder}} \times \delta_{X, \text{confounder}}$$
-\item[]
-\item Depends on:
+\item $\hat{\beta}_1$: the ``true'' coefficient from the long regression
+\item $\hat{\beta}_2$: the effect of the omitted variable on $Y$
+\item $\tilde{\delta}$: the relationship between $X_2$ and $X_1$
   \begin{itemize}
-  \item How strongly the confounder affects $Y$
-  \item How strongly the confounder relates to $X$
+  \item (coefficient from regressing $X_2$ on $X_1$)
   \end{itemize}
+\item[]
+\item Bias $= \hat{\beta}_2 \cdot \tilde{\delta}$
+\item Zero only if $\hat{\beta}_2 = 0$ \textit{or} $\tilde{\delta} = 0$
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This is the formal OVB formula. Walk through it carefully:
+\begin{itemize}
+\item The short regression coefficient ($\tilde{\beta}_1$) equals the long regression coefficient ($\hat{\beta}_1$) plus a bias term.
+\item The bias depends on two things: how much the omitted variable affects $Y$ ($\hat{\beta}_2$) and how related the omitted variable is to $X_1$ ($\tilde{\delta}$).
+\item If either is zero, there is no bias.
+\end{itemize}
+Give the education-income example: if we omit ``ability,'' and ability both increases education ($\tilde{\delta} > 0$) and increases income ($\hat{\beta}_2 > 0$), the bias is positive -- we overestimate the effect of education. We will verify this formula numerically in the lab.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{OVB in practice: education and income}
+\centering
+
+\vspace{5pt}
+
+\small
+\begin{tabular}{lcc}
+\hline
+ & Short regression & Long regression \\
+ & (omits ability) & (includes ability) \\
+\hline
+Education ($\beta_1$) & \$5,000 & \$3,000 \\
+Ability ($\beta_2$) & --- & \$5,000 \\
+\hline
+\end{tabular}
+
+\normalsize
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item Auxiliary regression: $\tilde{\delta} = 0.4$ (ability on education)
+\item[]
+\item Check: $\underbrace{\$3{,}000}_{\hat{\beta}_1} + \underbrace{\$5{,}000}_{\hat{\beta}_2} \times \underbrace{0.4}_{\tilde{\delta}} = \underbrace{\$5{,}000}_{\tilde{\beta}_1}$ \checkmark
+\item[]
+\item Bias $= \$2{,}000$ --- we overestimate by 67\%!
+\item Because ability $\uparrow$ education \textit{and} ability $\uparrow$ income
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Walk through this carefully. The short regression (without ability) gives \$5,000 per year of education. The long regression (with ability) gives \$3,000. The difference of \$2,000 is the bias. The formula works: 3,000 + 5,000 $\times$ 0.4 = 5,000. The bias is positive because ability is positively related to both education and income. This is the ``ability bias'' in returns to education -- one of the most studied problems in labor economics. We will verify this same decomposition with real data in the lab.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -251,7 +627,18 @@ Good controls are variables that:
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Simple rule of thumb: control for things that came before and could affect both $X$ and $Y$. Pre-treatment means determined before the treatment occurred -- this rules out mediators and post-treatment variables. A confounder is something that opens a ``back door'' between $X$ and $Y$. This is the language of DAGs (directed acyclic graphs), which we won't formalize here but is useful to know.}
+
+% ----------------------------------------------------
+\begin{frame}
+\centering
+\vspace{30pt}
+\large You study the effect of job training on wages.\\[15pt]
+Is \textit{current job type} a good or bad control?\\[5pt]
+Why?
+\end{frame}
+% ----------------------------------------------------
+\note{Give students a minute to think. Then reveal: it's a bad control -- job type is affected by the training (post-treatment), so controlling for it blocks part of the causal pathway. This sets up the next slide on post-treatment variables perfectly. If students say ``good control,'' ask: could training change the type of job someone gets? If yes, then job type is a consequence of the treatment, not a confounder.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -272,7 +659,7 @@ Good controls are variables that:
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This is one of the most common mistakes in applied work. If training changes the type of job someone gets, and job type affects wages, then controlling for job type blocks part of the causal pathway. You are effectively asking: ``what is the effect of training among people who ended up in the same job?'' That's a different question, and it underestimates the total effect. The general rule: only control for pre-treatment variables.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -293,7 +680,7 @@ Good controls are variables that:
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{The collider is a subtler problem. In the general population, height and basketball skill are unrelated (or weakly positive). But if you condition on being in the NBA -- which requires either height or skill or both -- you create a negative association. Short NBA players must be very skilled; tall ones can get by with less skill. Conditioning on the collider ``opens'' a path that creates bias. This is sometimes called Berkson's paradox.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -319,7 +706,7 @@ Good controls are variables that:
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Practical point about how R handles categorical variables. When you include a factor variable, R creates $k-1$ dummy variables (where $k$ is the number of categories). The omitted category becomes the reference group, and all coefficients are differences relative to that group. The choice of reference category does not affect the model fit -- it just changes what the coefficients mean. You can change the reference with relevel(). Remind students to always use factor() for categorical variables.}
 
 % ====================================================
 \section{Interaction Effects}
@@ -345,7 +732,7 @@ Good controls are variables that:
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Interactions are one of the most powerful and most misunderstood tools in regression. The core idea is simple: the slope changes depending on context. This is very common in social science -- effects are rarely the same for everyone. Give a concrete example: the return to education might be higher for women than men, or the effect of campaign spending might matter more for challengers than incumbents.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -366,7 +753,7 @@ $$Y = \beta_0 + \beta_1 X + \beta_2 Z + \beta_3 (X \times Z) + \varepsilon$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Write the model on the board. Emphasize that $\beta_1$ and $\beta_2$ are only meaningful at specific values of the other variable. If $Z$ is gender coded 0/1, then $\beta_1$ is the effect of $X$ for the reference group (gender = 0). If $Z$ is a continuous variable like GDP per capita, then $\beta_1$ is the effect of $X$ when GDP is zero -- which may not be meaningful. This is why centering variables is sometimes useful.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -388,7 +775,7 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This is the key equation. The marginal effect of $X$ depends on $Z$. So you can't just look at the coefficient table and say ``the effect of $X$ is $\beta_1$'' -- that's only true when $Z = 0$. You need to evaluate the marginal effect at different values of $Z$ that are substantively interesting (e.g., the mean, or one SD above and below). This is why plotting is essential for interaction models.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -410,7 +797,36 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This is the most intuitive case. With a binary moderator, the interaction just gives you two different slopes. The advantage of estimating them jointly (instead of running separate regressions for each group) is that you pool information about the error variance, which gives more precise estimates. You can also test whether the difference between slopes is statistically significant, which is what $\beta_3$ tells you.}
+
+% ----------------------------------------------------
+\begin{frame}[plain]
+  \begin{tikzpicture}[remember picture, overlay]
+    \node[at=(current page.center)] {%
+      \begin{tikzpicture}[x=1cm, y=1cm]
+        % Axes
+        \draw[->, thick, jet] (-0.3,0) -- (9.5,0) node[below] {$X$ (education)};
+        \draw[->, thick, jet] (0,-0.3) -- (0,7.5) node[left] {$Y$ (income)};
+        % Group A: steep slope (Women)
+        \draw[accent, very thick] (0.5,1.5) -- (9,6.5);
+        \node[accent, right, font=\bfseries] at (9,6.5) {Women};
+        % Group B: shallow slope (Men)
+        \draw[accent2, very thick] (0.5,2.5) -- (9,4.8);
+        \node[accent2, right, font=\bfseries] at (9,4.8) {Men};
+        % Scatter dots Group A
+        \foreach \x/\y in {1/2.0, 2/2.5, 3/3.3, 4/3.6, 5/4.2, 6/4.8, 7/5.5, 8/5.9} {
+          \fill[accent!40] (\x,\y) circle (3pt);
+        }
+        % Scatter dots Group B
+        \foreach \x/\y in {1/2.8, 2/3.1, 3/3.3, 4/3.7, 5/3.8, 6/4.2, 7/4.3, 8/4.6} {
+          \fill[accent2!40] (\x,\y) circle (3pt);
+        }
+      \end{tikzpicture}
+    };
+  \end{tikzpicture}
+\end{frame}
+% ----------------------------------------------------
+\note{This picture shows what a continuous-by-categorical interaction looks like. The two lines represent the relationship between education (X) and income (Y) for men and women separately. The slopes differ: the return to education is steeper for women than for men. The interaction coefficient $\beta_3$ captures the difference between these two slopes. If the lines were parallel, the interaction would be zero and the effect of education would be the same for both groups.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -432,7 +848,7 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Continuous-by-continuous interactions are harder because the slope is changing continuously, not jumping between two values. There's no single ``effect of X'' -- it's a line (or surface). The best approach is visualization: plot predicted Y at different values of Z (holding X constant), or plot the marginal effect of X as a function of Z. The marginaleffects package makes this easy. Mention that continuous interactions often have low power, so large samples help.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -459,7 +875,12 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{These are the three most common mistakes in published research using interactions:
+\begin{itemize}
+\item Mistake 1: The coefficient on $X$ in an interaction model is conditional on $Z = 0$. If $Z$ has no natural zero (like GDP per capita), this is meaningless. Center $Z$ if needed.
+\item Mistake 2: Brambor, Clark, and Golder (2006) showed that many published papers omit the constitutive terms, which biases all the estimates. R includes them automatically with the * operator, so this is less of a problem in practice.
+\item Mistake 3: A regression table for an interaction model is essentially uninterpretable without a plot showing how the effect varies. Always plot.
+\end{itemize}}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -481,7 +902,7 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Show a quick example of how to use plot\_predictions(). The basic call is plot\_predictions(model, condition = c(``x'', ``z'')). This will plot predicted Y on the y-axis, X on the x-axis, with separate lines for different values of Z. You can customize the values of Z with the condition list. For marginal effects plots, use plot\_slopes() from the same package. Emphasize that the plot IS the result for interaction models -- the table is just a summary.}
 
 % ====================================================
 \section{Presenting Results}
@@ -506,7 +927,7 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This section is about the last mile: you've run the regression, now you need to communicate what you found. Many students stop at summary() output or a screenshot. We want publication-quality tables and plots that a reader can understand without seeing the code. Emphasize that a number in a table only matters if the reader can assess whether it's big or small, and whether it's precise or noisy.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -528,7 +949,7 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{modelsummary is the go-to package for regression tables in R. It supports dozens of model types and output formats. Key features to mention: you can rename coefficients with coef\_map, add goodness-of-fit statistics with gof\_map, and include robust SEs with the vcov argument. For the assignments, they will use modelsummary to create tables comparing multiple models. Show a quick example if time permits.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -550,7 +971,7 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Coefficient plots (sometimes called ``dot-and-whisker'' plots) show each coefficient as a dot with a confidence interval bar. They are especially useful when you have many predictors or want to compare coefficients across models. The visual makes it immediately clear which effects are significant (intervals not crossing zero) and how they compare in magnitude. Use modelplot() from modelsummary -- it returns a ggplot object you can customize further.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -574,7 +995,7 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{This is standard practice in quantitative social science. By showing a sequence of models, you let the reader see how the key coefficient changes as you add controls. If $\beta_1$ barely changes, that's reassuring -- it suggests the relationship is robust to confounding. If it changes a lot, that's informative too -- it tells you which variables were confounding the relationship. The sequence also connects directly to the OVB formula we discussed earlier.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -589,7 +1010,7 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
   \texttt{m2 <- lm(y \textasciitilde{} x + z1 + z2, data = df)} \\[3pt]
   \texttt{m3 <- lm(y \textasciitilde{} x * z1 + z2, data = df)}
 \item[]
-  \texttt{modelsummary(list(m1, m2, m3))}
+  \texttt{modelsummary(list(m1, m2, m3), vcov = "robust")}
 \item[]
   \texttt{modelplot(list(m1, m2, m3))}
 \item[]
@@ -598,7 +1019,7 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Walk through this as a template workflow. Note the addition of vcov = ``robust'' in modelsummary -- this is the practical advice from the OLS properties section in action. The three-step workflow (bivariate, controls, interaction) is very common and they should follow it in their assignments. Each step adds a layer of complexity and tells a richer story about the data.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -607,6 +1028,8 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 
 \begin{itemize}[<+->]
 \item Regression estimates conditional expectations
+\item OLS is unbiased under standard assumptions
+\item Always use robust standard errors
 \item Multiple regression: ``holding constant'' interpretation
 \item Control variables help only if chosen correctly
 \item Interactions model conditional relationships
@@ -615,7 +1038,7 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Recap the session. Highlight the three most important practical takeaways: (1) always use robust SEs, (2) think carefully about which controls to include and which to avoid, and (3) when using interactions, always plot the marginal effects. These three lessons will come up again and again throughout the course and in their research projects.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -637,7 +1060,7 @@ $$\frac{\partial Y}{\partial X} = \beta_1 + \beta_3 Z$$
 
 \end{frame}
 % ----------------------------------------------------
-\note{}
+\note{Mention that the readings focus on regression with binary outcomes (logit/probit), which we cover next week. Assignment 2 has two parts: the in-class lab they started today and the take-home exercises due before next session. Encourage them to start the take-home early and come to office hours if stuck.}
 
 % ----------------------------------------------------
 \begin{frame}
