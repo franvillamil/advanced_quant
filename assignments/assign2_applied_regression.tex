@@ -10,10 +10,13 @@
 \begin{itemize}
 \setlength\itemsep{0pt}
   \item {\color{red}{\textbf{Deadline}}}: \textbf{February 19, before class}
-  \item Submit your work as a \code{.R} file called \code{ps2.R} in your GitHub repository
-  \item Use comments in your R code to answer conceptual questions and explain your analysis
+  \item Submit your work in a separate folder in your GitHub repository
+  \begin{itemize}
+    \item You can include only the R file or additional ones (e.g. pdf with results)
+  \end{itemize}
+  \item \textbf{Always use comments} in your R code -- and use them to answer questions
   \item You are encouraged to work together, but each person must submit their own code
-  \item Part 1 is started in class; Part 2 is completed at home
+  \item Plan is to start Part 1 in class and complete Part 2 at home
 \end{itemize}
 
 \vspace{20pt}
@@ -21,14 +24,14 @@
 \newpage
 
 % ==========================================================================
-\section{Part 1: In-Class Lab (QoG Dataset)}
+\section{Part 1: QoG Dataset}
 % ==========================================================================
 
 In this lab, we explore cross-country data from the Quality of Government (QoG) dataset. You will practice bivariate and multiple regression, demonstrate omitted variable bias, use robust standard errors, and present results with \code{modelsummary}. Follow along in class.
 
 \subsection{Setup and data preparation}
 
-Download the QoG Standard cross-section dataset from \url{https://www.gu.se/en/quality-government/qog-data/data-downloads/standard-dataset} (CSV format), or use the file provided on the course page.
+Download the QoG Standard cross-section dataset from \href{https://www.gu.se/en/quality-government/qog-data/data-downloads/standard-dataset}{gu.se/en/quality-government/qog-data/data-downloads/standard-dataset} (CSV format).
 
 \begin{enumerate}[label=\alph*)]
   \item Load the dataset and select the following variables. Rename them for convenience:
@@ -37,7 +40,7 @@ Download the QoG Standard cross-section dataset from \url{https://www.gu.se/en/q
     \item \code{epi\_epi} --- Environmental Performance Index (EPI) score (our outcome)
     \item \code{wdi\_wip} --- share of women in parliament (\%)
     \item \code{wbgi\_gee} --- government effectiveness (World Bank governance indicator)
-    \item \code{gpp\_grnst} --- green party seat share in parliament (\%)
+    \item \code{cpds\_lg} --- green party seat share in parliament (\%)
   \end{itemize}
   Suggested names: \code{country}, \code{epi}, \code{women\_parl}, \code{gov\_eff}, \code{green\_seats}.
   \item Drop observations with missing values on any of these variables. How many countries remain?
