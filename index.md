@@ -6,10 +6,10 @@ layout: default
 
 ### Schedule
 
-| Date        | Topic  | Slides | Exercises |
-| :---        | :---   | :--- | :--- | :--- |
+| Date        | Topic  | Slides | Exercises | Solution |
+| :---        | :---   | :--- | :--- | :--- | :---     |
 | Feb 5    | [Introduction](./sessions.md) | [[Slides 1](./slides/01_introduction/introduction.pdf)] | [[Ex 1](./assignments/assign1_introduction.pdf)] |
-| Feb 12  | [Applied regression](./sessions.md) | [[Slides 2](./slides/applied_regression/applied_regression.pdf)] | [[Ex 2](./assignments/assign2_applied_regression.pdf)] |
+| Feb 12  | [Applied regression](./sessions.md) | [[Slides 2](./slides/02_applied_regression/applied_regression.pdf)] | [[Ex 2](./assignments/assign2_applied_regression.pdf)] |
 | Feb 19  | [Binary outcomes](./sessions.md) | | |
 | Feb 26  | [Interpretation and diagnostics](./sessions.md) | | |
 | Mar 5   | [Best practices in computing](./sessions.md) | | |
