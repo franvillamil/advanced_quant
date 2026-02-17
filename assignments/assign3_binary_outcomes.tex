@@ -38,7 +38,7 @@ Download the data (and related files) here:
 \end{itemize}
 
 \begin{enumerate}[label=\alph*)]
-  \item Load the dataset. Key variables:
+  \item Load the dataset. Key variables to define:
   \begin{itemize}
     \item \code{voted} --- whether the respondent voted (0/1, our outcome)
     \item \code{age} --- age in years
@@ -79,7 +79,8 @@ Download the data (and related files) here:
 \subsection{Comparing LPM and logit}
 
 \begin{enumerate}[label=\alph*)]
-  \item Compute average marginal effects for the logit model using \code{marginaleffects::avg\_slopes(logit)}.
+  \item Compute average marginal effects for the logit model using
+  \item[] \code{marginaleffects::avg\_slopes(logit)}.
   \item Compare the AMEs to the LPM coefficients. How similar are they? Discuss in a comment.
   \item Create a table with \code{modelsummary()} showing the LPM and logit side by side. Use robust standard errors for the LPM: \\\code{modelsummary(list("LPM" = lpm, "Logit" = logit), vcov = list("robust", NULL))}.
 \end{enumerate}
@@ -108,7 +109,7 @@ Download the data (and related files) here:
 
 We return to the STAR experiment data from Assignment 2, but now focus on a \textbf{binary outcome}: whether students graduated from high school. This lets you practice binary outcome methods on a dataset you already know.
 
-Use the same \code{star.csv} from the course page. Key variables for this assignment:
+Use the same \code{star.csv} from the \href{https://github.com/franvillamil/AQM2/tree/master/datasets/star}{course page}. Key variables for this assignment:
 
 \begin{itemize}
   \item \code{classtype}: class type (1 = small, 2 = regular, 3 = regular + aide)
@@ -178,18 +179,9 @@ Use the same \code{star.csv} from the course page. Key variables for this assign
 
 \vspace{15pt}
 
-\section{Data Sources}
-
-\begin{itemize}
-  \item \textbf{ANES dataset}: \code{anes.csv}, provided on the course page. A subset of the American National Election Study with demographic and political participation variables.
-  \item \textbf{STAR dataset}: \code{star.csv}, provided on the course page. Same data as Assignment 2, from the Tennessee STAR experiment (Krueger, 1999).
-\end{itemize}
-
-\vspace{15pt}
-
 \section{Submission}
 
-Commit your \code{ps3.R} file to your GitHub repository before the deadline. Make sure your repository is public so I can access it.
+Commit your file to your GitHub repository before the deadline. Put it in a different folder, e.g. \texttt{assignment3}. Make sure your repository is public so I can access it.
 
 Your R script should:
 \begin{itemize}
