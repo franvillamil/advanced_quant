@@ -10,11 +10,14 @@
 \begin{itemize}
 \setlength\itemsep{0pt}
   \item {\color{red}{\textbf{Deadline}}}: \textbf{February 26, before class}
-  \item Submit your work as a \code{.R} file called \code{ps3.R} in your GitHub repository
-  \item Use comments in your R code to answer conceptual questions and explain your analysis
-  \item For model interpretation, use the \code{marginaleffects} package
+  \item Submit your work in a separate folder in your GitHub repository
+  \begin{itemize}
+    \item You can include only the R file or additional ones (e.g. pdf with results)
+  \end{itemize}
+  \item \textbf{Always use comments} in your R code -- and use them to answer questions
   \item You are encouraged to work together, but each person must submit their own code
-  \item Part 1 is started in class; Part 2 is completed at home
+  \item Plan is to start Part 1 in class and complete Part 2 at home
+  \item I'll upload a solution file to the website after next class
 \end{itemize}
 
 \vspace{20pt}
@@ -22,14 +25,17 @@
 \newpage
 
 % ==========================================================================
-\section{Part 1: In-Class Lab (ANES Voter Turnout)}
+\section{Part 1: In-Class (ANES Voter Turnout)}
 % ==========================================================================
 
 In this lab, we analyze voter turnout using data from the American National Election Study (ANES). You will practice estimating and comparing the linear probability model and logistic regression, computing marginal effects, and plotting predicted probabilities. Follow along in class.
 
 \subsection{Setup and data preparation}
 
-Download \code{anes.csv} from the course page.
+Download the data (and related files) here:
+\begin{itemize}
+  \item \href{https://github.com/franvillamil/AQM2/tree/master/datasets/anes}{github.com/franvillamil/AQM2/tree/master/datasets/anes}
+\end{itemize}
 
 \begin{enumerate}[label=\alph*)]
   \item Load the dataset. Key variables:
