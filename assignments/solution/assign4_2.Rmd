@@ -1,0 +1,238 @@
+---
+title: "Assignment 4 -- Solutions: Part 2 (Wealth and Infant Mortality)"
+subtitle: "Applied Quantitative Methods II, UC3M"
+output:
+  pdf_document:
+    toc: false
+geometry: margin=2cm
+header-includes:
+  - \renewcommand*\rmdefault{ppl}
+  - \usepackage{setspace}\setstretch{1.2}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+options(stringsAsFactors = FALSE)
+```
+
+# 1. Data exploration
+
+**a)** Load the dataset and summary statistics:
+
+```{r}
+library(dplyr)
+library(broom)
+library(ggplot2)
+library(modelsummary)
+library(marginaleffects)
+library(readstata13)
+
+df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/other/infantmortality.dta")
+summary(df)
+nrow(df)
+```
+
+**b)** Histograms of infant mortality and income:
+
+```{r, fig.height=3.5}
+ggplot(df, aes(x = infant)) +
+  geom_histogram(bins = 20) +
+  labs(x = "Infant mortality (per 1,000 live births)", y = "Count")
+```
+
+```{r, fig.height=3.5}
+ggplot(df, aes(x = income)) +
+  geom_histogram(bins = 20) +
+  labs(x = "Per-capita income (dollars)", y = "Count")
+```
+
+Both variables are right-skewed: most countries have low income and low-to-moderate infant mortality, with long right tails.
+
+**c)** Scatter plot colored by region:
+
+```{r, fig.height=4}
+ggplot(df, aes(x = income, y = infant, color = region)) +
+  geom_point() +
+  labs(x = "Per-capita income", y = "Infant mortality")
+```
+
+There is a clear negative relationship: richer countries have lower infant mortality. The relationship is non-linear, with a steep decline at low income levels that flattens out. African countries tend to have the highest mortality and lowest income.
+
+**d)** Log-log scatter plot:
+
+```{r, fig.height=4}
+ggplot(df, aes(x = log(income), y = log(infant), color = region)) +
+  geom_point() +
+  labs(x = "log(income)", y = "log(infant mortality)")
+```
+
+The log-log relationship looks much more linear, suggesting that a log-log specification is appropriate.
+
+# 2. Comparing specifications
+
+**a)** Level-level model:
+
+```{r}
+m1 = lm(infant ~ income, data = df)
+tidy(m1)
+```
+
+**b)** Log-log model:
+
+```{r}
+m2 = lm(log(infant) ~ log(income), data = df)
+tidy(m2)
+```
+
+**c)** In the level-level model, the coefficient on income gives the predicted change in infant mortality for a one-dollar increase in income. For a \$1,000 increase:
+
+```{r}
+coef(m1)["income"] * 1000
+```
+
+In the log-log model, the coefficient is an elasticity: a 1% increase in income is associated with a change of approximately that percentage in infant mortality. For a 10% increase in income, the predicted change in infant mortality is roughly 10 times the coefficient in percentage terms.
+
+**d)** Residual plots for both models:
+
+```{r, fig.height=4}
+m1_aug = augment(m1)
+ggplot(m1_aug, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(x = "Fitted values", y = "Residuals", title = "Residuals: Level-Level (m1)")
+```
+
+```{r, fig.height=4}
+m2_aug = augment(m2)
+ggplot(m2_aug, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(x = "Fitted values", y = "Residuals", title = "Residuals: Log-Log (m2)")
+```
+
+The level-level model shows a strong curved pattern in the residuals and clear heteroskedasticity. The log-log model substantially improves both issues, producing a much more random scatter of residuals.
+
+# 3. Multiple regression with controls
+
+**a)** Log-log model with controls:
+
+```{r}
+m3 = lm(log(infant) ~ log(income) + region + oil, data = df)
+tidy(m3)
+```
+
+**b)** The coefficient on `log(income)` represents the elasticity of infant mortality with respect to income, controlling for region and oil-exporting status. Comparing with the bivariate log-log model, controlling for region and oil status changes the income coefficient, indicating that some of the bivariate association was driven by regional differences and oil wealth.
+
+**c)** The coefficient on the Africa region indicator (relative to the reference category) shows the log-difference in infant mortality between African countries and the reference group, holding income and oil status constant. The positive coefficient indicates that African countries have higher infant mortality than the reference group even after accounting for income differences.
+
+**d)** Average marginal effects:
+
+```{r}
+avg_slopes(m3)
+```
+
+The AME of income tells us the average predicted change in log(infant mortality) for a one-dollar increase in income, computed across all observed values. Because the model is in logs, the marginal effect on the original scale depends on the income level.
+
+# 4. Interaction: oil status and income
+
+**a)** Interaction model:
+
+```{r}
+m4 = lm(log(infant) ~ log(income) * oil + region, data = df)
+tidy(m4)
+```
+
+**b)** Marginal effect of income by oil status:
+
+```{r}
+avg_slopes(m4, variables = "income", by = "oil")
+```
+
+**c)** The interaction allows the income-mortality relationship to differ for oil-exporting and non-oil countries. Oil-exporting countries may have high income from resource extraction without the broader economic development (health infrastructure, education, governance) that normally accompanies income growth. This "resource curse" pattern can weaken the income-mortality link.
+
+**d)** Plot marginal effects by oil status:
+
+```{r, fig.height=4}
+p1 = plot_slopes(m4, variables = "income", condition = "oil")
+p1
+ggsave("slopes_oil.png", p1, width = 6, height = 4)
+```
+
+# 5. Predicted values for specific scenarios
+
+**a)** Predicted values for three scenarios:
+
+```{r}
+preds = predictions(m3,
+  newdata = datagrid(
+    income = c(1000, 20000, 10000),
+    region = c("Africa", "Europe", "Americas"),
+    oil = c("no", "no", "yes")))
+preds
+```
+
+Since the outcome is `log(infant)`, we exponentiate to get infant mortality in the original scale:
+
+```{r}
+preds$estimate_original = exp(preds$estimate)
+preds %>% select(income, region, oil, estimate, estimate_original)
+```
+
+**b)** The predicted infant mortality rates are plausible given what we know about global health patterns. The gap between the African low-income scenario and the European high-income scenario is substantial, reflecting the combined effect of income differences and regional factors. The Americas oil-exporting scenario falls between the two.
+
+# 6. Publication-quality visualization
+
+**a)** Prediction plot by region:
+
+```{r, fig.height=5}
+p2 = plot_predictions(m3, condition = c("income", "region")) +
+  labs(
+    x = "Per-capita income (dollars)",
+    y = "Predicted log(infant mortality)",
+    title = "Predicted infant mortality by income and region",
+    color = "Region") +
+  theme_minimal()
+p2
+ggsave("pred_plot_region.png", p2, width = 7, height = 5)
+```
+
+**b)** This plot shows that infant mortality decreases with income across all regions, but at different levels. African countries have consistently higher predicted infant mortality than other regions at the same income level, reflecting structural factors beyond income---such as disease burden, health system capacity, and historical underinvestment. European countries have the lowest predicted mortality at any given income level. The income-mortality gradient is steepest at low income levels, meaning that economic growth has the largest potential health impact in the poorest countries. However, this analysis has important limitations. First, it is cross-sectional and cannot establish causation: countries that invest in health may also grow economically, creating reverse causality. Second, many relevant variables are omitted (education, governance, health spending). Third, the ecological fallacy means that country-level relationships may not apply to individuals within countries. Finally, the log-log specification, while fitting the data well, imposes a specific functional form assumption.
+
+# 7. Diagnostics and robust inference
+
+**a)** Residuals vs. fitted for model 3:
+
+```{r, fig.height=4}
+m3_aug = augment(m3)
+ggplot(m3_aug, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(x = "Fitted values", y = "Residuals", title = "Residuals vs Fitted: m3")
+```
+
+The residual pattern looks reasonably random, though some heteroskedasticity may be present. This motivates the use of robust standard errors.
+
+**b)** Regression table comparing all four models:
+
+```{r}
+modelsummary(
+  list("Level" = m1, "Log-Log" = m2,
+       "Controls" = m3, "Interaction" = m4),
+  vcov = "robust",
+  stars = TRUE,
+  gof_map = c("r.squared", "nobs"),
+  output = "markdown")
+```
+
+**c)** Compare robust and default standard errors for m3:
+
+```{r}
+modelsummary(
+  list("Default SEs" = m3, "Robust SEs" = m3),
+  vcov = list("classical", "robust"),
+  stars = TRUE,
+  gof_map = c("r.squared", "nobs"),
+  output = "markdown")
+```
+
+The robust standard errors may differ from the default ones, particularly if heteroskedasticity is present. When differences are small, the conclusions are robust. We use robust standard errors as a safeguard against heteroskedasticity, which is common in cross-country data where variance in outcomes often depends on the level of development.

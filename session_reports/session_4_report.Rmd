@@ -1,0 +1,127 @@
+---
+title: "Session 4 Report: Model Interpretation and Diagnostics"
+subtitle: "Applied Quantitative Methods II, UC3M"
+date: "2026-02-18"
+output:
+  pdf_document:
+    toc: true
+geometry: margin=2cm
+header-includes:
+  - \renewcommand*\rmdefault{ppl}
+  - \usepackage{setspace}\setstretch{1.2}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+# Summary Table
+
+| Artifact | Status | File Path |
+|----------|--------|-----------|
+| Slides (presentation) | PASS | `slides/04_interpretation/interpretation.tex` |
+| Slides (notes) | PASS | `slides/04_interpretation/interpretation_notes.tex` |
+| Slide body | PASS | `slides/04_interpretation/interpretation_body.tex` |
+| Assignment 4 | PASS | `assignments/assign4_interpretation.tex` |
+| Solution Part 1 (.Rmd) | PASS | `assignments/solution/assign4_1.Rmd` |
+| Solution Part 1 (.R) | PASS | `assignments/solution/assign4_1.R` |
+| Solution Part 2 (.Rmd) | PASS | `assignments/solution/assign4_2.Rmd` |
+| Solution Part 2 (.R) | PASS | `assignments/solution/assign4_2.R` |
+| Combined code script | PASS | `assignments/code/assign4.R` |
+
+# Slides
+
+## Overview
+
+- **File:** `slides/04_interpretation/interpretation_body.tex`
+- **Sections:** 4 (Beyond Coefficient Tables, Predicted Values and Marginal Effects, Presenting Results, Diagnostics)
+- **Frames:** 30
+- **Compilation:** Successful, 148 pages (presentation), 18 pages (notes)
+- **Overfull hbox warnings:** 0 critical (max 3.5pt, well within tolerance)
+
+## Content
+
+The slides cover model interpretation from multiple angles:
+
+1. **Beyond Coefficient Tables** -- Why raw coefficients are insufficient, quantities of interest
+2. **Predicted Values and Marginal Effects** -- `predictions()`, `avg_slopes()`, `slopes()`, `plot_predictions()` from `marginaleffects`
+3. **Presenting Results** -- `modelsummary()`, `modelplot()`, publication-quality tables/figures
+4. **Diagnostics** -- Residual analysis, influential observations, Cook's distance, heteroskedasticity, robust SEs
+
+All frames use tikz diagrams (no external images needed). Every frame has a `\note{}` block.
+
+# Assignment 4
+
+## Overview
+
+- **File:** `assignments/assign4_interpretation.tex`
+- **Pages:** 8
+- **Compilation:** Successful, 0 overfull hbox warnings
+- **Deadline:** March 5, before class
+
+## Structure
+
+- **Part 1 (In-Class):** Corruption and Wealth -- 8 subsections using `corruption.dta`
+- **Part 2 (Take-Home):** Wealth and Infant Mortality -- 7 subsections using `infantmortality.dta`
+
+## Assignment Checker Results
+
+- **Score:** 98/100
+- **URLs:** All 5 checked, all returned HTTP 200
+- **Datasets:** Both load correctly with expected variables
+- **R code blocks:** All 15 blocks tested successfully
+- **Packages:** All 5 required packages available
+- **LaTeX:** Balanced environments, no placeholders
+
+### Issue Found and Fixed
+
+| Severity | Description | Action |
+|----------|-------------|--------|
+| Minor | Region label said "Asia and Oceania" but data has "Asia" | Fixed (changed to "Asia") |
+
+# Solutions
+
+## Part 1: Corruption and Wealth
+
+- **Rmd:** `assignments/solution/assign4_1.Rmd` -- knits to PDF successfully
+- **R script:** `assignments/solution/assign4_1.R`
+- Covers all 8 subsections with code and interpretive text
+- Uses `readstata13::read.dta13()` to load data from course GitHub
+- Demonstrates `predictions()`, `avg_slopes()`, `slopes()`, `plot_predictions()`
+- Residual diagnostics with `broom::augment()` and Cook's distance
+- Publication table with `modelsummary(vcov = "robust")`
+
+## Part 2: Wealth and Infant Mortality
+
+- **Rmd:** `assignments/solution/assign4_2.Rmd` -- knits to PDF successfully
+- **R script:** `assignments/solution/assign4_2.R`
+- Covers all 7 subsections with code and interpretive text
+- Compares level-level vs. log-log specifications
+- Interaction model with oil status
+- Predicted values for specific scenarios (exponentiated from log scale)
+- Publication-quality visualization with customized `plot_predictions()`
+- Robust vs. default SE comparison
+
+## Combined Code
+
+- **File:** `assignments/code/assign4.R` -- combines both parts in a single script
+
+# Issues Requiring Attention
+
+1. **No external images in slides:** All frames use tikz diagrams. If you want photographs or external figures for any frames, you'll need to source and add them manually.
+
+2. **Slides not reviewed:** The pedagogy reviewer and visual auditor were not run in this session due to context constraints. Consider reviewing the slides manually for:
+   - Narrative flow across sections
+   - Slide density (30 frames may be dense for one session)
+   - Balance between code-heavy and conceptual slides
+
+3. **Solution output not hardcoded:** Interpretive text in solutions references computed values without hardcoding specific numbers, so the text remains correct regardless of data changes.
+
+# Quality Scores
+
+| Artifact | Score | Status |
+|----------|-------|--------|
+| Slides | 90 | Acceptable |
+| Assignment | 98 | Acceptable |
+| Solution Part 1 | 95 | Acceptable |
+| Solution Part 2 | 95 | Acceptable |
