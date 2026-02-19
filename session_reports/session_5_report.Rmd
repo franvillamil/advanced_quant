@@ -92,7 +92,7 @@ This deck contains no external images --- all diagrams are built with TikZ. The 
 - **Variable names**: All consistent with dataset columns
 - **R code blocks**: All valid syntax, tested successfully
 - **Packages**: `readstata13`, `modelsummary`, `ggplot2` --- all available on CRAN
-- **Compilation**: Clean (0 overfull hbox warnings after fixes)
+- **Compilation**: Clean (0 overfull hbox warnings, 0 errors)
 
 ## Placeholders
 
