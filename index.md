@@ -12,12 +12,12 @@ layout: default
 | Feb 12  | [Applied regression](./sessions.md) | [[Slides 2](./slides/02_applied_regression/applied_regression.pdf)] | [[Ex 2](./assignments/assign2_applied_regression.pdf)] | [[Part 1](./assignments/solution/assign2_1.pdf)]
 | Feb 19  | [Binary outcomes](./sessions.md) | [[Slides 3](./slides/03_binary_outcomes/binary_outcomes.pdf)] | [[Ex 3](./assignments/assign3_binary_outcomes.pdf)] |
 | Feb 26  | [Interpretation and diagnostics](./sessions.md) | | |
-| Mar 5   | [Best practices in computing](./sessions.md) | | |
-| Mar 12  | [Panel data (I)](./sessions.md) | | |
-| Mar 19  | [Panel data (II)](./sessions.md) | | |
-| Mar 26  | [Spatial data (I)](./sessions.md) | | |
-| Apr 9   | [Spatial data (II)](./sessions.md) | | |
-| Apr 16  | [Other outcomes](./sessions.md) | | |
+| Mar 5   | [Panel data (I)](./sessions.md) | | |
+| Mar 12  | [Panel data (II)](./sessions.md) | | |
+| Mar 19  | [Spatial data (I)](./sessions.md) | | |
+| Mar 26  | [Spatial data (II)](./sessions.md) | | |
+| Apr 9   | [Other outcomes](./sessions.md) | | |
+| Apr 16  | [Best practices in computing](./sessions.md) | | |
 | Apr 23  | [Project presentations](./logistics.md) | | |
 | Apr 30  | [Exam](./logistics.md) / [Review & Advanced](./sessions.md) | | |
 

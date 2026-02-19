@@ -1,5 +1,5 @@
 \input{preamble.tex}
-\textbf{\large Assignment 5: Best Practices in Computing}\\\vspace{10pt}
+\textbf{\large Assignment 10: Best Practices in Computing}\\\vspace{10pt}
 \end{center}
 
 \vspace{10pt}
@@ -9,8 +9,8 @@
 \vspace{10pt}
 \begin{itemize}
 \setlength\itemsep{0pt}
-  \item {\color{red}{\textbf{Deadline}}}: \textbf{March 12, before class}
-  \item Submit via your GitHub repository in a separate folder (\texttt{assignment5})
+  \item {\color{red}{\textbf{Deadline}}}: \textbf{April 23, before class}
+  \item Submit via your GitHub repository in a separate folder (\texttt{assignment10})
   \item \textbf{Always use comments} in your R code -- and use them to answer questions
   \item You are encouraged to work together, but each person must submit their own code
   \item Plan is to start Part 1 in class and complete Part 2 at home
@@ -29,10 +29,10 @@
 
 \subsection{Folder structure}
 
-Create a new folder \texttt{assignment5} in your course repository with the following structure:
+Create a new folder \texttt{assignment10} in your course repository with the following structure:
 
 \begin{lstlisting}
-assignment5/
+assignment10/
   Makefile
   README.md
   data/
@@ -56,12 +56,12 @@ assignment5/
 
 \subsection{Analysis script}
 
-Create the file \code{analysis/models.R} with the following structure. The script should be self-contained: anyone should be able to run it from the \texttt{assignment5} folder and reproduce the results.
+Create the file \code{analysis/models.R} with the following structure. The script should be self-contained: anyone should be able to run it from the \texttt{assignment10} folder and reproduce the results.
 
 \begin{enumerate}[label=\alph*)]
   \item Start the script by loading necessary packages and reading the data:
   \begin{lstlisting}
-# setwd("~/path/to/assignment5")
+# setwd("~/path/to/assignment10")
 options(stringsAsFactors = FALSE)
 
 library(readstata13)
@@ -113,7 +113,7 @@ Create the file \code{plots/figures.R}. This script reads the same data and prod
 
 \subsection{Makefile}
 
-Create a \code{Makefile} in the \texttt{assignment5} folder that automates the pipeline. Recall from the lecture that a Makefile specifies targets, dependencies, and recipes.
+Create a \code{Makefile} in the \texttt{assignment10} folder that automates the pipeline. Recall from the lecture that a Makefile specifies targets, dependencies, and recipes.
 
 \begin{enumerate}[label=\alph*)]
   \item Write an \code{all:} rule that lists both outputs as targets:
@@ -129,7 +129,7 @@ analysis/output/table_models.tex: analysis/models.R \
   \end{lstlisting}
   \textbf{Important}: the recipe line (the \code{Rscript} command) must be indented with a \textbf{tab character}, not spaces. This is a Makefile requirement.
   \item Write a similar rule for the scatter plot output, which depends on \code{plots/figures.R} and the dataset.
-  \item Test it by running \code{make} in the terminal from the \texttt{assignment5} folder. In a comment in your \code{README.md}, note whether it worked and what output was produced.
+  \item Test it by running \code{make} in the terminal from the \texttt{assignment10} folder. In a comment in your \code{README.md}, note whether it worked and what output was produced.
 \end{enumerate}
 
 \newpage
@@ -160,7 +160,7 @@ plot(x$education,x$outcome)
 dev.off()
 \end{lstlisting}
 
-Rewrite this script and save it as \code{assignment5/improved\_script.R}. Your improved version should include:
+Rewrite this script and save it as \code{assignment10/improved\_script.R}. Your improved version should include:
 
 \begin{enumerate}[label=\alph*)]
   \item Meaningful variable names instead of \code{x}, \code{m}, \code{m2}, \code{m3}.
@@ -188,15 +188,15 @@ cat("Rows after filtering:", nrow(df), "\n")
 This exercise asks you to practice the Git habits discussed in the lecture: frequent commits with meaningful messages, and a proper \code{.gitignore}.
 
 \begin{enumerate}[label=\alph*)]
-  \item Make sure your \texttt{assignment5} folder is tracked by Git (it should be part of your course repository).
+  \item Make sure your \texttt{assignment10} folder is tracked by Git (it should be part of your course repository).
   \item Create at least \textbf{3 separate commits} for this assignment. Each commit should correspond to a logical unit of work (e.g., one commit for the folder structure, one for the analysis script, one for the Makefile). Do \textbf{not} make one big commit with everything at the end.
   \item Each commit must have a \textbf{meaningful message} --- not ``update'' or ``changes''. Recall from the lecture: the message should complete the sentence ``This commit will...''. Examples:
   \begin{itemize}
-    \item \code{Add folder structure and README for assignment 5}
+    \item \code{Add folder structure and README for assignment 10}
     \item \code{Create analysis script with regression models}
     \item \code{Add Makefile to automate pipeline}
   \end{itemize}
-  \item Create a \code{.gitignore} file inside \texttt{assignment5/} that ignores generated and system files:
+  \item Create a \code{.gitignore} file inside \texttt{assignment10/} that ignores generated and system files:
   \begin{lstlisting}
 *.pdf
 *.aux
@@ -236,9 +236,9 @@ The corruption dataset is available at the course GitHub repository:
 \section{Submission}
 % ==========================================================================
 
-Commit your work to your GitHub repository before the deadline. Everything should be inside the \texttt{assignment5} folder. Make sure your repository is public so I can access it.
+Commit your work to your GitHub repository before the deadline. Everything should be inside the \texttt{assignment10} folder. Make sure your repository is public so I can access it.
 
-Your \texttt{assignment5} folder should contain:
+Your \texttt{assignment10} folder should contain:
 \begin{itemize}
   \item \code{README.md} --- project description, Makefile test results, commit messages, and reflection
   \item \code{Makefile} --- automation rules for the analysis and plots
@@ -251,6 +251,6 @@ Your \texttt{assignment5} folder should contain:
   \item \code{improved\_script.R} --- rewritten version of the bad script
 \end{itemize}
 
-All R scripts should run without errors from the \texttt{assignment5} directory.
+All R scripts should run without errors from the \texttt{assignment10} directory.
 
 \end{document}
