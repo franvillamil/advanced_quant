@@ -1,5 +1,4 @@
 # setwd("~/Documents/AQM2")
-options(stringsAsFactors = FALSE)
 
 # ============================================================
 # Assignment 3: Binary Outcomes
