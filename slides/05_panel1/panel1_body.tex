@@ -1,0 +1,766 @@
+% ----------------------------------------------------
+\begin{frame}
+  \titlepage
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Today's goals}
+\centering
+
+\begin{itemize}[<+->]
+\item Understand the structure and logic of panel data
+\item See why cross-sectional OLS can be biased due to unobserved heterogeneity
+\item Learn the fixed effects (within) estimator and its key intuition
+\item Add time fixed effects for two-way FE models
+\item Compare fixed effects and random effects; know when to use which
+\item Cluster standard errors correctly in panel settings
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This lecture introduces panel data methods, which will occupy two sessions. The key motivating question is: why is it often not enough to run OLS on cross-sectional data, even with many controls? The answer --- unobserved heterogeneity --- leads naturally to fixed effects. Emphasize that the goal is not just to learn a new estimator, but to develop intuition about what variation is being used to identify the effect of interest.}
+
+% ====================================================
+\section{What is Panel Data?}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Panel data: the basic structure}
+\centering
+
+\vspace{10pt}
+
+\begin{tikzpicture}[
+  box/.style={draw, minimum width=1.6cm, minimum height=0.6cm, align=center, font=\footnotesize},
+  head/.style={draw, minimum width=1.6cm, minimum height=0.6cm, align=center, font=\footnotesize\bfseries, fill=accent!15}
+]
+  % Header row
+  \node[head] (h0) at (0,0)    {Unit $i$};
+  \node[head] (h1) at (1.7,0)  {Time $t$};
+  \node[head] (h2) at (3.4,0)  {$y_{it}$};
+  \node[head] (h3) at (5.1,0)  {$x_{it}$};
+  % Data rows
+  \foreach \row/\i/\t/\y/\x in {
+    1/1/2010/0.42/12.1,
+    2/1/2011/0.51/13.0,
+    3/1/2012/0.48/12.7,
+    4/2/2010/0.61/9.4,
+    5/2/2011/0.59/9.8,
+    6/2/2012/0.64/10.2}{
+    \node[box] at (0,   -0.75*\row) {\i};
+    \node[box] at (1.7, -0.75*\row) {\t};
+    \node[box] at (3.4, -0.75*\row) {\y};
+    \node[box] at (5.1, -0.75*\row) {\x};
+  }
+  \node[font=\footnotesize, asher] at (2.55,-4.65) {\vdots};
+\end{tikzpicture}
+
+\vspace{6pt}
+
+\begin{itemize}
+\item $N$ units, each observed at $T$ time points
+\item Data indexed $(i, t)$: unit $i$ at time $t$
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Start concretely. Panel data simply means we observe the same units more than once. The key index is always $(i, t)$: unit and time. Walk through the table: unit 1 appears in 2010, 2011, 2012; unit 2 also appears in all three years. This structure is very common in social science: countries surveyed annually, individuals re-interviewed across waves, firms reporting quarterly. The data structure itself is the motivation for the methods.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Panel data: examples}
+\centering
+
+\begin{itemize}[<+->]
+\item \textbf{Cross-national}: GDP, democracy, conflict for 150+ countries $\times$ 50 years
+\vspace{8pt}
+\item \textbf{Survey panels}: same individuals surveyed in 2010, 2014, 2018
+  \begin{itemize}
+  \item European Social Survey rotating panels
+  \item British Household Panel Survey
+  \end{itemize}
+\vspace{8pt}
+\item \textbf{Sub-national}: US states $\times$ years; municipalities $\times$ election cycles
+\vspace{8pt}
+\item \textbf{Firms}: quarterly earnings reports for publicly traded companies
+\vspace{8pt}
+\item \textbf{Running example}: US state-level presidential approval $\times$ years
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Give students a range of examples so they can connect this to their own research. The running example (US states over time) is intuitive and will anchor the technical material. Mention that panels can be balanced (all units observed in all periods) or unbalanced (some units missing in some periods). Most real datasets are unbalanced.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Why panel data? Three advantages}
+\centering
+
+\begin{itemize}[<+->]
+\item \textbf{More observations}: $N \times T$ rows instead of $N$ --- more statistical power
+\vspace{8pt}
+\item \textbf{Within-unit variation}: follow how $y_{it}$ changes as $x_{it}$ changes \emph{for the same unit}
+  \begin{itemize}
+  \item Cleaner comparison than across different units
+  \end{itemize}
+\vspace{8pt}
+\item \textbf{Control for unobserved heterogeneity}: the big one
+  \begin{itemize}
+  \item Units may differ in ways we cannot measure
+  \item Panel structure lets us ``absorb'' those differences
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The third advantage is the key motivation for everything that follows. Many unit-level characteristics are simply unobservable: political culture, institutional quality, historical legacy, personality. If these unobservables are correlated with the regressor, OLS is biased. Panel methods allow us to ``difference out'' these time-invariant unit characteristics without ever having to measure them. That is a very powerful idea.}
+
+% ====================================================
+\section{The Problem: Unobserved Heterogeneity}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Motivating example: presidential approval}
+\centering
+
+\vspace{8pt}
+
+Does unemployment drive down presidential approval?
+
+\vspace{12pt}
+
+\begin{tikzpicture}[scale=0.75]
+  % Axes
+  \draw[->, thick] (0,0) -- (9.5,0) node[right] {\small Unemployment (\%)};
+  \draw[->, thick] (0,0) -- (0,6)  node[above] {\small Approval (\%)};
+  % Cross-section: two groups of states
+  % Southern states: high approval, low unemployment (clustered top-left)
+  \foreach \x/\y in {1.5/4.8, 1.8/4.2, 2.0/5.1, 2.3/4.5, 2.5/3.9, 2.7/4.7}{
+    \fill[accent2, opacity=0.8] (\x,\y) circle (4pt);
+  }
+  % Northern states: lower approval, higher unemployment (bottom-right)
+  \foreach \x/\y in {5.5/2.3, 6.0/3.1, 6.5/2.7, 7.0/2.0, 7.3/3.0, 7.6/2.5}{
+    \fill[accent, opacity=0.8] (\x,\y) circle (4pt);
+  }
+  % Cross-section OLS line (spurious negative slope)
+  \draw[jet, very thick, dashed] (1.0, 5.2) -- (8.2, 1.8);
+  % Labels
+  \node[accent2, font=\footnotesize] at (1.2,3.2) {South};
+  \node[accent,  font=\footnotesize] at (7.5,3.5) {North};
+  \node[jet, font=\footnotesize]     at (5.8,4.8) {Cross-section OLS};
+\end{tikzpicture}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This is the classic illustration of omitted variable bias in a cross-section. Southern states in the US tend to have lower unemployment AND higher presidential approval (at least for Republican presidents, and historically for any incumbent). Northern states tend to have higher unemployment and lower approval. The cross-sectional slope picks up this between-group difference and confounds it with the actual effect of unemployment. The question is: how do we isolate the within-state effect of unemployment changes on approval changes?}
+
+% ----------------------------------------------------
+\begin{frame}
+\centering
+\vspace{30pt}
+{\large The cross-sectional slope is negative.\\\vspace{15pt}
+Does that mean unemployment \emph{causes} lower approval?\\
+\vspace{15pt}What else might explain this pattern?}
+\end{frame}
+% ----------------------------------------------------
+\note{Give students 30--60 seconds to think or turn to a neighbor. Expected answers: Southern states have historically different political cultures, economic structures, partisan composition. What we see is the difference \textit{between} groups of states, not the effect of unemployment changes \textit{within} any particular state. This is the omitted variable problem in action.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The problem: unit-level confounders}
+\centering
+
+\begin{itemize}[<+->]
+\item Units differ in many \textbf{unobserved} ways:
+  \begin{itemize}
+  \item Political culture, history, institutional quality
+  \item Personality (in individual panels)
+  \item Industrial structure, geography
+  \end{itemize}
+\vspace{8pt}
+\item If these unobservables correlate with $x_{it}$ \textbf{and} $y_{it}$: OLS is biased
+\vspace{8pt}
+\item The model:
+$$y_{it} = \alpha_i + \beta x_{it} + \varepsilon_{it}$$
+\item $\alpha_i$ = unit-specific intercept (the unobserved heterogeneity)
+\item Cross-section OLS ignores $\alpha_i$ $\Rightarrow$ omitted variable bias
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The key insight: if we run OLS ignoring the $\alpha_i$ terms, we get biased estimates of $\beta$ whenever $\alpha_i$ is correlated with $x_{it}$. In the presidential approval example, the ``South'' variable captures part of $\alpha_i$: southern states have high $\alpha_i$ (higher approval baseline) and low $x_{it}$ (lower unemployment). Omitting $\alpha_i$ from the regression means part of its effect gets attributed to $x_{it}$. This is a classic omitted variable bias story, but the variable being omitted is the whole set of unit-level characteristics, not just one.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Simpson's paradox: the intuition}
+\centering
+
+\vspace{8pt}
+
+\begin{tikzpicture}[scale=0.72]
+  % Axes
+  \draw[->, thick] (0,0) -- (10,0) node[right] {\small $X$};
+  \draw[->, thick] (0,0) -- (0,6)  node[above] {\small $Y$};
+  % Group A (left cluster)
+  \foreach \x/\y in {1.0/1.5, 1.3/1.1, 1.6/1.8, 1.9/1.3, 2.1/1.9, 2.4/1.4}{
+    \fill[accent2, opacity=0.7] (\x,\y) circle (3.5pt);
+  }
+  \draw[accent2, thick] (0.8,1.0) -- (2.6,2.2);
+  \node[accent2, font=\footnotesize] at (1.7,0.5) {Group A};
+  % Group B (middle cluster)
+  \foreach \x/\y in {4.0/2.8, 4.3/3.4, 4.6/3.0, 4.9/3.6, 5.1/3.1, 5.4/3.7}{
+    \fill[accent!70!jet, opacity=0.8] (\x,\y) circle (3.5pt);
+  }
+  \draw[accent!70!jet, thick] (3.8,2.6) -- (5.6,3.9);
+  \node[accent!70!jet, font=\footnotesize] at (4.7,2.2) {Group B};
+  % Group C (right cluster)
+  \foreach \x/\y in {7.0/4.0, 7.3/4.6, 7.6/4.2, 7.9/4.8, 8.1/4.3, 8.4/5.0}{
+    \fill[accent, opacity=0.8] (\x,\y) circle (3.5pt);
+  }
+  \draw[accent, thick] (6.8,3.8) -- (8.6,5.2);
+  \node[accent, font=\footnotesize] at (7.7,3.4) {Group C};
+  % Overall OLS line (positive slope ignoring groups)
+  \draw[jet, very thick, dashed] (0.5, 0.6) -- (9.0, 5.4);
+  \node[jet, font=\footnotesize] at (7.5,1.5) {\textit{Aggregate slope}};
+\end{tikzpicture}
+
+\vspace{5pt}
+
+\begin{itemize}
+\item Within each group: positive slope
+\item Cross-section OLS: also positive, but for the \textbf{wrong reason}
+\item The group-level differences dominate the estimate
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This diagram shows that even when the aggregate relationship looks right, it can be driven entirely by between-group differences rather than the true within-group relationship. Here all three groups show a positive within-group slope, and the overall slope is also positive --- but in other cases the signs can differ (the classic Simpson's paradox). The point is that we want to estimate the within-group (within-unit) relationship. Fixed effects achieve exactly this.}
+
+% ====================================================
+\section{Fixed Effects}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Fixed effects: the key idea}
+\centering
+
+\vspace{8pt}
+
+\begin{tikzpicture}[
+  box/.style={draw, rounded corners, minimum width=3.8cm, minimum height=1cm, align=center, font=\small},
+  arrow/.style={->, thick, accent}
+]
+  \node[box, fill=accent2!10] (problem) at (0,3)  {Each unit has its own\\baseline level ($\alpha_i$)};
+  \node[box, fill=accent!10]  (solution) at (0,1) {Include a \textbf{dummy variable}\\for each unit};
+  \node[box, fill=accent!10]  (result)   at (0,-1) {$\alpha_i$ is \textbf{absorbed}\\into the intercepts};
+  \node[box, fill=accent2!10] (payoff)   at (0,-3) {$\hat{\beta}$ uses only\\\textbf{within-unit} variation};
+  \draw[arrow] (problem)  -- (solution);
+  \draw[arrow] (solution) -- (result);
+  \draw[arrow] (result)   -- (payoff);
+\end{tikzpicture}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This is the conceptual core of the lecture. Fixed effects is just a fancy way of saying: include a dummy variable for each unit. If Alabama always has higher approval than Oregon (regardless of unemployment), that difference gets captured by the Alabama and Oregon dummies. The coefficient on unemployment is then identified purely from within-state changes over time. No more cross-sectional confounding from unobserved state characteristics.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The within (demeaning) estimator}
+\centering
+
+Starting from $y_{it} = \alpha_i + \beta x_{it} + \varepsilon_{it}$, subtract unit means:
+
+\vspace{6pt}
+
+$$\underbrace{y_{it} - \bar{y}_{i}}_{\tilde{y}_{it}} = \beta\underbrace{(x_{it} - \bar{x}_{i})}_{\tilde{x}_{it}} + \underbrace{(\varepsilon_{it} - \bar{\varepsilon}_{i})}_{\tilde{\varepsilon}_{it}}$$
+
+\vspace{8pt}
+
+\begin{itemize}[<+->]
+\item $\alpha_i$ \textbf{cancels out} --- the unit effect is gone
+\item Regressing $\tilde{y}_{it}$ on $\tilde{x}_{it}$ gives the FE estimator
+\item Uses only variation \emph{within} each unit over time
+\item Works because $\alpha_i$ is constant: $\bar{\alpha}_i = \alpha_i$
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The demeaning derivation is the cleanest way to see why FE works. By subtracting the unit mean from both sides, $\alpha_i$ disappears: it appears in both $y_{it}$ and $\bar{y}_i$ and thus cancels. What remains is demeaned $Y$ and demeaned $X$. Regressing one on the other gives the within-unit estimator. Walk through this slowly. The key punchline: since $\alpha_i$ cancels, it doesn't matter whether it's correlated with $x_{it}$ or not. That's the magic of FE.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{FE = dummies for each unit}
+\centering
+
+\begin{itemize}[<+->]
+\item Mathematically equivalent to including unit dummies:
+$$y_{it} = \sum_{i=1}^{N} \alpha_i D_i + \beta x_{it} + \varepsilon_{it}$$
+where $D_i = 1$ if observation belongs to unit $i$
+\vspace{8pt}
+\item ``Least squares dummy variable'' (LSDV) estimator
+\item Same $\hat{\beta}$, different computational approach
+\vspace{8pt}
+\item \textbf{Key implication}: cannot estimate effect of \textbf{time-invariant} variables
+  \begin{itemize}
+  \item If $z_i$ does not vary over time, it is collinear with $D_i$
+  \item Example: ``South'' dummy, gender, country of birth
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The equivalence between FE and dummy variables is important for understanding both what FE does and what it cannot do. Because we include a separate intercept for every unit, any variable that is constant within a unit is perfectly collinear with those unit dummies. So we literally cannot estimate the effect of gender, race, or country in a unit FE model. This is not a bug but a feature of the design: FE is absorbing all time-invariant variation, observed or not.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Presidential approval: what FE does}
+\centering
+
+\vspace{8pt}
+
+\begin{tikzpicture}[scale=0.72]
+  % Axes
+  \draw[->, thick] (0,0) -- (10,0) node[right] {\small Unemployment (\%)};
+  \draw[->, thick] (0,0) -- (0,6)  node[above] {\small Approval (\%)};
+  % State 1: trajectories (time series)
+  \foreach \x/\y in {2.0/4.0, 2.5/3.7, 3.0/3.4}{
+    \fill[accent2, opacity=0.8] (\x,\y) circle (4pt);
+  }
+  \draw[accent2, thick] (1.8,4.1) -- (3.2,3.3);
+  \node[accent2, font=\footnotesize] at (1.3,4.2) {Alabama};
+  % State 2
+  \foreach \x/\y in {4.5/3.2, 5.0/2.9, 5.5/2.6}{
+    \fill[accent!60!jet, opacity=0.8] (\x,\y) circle (4pt);
+  }
+  \draw[accent!60!jet, thick] (4.3,3.3) -- (5.7,2.5);
+  \node[accent!60!jet, font=\footnotesize] at (5.7,3.2) {Ohio};
+  % State 3
+  \foreach \x/\y in {6.5/2.5, 7.0/2.2, 7.5/1.9}{
+    \fill[accent, opacity=0.8] (\x,\y) circle (4pt);
+  }
+  \draw[accent, thick] (6.3,2.6) -- (7.7,1.8);
+  \node[accent, font=\footnotesize] at (8.1,2.5) {Michigan};
+  % FE within-slope
+  \draw[jet, very thick] (1.5, 4.3) -- (8.0, 1.7);
+  \node[jet, font=\footnotesize] at (5.5,4.7) {\textbf{FE slope} (within each state)};
+\end{tikzpicture}
+
+\vspace{5pt}
+
+\begin{itemize}
+\item Each state has its own intercept; the slope is shared
+\item FE estimates: as \emph{this state's} unemployment rises, its approval falls
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This visualization shows how FE works with the running example. Instead of comparing Alabama to Michigan (which would confound structural differences), FE asks: when Alabama's unemployment goes up by 1 point, how much does Alabama's approval change? When Michigan's unemployment goes up, how much does Michigan's approval change? The separate intercepts absorb the between-state differences; the common slope captures the within-state relationship. Emphasize that the FE slope is identified from the within-state time variation only.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Fixed effects in R}
+\centering
+
+\begin{itemize}[<+->]
+\item Preferred: \texttt{fixest} package (fast, flexible, clustered SEs built in)
+  \begin{itemize}
+  \item[] \texttt{library(fixest)}
+  \item[] \texttt{feols(approval \textasciitilde{} unemp | state, data = df)}
+  \end{itemize}
+\vspace{8pt}
+\item Alternative: \texttt{plm} package
+  \begin{itemize}
+  \item[] \texttt{library(plm)}
+  \item[] \texttt{pdata.frame(df, index = c("state","year"))}
+  \item[] \texttt{plm(approval \textasciitilde{} unemp, data = pdf, model = "within")}
+  \end{itemize}
+\vspace{8pt}
+\item The \texttt{|} in \texttt{feols()} separates regressors from fixed effects
+\item Tables with \texttt{modelsummary()} work seamlessly with \texttt{feols} objects
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Walk through the syntax carefully. In \texttt{feols()}, everything to the left of \texttt{|} is a standard regressor; everything to the right is a set of fixed effects. So \texttt{feols(y \textasciitilde{} x1 + x2 | unit, data = df)} regresses $y$ on $x_1$ and $x_2$ with unit fixed effects. The \texttt{plm} approach is older and slower but worth knowing since students will encounter it in papers. The key argument in \texttt{plm} is \texttt{model = "within"} (other options: \texttt{"pooling"} for OLS, \texttt{"random"} for RE). Remind students that \texttt{modelsummary()} works with \texttt{feols} objects and will display the fixed effect label in the table footer.}
+
+% ====================================================
+\section{Two-Way Fixed Effects}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{frame}
+\centering
+\vspace{30pt}
+{\large FE controls for everything time-invariant.\\\vspace{15pt}
+But what if something happens in 2008 that affects \emph{all} states simultaneously?}
+\end{frame}
+% ----------------------------------------------------
+\note{The 2008 financial crisis is the perfect motivator here. Unemployment spiked everywhere at once. Presidential approval also shifted. Unit FE cannot separate the unemployment effect from the common macro shock: every state's unemployment went up, every state's approval went down. The unit demeaning removes the 2008 mean \textit{for each state}, but the common shock is still in the within-unit variation. This motivates adding time fixed effects.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{A new threat: time trends and common shocks}
+\centering
+
+\begin{itemize}[<+->]
+\item Unit FE removes time-invariant unit characteristics
+\vspace{8pt}
+\item But what about events that affect \textbf{all} units at the same time?
+  \begin{itemize}
+  \item A global recession hits every state simultaneously
+  \item A presidential scandal lowers approval everywhere
+  \item A pandemic affects all countries in 2020
+  \end{itemize}
+\vspace{8pt}
+\item If these shocks also correlate with $x_{it}$: new bias
+\vspace{8pt}
+\item Solution: add \textbf{time fixed effects} $\gamma_t$
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{After selling unit FE, immediately introduce the new problem it does not solve. Unit FE eliminates time-invariant confounders; time FE eliminates unit-invariant confounders (i.e., events that hit all units equally in a given period). If unemployment rises everywhere in a recession, and presidential approval also falls everywhere in that recession, a model without time FE would partly attribute the approval drop to unemployment even if the two are unrelated. Time FE fix this by absorbing the ``common trend'' in approval that affects all states each year.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Two-way fixed effects model}
+\centering
+
+\vspace{8pt}
+
+$$y_{it} = \alpha_i + \gamma_t + \beta x_{it} + \varepsilon_{it}$$
+
+\vspace{12pt}
+
+\begin{itemize}[<+->]
+\item $\alpha_i$: unit FE --- absorbs all time-invariant unit characteristics
+\item $\gamma_t$: time FE --- absorbs all unit-invariant time shocks
+\item $\hat{\beta}$: identified from variation \textbf{within units}, \textbf{across time}, \textbf{net of common trends}
+\vspace{8pt}
+\item In R:
+  \begin{itemize}
+  \item[] \texttt{feols(approval \textasciitilde{} unemp | state + year, data = df)}
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The two-way FE model is the workhorse of modern panel data analysis in political science and economics. Adding time FE is as simple as adding a second variable after the \texttt{|} in \texttt{feols()}. Emphasize the interpretation: $\hat{\beta}$ now captures how much approval deviates from a state's own average when unemployment deviates from that state's average, \textit{in the same year as all other states}. The year fixed effects soak up everything that is common to all states in a given year. This is a very demanding specification but also a very credible one.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{What TWFE absorbs}
+\centering
+
+\vspace{5pt}
+
+{\footnotesize
+\begin{tabular}{lcc}
+\hline
+\textbf{Type of variation} & \textbf{Unit FE} & \textbf{Two-way FE} \\
+\hline
+Time-invariant unit differences & absorbed & absorbed \\
+Unit-invariant time shocks & not absorbed & absorbed \\
+Within-unit, across-time variation & used for $\hat{\beta}$ & used for $\hat{\beta}$ \\
+\hline
+\end{tabular}
+}
+
+\vspace{15pt}
+
+\begin{itemize}[<+->]
+\item TWFE is conservative: only uses within-unit, net-of-time-trends variation
+\item Leaves less variation to identify $\hat{\beta}$ $\Rightarrow$ larger standard errors
+\item But more credible: fewer threats to identification
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This table summarizes what gets absorbed by each specification. TWFE is more demanding than unit FE alone. Students often worry that adding time FE will wipe out the effect. Reassure them: if the true effect exists, TWFE will still find it, because there is still within-unit variation in $x_{it}$ even after removing year means. What TWFE removes is the spurious correlation driven by common shocks. A coefficient that survives TWFE is particularly credible. The price is higher standard errors (less variation left), but that's appropriate uncertainty.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Teaching evaluations: worked example}
+\centering
+
+\begin{itemize}[<+->]
+\item Dataset: instructors evaluated across multiple courses
+  \begin{itemize}
+  \item Outcome: \texttt{Eval} (student evaluation score)
+  \item Predictors: \texttt{Apct} (attractive), \texttt{Enrollment}, \texttt{Required}
+  \end{itemize}
+\vspace{8pt}
+\item OLS ignores that instructors differ systematically:
+  \begin{itemize}
+  \item Friendliness, teaching experience, subject difficulty
+  \end{itemize}
+\vspace{8pt}
+\item Unit FE (instructor):
+  \begin{itemize}
+  \item[] \texttt{feols(Eval \textasciitilde{} Apct + Enrollment + Required}
+  \item[] \texttt{\hspace{12pt}| instructor, data = evals)}
+  \end{itemize}
+\vspace{8pt}
+\item $\hat{\beta}_{\text{Apct}}$: compares same instructor's courses, not different instructors
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The teaching evaluations dataset is a nice pedagogical example because students find it intuitive. Does attractiveness improve evaluations? A cross-sectional comparison is biased: attractive instructors might also be more outgoing, teach easier subjects, etc. With instructor FE, we compare the same instructor's evaluations across different courses, controlling for the time-varying variables. The FE estimate of attractiveness is then: ``compared to this instructor's other courses, do courses where the instructor is rated more attractive get higher evaluations?'' That is a much sharper question. The answer in the literature: the effect is smaller and sometimes disappears with FE.}
+
+% ====================================================
+\section{Random Effects and the FE/RE Choice}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Random effects: a different assumption}
+\centering
+
+\vspace{8pt}
+
+$$y_{it} = \alpha + \beta x_{it} + \underbrace{\eta_i}_{\text{unit random effect}} + \varepsilon_{it}$$
+
+\vspace{12pt}
+
+\begin{itemize}[<+->]
+\item $\eta_i \sim N(0, \sigma^2_\eta)$: unit-specific deviation, treated as \textbf{random}
+\vspace{8pt}
+\item \textbf{Key assumption}: $\eta_i \perp x_{it}$ (unit effects uncorrelated with regressors)
+\vspace{8pt}
+\item If this holds: RE is more \textbf{efficient} than FE
+\item If this fails: RE is \textbf{biased}; FE is consistent
+\vspace{8pt}
+\item Unlike FE: can estimate effects of \textbf{time-invariant} variables
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Random effects treats the unit-specific term as part of the error, not as a parameter to estimate. This is a weaker treatment --- it uses both within and between variation --- which makes it more efficient if the assumption holds. But the assumption is strong: that unit effects are uncorrelated with regressors. In most political science applications (countries, regions, individuals) this assumption is questionable. Unit effects often reflect exactly the unobserved confounders we are worried about. That is why FE is usually preferred. RE is worth knowing mainly to understand the Hausman test and when comparing specifications.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{FE vs.\ RE: the tradeoff}
+\centering
+
+\vspace{10pt}
+
+{\footnotesize
+\begin{tabular}{lcc}
+\hline
+ & \textbf{Fixed Effects} & \textbf{Random Effects} \\
+\hline
+Assumption & $\alpha_i$ correlated with $X$? & $\eta_i \perp X$ \\
+Consistency & Always (if $T \to \infty$) & Only if $\eta_i \perp X$ \\
+Efficiency & Less efficient & More efficient \\
+Time-invariant vars & Cannot estimate & Can estimate \\
+\hline
+\end{tabular}
+}
+
+\vspace{15pt}
+
+\begin{itemize}[<+->]
+\item If you are unsure: \textbf{use FE}
+\item More conservative, more credible
+\item RE requires an untestable assumption; FE does not
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This table is the key reference. The critical point: FE is consistent regardless of whether unit effects are correlated with the regressors. RE is only consistent if they are not. In practice, we nearly always have reason to worry about correlation (that is the whole point of using panel data), so FE is the default. The efficiency advantage of RE is real but usually modest, and it comes at the cost of a questionable assumption. The practical advice ``when in doubt, use FE'' is widely accepted in the literature.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Hausman test: FE vs.\ RE}
+\centering
+
+\begin{itemize}[<+->]
+\item \textbf{Hausman test} (1978): formally test whether $\eta_i \perp x_{it}$
+\vspace{8pt}
+\item $H_0$: no correlation between unit effects and regressors (RE is consistent)
+\item $H_1$: correlation exists (only FE is consistent)
+\vspace{8pt}
+\item If $p < 0.05$: reject $H_0$ $\Rightarrow$ use FE
+\item If $p > 0.05$: fail to reject $\Rightarrow$ RE or FE both OK
+\vspace{8pt}
+\item In R (\texttt{plm} package):
+  \begin{itemize}
+  \item[] \texttt{fe\_mod = plm(y \textasciitilde{} x, data = pdf, model = "within")}
+  \item[] \texttt{re\_mod = plm(y \textasciitilde{} x, data = pdf, model = "random")}
+  \item[] \texttt{phtest(fe\_mod, re\_mod)}
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The Hausman test compares the FE and RE estimates. Under $H_0$ (RE is correct), both FE and RE are consistent and they should produce similar estimates. Under $H_1$ (unit effects correlated with regressors), FE is consistent but RE is not; the estimates will diverge. The test statistic captures this divergence. In practice the Hausman test often rejects, confirming the need for FE. Even when it doesn't reject, many researchers still prefer FE for its more credible assumptions. Note that the Hausman test requires using \texttt{plm} rather than \texttt{fixest}, since \texttt{phtest()} is a \texttt{plm} function.}
+
+% ====================================================
+\section{Clustered Standard Errors}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Why panel data violates iid}
+\centering
+
+\begin{itemize}[<+->]
+\item OLS standard errors assume errors are \textbf{independent} across observations
+\vspace{8pt}
+\item In panel data: observations from the \emph{same unit} are correlated over time
+  \begin{itemize}
+  \item Alabama in 2010 and Alabama in 2011 are not independent
+  \item Same unit experiences same shocks, trends, institutions
+  \end{itemize}
+\vspace{8pt}
+\item Ignoring this: standard errors are \textbf{too small}
+\item Too-small SEs $\Rightarrow$ inflated $t$-statistics $\Rightarrow$ false positives
+\vspace{8pt}
+\item Solution: \textbf{cluster standard errors by unit}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Serial correlation within units is one of the most common problems in panel data analysis and one of the most commonly ignored. The intuition: if we have 50 states over 20 years = 1000 observations, we do not really have 1000 independent pieces of information. Alabama's 20 observations all share the same political culture, economic structure, and history. Clustering by state tells the standard error estimator to treat the 20 Alabama observations as a single cluster, reducing the effective sample size. The result: standard errors are larger (correct) and test statistics are smaller (more conservative).}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Clustering in practice}
+\centering
+
+\begin{itemize}[<+->]
+\item \texttt{feols()} clusters by the FE variable automatically:
+  \begin{itemize}
+  \item[] \texttt{feols(y \textasciitilde{} x | state, data = df)}
+  \item[] \texttt{\# SEs already clustered by state}
+  \end{itemize}
+\vspace{8pt}
+\item Explicit clustering:
+  \begin{itemize}
+  \item[] \texttt{feols(y \textasciitilde{} x | state, data = df, cluster = \textasciitilde{}state)}
+  \end{itemize}
+\vspace{8pt}
+\item In \texttt{modelsummary()} tables:
+  \begin{itemize}
+  \item[] \texttt{modelsummary(m, vcov = \textasciitilde{}state)}
+  \end{itemize}
+\vspace{8pt}
+\item Rule of thumb: cluster at the level of treatment assignment
+  \begin{itemize}
+  \item If state gets the treatment, cluster by state
+  \item If individual gets the treatment, cluster by individual
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The good news: \texttt{feols()} clusters by default by the first fixed effect, so students using \texttt{feols()} are automatically protected. The bad news: students using \texttt{lm()} with manual dummies or \texttt{plm()} need to be explicit. Emphasize the rule of thumb: cluster at the level at which the treatment is assigned (or at which errors are likely to be correlated). In most political science panel data with state or country units, clustering by unit is correct. Two-way clustering (by both unit and time) is sometimes used in economics but less common in political science.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Comparing specifications: a template}
+\centering
+
+\vspace{5pt}
+
+{\footnotesize
+\begin{tabular}{lccc}
+\hline
+ & \textbf{(1) OLS} & \textbf{(2) Unit FE} & \textbf{(3) TWFE} \\
+\hline
+Unemployment & $-0.82^{***}$ & $-0.51^{**}$ & $-0.43^{**}$ \\
+             & $(0.15)$     & $(0.18)$    & $(0.16)$    \\
+\hline
+State FE     & No  & Yes & Yes \\
+Year FE      & No  & No  & Yes \\
+Clustered SE & No  & Yes & Yes \\
+$N$          & 1000 & 1000 & 1000 \\
+\hline
+\end{tabular}
+}
+
+\vspace{12pt}
+
+\begin{itemize}[<+->]
+\item Coefficient shrinks as we add FEs: the OLS estimate was partly confounded
+\item Report all three specifications for transparency
+\item Preferred specification: (3)
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This template table is something students should memorize as a presentation format. Reporting multiple specifications side by side is standard practice: it shows how the estimate changes as we add controls, unit FE, and time FE. If the coefficient is stable across columns, we have evidence of robustness. If it shrinks dramatically (as here), we learn that the naive OLS estimate was partially driven by confounding. The shrinkage from $-0.82$ to $-0.43$ suggests that about half of the original cross-sectional estimate was confounded by unit and time effects. Standard practice in panel data papers is to show at minimum columns (2) and (3), often with column (1) for reference.}
+
+% ====================================================
+\section{Wrap-up}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Summary: key takeaways}
+\centering
+
+\begin{itemize}[<+->]
+\item Panel data: $N$ units $\times$ $T$ time periods; indexed $(i,t)$
+\vspace{8pt}
+\item Unobserved heterogeneity $\alpha_i$ biases cross-sectional OLS
+  \begin{itemize}
+  \item If $\alpha_i$ correlates with $x_{it}$: omitted variable bias
+  \end{itemize}
+\vspace{8pt}
+\item \textbf{Fixed effects} (within estimator): demeans data by unit, eliminates $\alpha_i$
+  \begin{itemize}
+  \item Cannot estimate time-invariant variables
+  \end{itemize}
+\vspace{8pt}
+\item \textbf{Two-way FE}: add time dummies to remove common shocks
+\vspace{8pt}
+\item \textbf{FE vs.\ RE}: use FE when unit effects may correlate with $X$; use Hausman test
+\vspace{8pt}
+\item Always \textbf{cluster standard errors} by unit
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Recap the five main ideas. (1) Data structure: the $(i,t)$ index. (2) The problem: unobserved unit heterogeneity biases OLS when correlated with regressors. (3) FE solution: demeaning removes the unit effect. (4) TWFE: also remove common time shocks. (5) Clustering: account for serial correlation within units. These are the building blocks for more advanced panel methods next session. Stress that these are now standard in applied work --- almost any paper using panel data will have TWFE with clustered SEs as its main specification.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{For next session}
+\centering
+
+\begin{itemize}
+\item Complete Assignment 5
+\vspace{8pt}
+\item Read the assigned paper using panel FE
+\vspace{8pt}
+\item Next session: Panel Data II
+  \begin{itemize}
+  \item Difference-in-Differences (DiD)
+  \item Event studies
+  \item Staggered treatment timing
+  \item Recent advances in DiD (Callaway--Sant'Anna, etc.)
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Preview the next session. DiD is a natural extension of two-way FE: it adds the notion of a treatment group vs.\ a control group, and uses the pre/post variation within each group. The identification assumption (parallel trends) is a strengthening of the FE assumptions. Recent work has shown that the standard staggered DiD estimator can be biased when treatment effects are heterogeneous across cohorts --- this is an active area of research that students will see if they read recent applied papers.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{}
+\centering
+
+Questions?
+
+\end{frame}
+% ----------------------------------------------------
+\note{}

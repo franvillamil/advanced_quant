@@ -2,145 +2,137 @@
 options(stringsAsFactors = FALSE)
 
 # ============================================================
-# Assignment 5: Best Practices in Computing
-# Applied Quantitative Methods II, UC3M
+# Assignment 5: Panel Data I
+# Applied Quantitative Methods for the Social Sciences II
 # ============================================================
 
 # List of packages
 library(readstata13)
-library(modelsummary)
+library(dplyr)
 library(ggplot2)
+library(fixest)
+library(plm)
+library(modelsummary)
 
 # ==========================================================================
-# Part 1: Project Organization (In-Class)
+# Part 1: Presidential Approval (In-Class)
 # ==========================================================================
 
 # ----------------------------------------------------------
-## 1. Folder structure
-
-# mkdir -p assignment5/data assignment5/analysis/output assignment5/plots/output
-# touch assignment5/Makefile assignment5/README.md
-# touch assignment5/analysis/models.R assignment5/plots/figures.R
-
-# ----------------------------------------------------------
-## 2. Analysis script (analysis/models.R)
+## 1. Setup and data exploration
 
 # a)
-df = read.dta13("data/corruption.dta")
+df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/presidential_approval/presidential_approval.dta")
+length(unique(df$State))
+length(unique(df$Year))
+table(table(df$State))
 
 # b)
-dep_var = "ti_cpi"
-indep_var = "undp_gdp"
+summary(df$PresApprov)
+summary(df$UnemPct)
+
+df_sub = df %>%
+  filter(State %in% c("California", "Texas", "NewYork"))
+
+ggplot(df_sub, aes(x = Year, y = PresApprov, color = State)) +
+  geom_line() +
+  theme_minimal() +
+  labs(x = "Year", y = "Presidential approval (%)", color = "State")
 
 # c)
-df = df[!is.na(df[[dep_var]]) & !is.na(df[[indep_var]]), ]
-cat("Observations:", nrow(df), "\n")
-
-# d)
-if(nrow(df) < 10) stop("Too few observations")
-
-# e)
-m1 = lm(ti_cpi ~ undp_gdp, data = df)
-m2 = lm(ti_cpi ~ log(undp_gdp), data = df)
-
-# f)
-modelsummary(
-  list("Level" = m1, "Log" = m2),
-  output = "analysis/output/table_models.tex",
-  stars = TRUE,
-  gof_map = c("r.squared", "nobs"))
-
-# g)
-cat("Analysis complete. Table saved.\n")
+ggplot(df, aes(x = UnemPct, y = PresApprov)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm") +
+  theme_minimal() +
+  labs(x = "Unemployment rate (%)", y = "Presidential approval (%)")
 
 # ----------------------------------------------------------
-## 3. Plots script (plots/figures.R)
+## 2. Pooled OLS
 
 # a)
-df = read.dta13("data/corruption.dta")
-df = df[!is.na(df$ti_cpi) & !is.na(df$undp_gdp), ]
+m_pooled = lm(PresApprov ~ UnemPct, data = df)
+summary(m_pooled)
 
-# b-c)
-p = ggplot(df, aes(x = log(undp_gdp), y = ti_cpi)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  labs(
-    x = "Log GDP per capita (PPP)",
-    y = "Corruption Perceptions Index",
-    title = "Corruption and Wealth") +
-  theme_minimal()
-
-# d)
-ggsave("plots/output/scatter_corruption.pdf", p, width = 7, height = 5)
-
-# e)
-cat("Scatter plot saved.\n")
+# b)
+m_pooled2 = lm(PresApprov ~ UnemPct + South, data = df)
+summary(m_pooled2)
 
 # ----------------------------------------------------------
-## 4. Makefile
+## 3. Entity fixed effects
 
-# all: analysis/output/table_models.tex plots/output/scatter_corruption.pdf
-#
-# analysis/output/table_models.tex: analysis/models.R data/corruption.dta
-# 	Rscript --no-save analysis/models.R
-#
-# plots/output/scatter_corruption.pdf: plots/figures.R data/corruption.dta
-# 	Rscript --no-save plots/figures.R
-
-# ==========================================================================
-# Part 2: Code Quality and Git (Take-Home)
-# ==========================================================================
-
-# ----------------------------------------------------------
-## 1. Improved script (improved_script.R)
-
-start_year = 2000
-end_year = 2020
-
-panel = read.csv("mydata.csv")
-
-if(nrow(panel) == 0) stop("Dataset is empty")
-expected_cols = c("year", "outcome", "gdp", "pop", "education", "health")
-missing_cols = setdiff(expected_cols, names(panel))
-if(length(missing_cols) > 0) stop("Missing columns: ", paste(missing_cols, collapse = ", "))
-
-panel = panel[panel$year >= start_year & panel$year <= end_year, ]
-cat("Rows after filtering:", nrow(panel), "\n")
-
-m_base = lm(outcome ~ gdp + pop, data = panel)
-m_educ = lm(outcome ~ gdp + pop + education, data = panel)
-m_full = lm(outcome ~ gdp + pop + education + health, data = panel)
+# a)
+m_fe = feols(PresApprov ~ UnemPct | State, data = df)
 
 modelsummary(
-  list("Base" = m_base, "Education" = m_educ, "Full" = m_full),
+  list("Pooled OLS" = m_pooled, "State FE" = m_fe),
+  vcov = ~State,
   stars = TRUE,
   gof_map = c("r.squared", "nobs"))
 
-save_scatter = function(data, xvar, yvar, filename) {
-  pdf(filename, width = 7, height = 5)
-  plot(data[[xvar]], data[[yvar]],
-    xlab = xvar, ylab = yvar,
-    pch = 16, col = rgb(0, 0, 0, 0.5))
-  dev.off()
-}
+# ----------------------------------------------------------
+## 4. Two-way fixed effects
 
-save_scatter(panel, "gdp", "outcome", "fig_gdp.pdf")
-save_scatter(panel, "education", "outcome", "fig_education.pdf")
+# a)
+m_twfe = feols(PresApprov ~ UnemPct | State + Year, data = df)
+
+# b)
+modelsummary(
+  list("Pooled OLS" = m_pooled, "State FE" = m_fe, "Two-Way FE" = m_twfe),
+  vcov = ~State,
+  stars = TRUE,
+  gof_map = c("r.squared", "nobs"))
+
+# ==========================================================================
+# Part 2: Teaching Evaluations (Take-Home)
+# ==========================================================================
 
 # ----------------------------------------------------------
-## 2. Git practices
+## 1. Data exploration
 
-# .gitignore:
-# *.pdf
-# *.aux
-# *.log
-# .DS_Store
-# analysis/output/
-# plots/output/
+# a)
+df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/teaching_evals/teaching_evals.dta")
+length(unique(df$InstrID))
+length(unique(df$CourseID))
+nrow(df) / length(unique(df$InstrID))
 
-# Example commit messages:
-# Add folder structure and README for assignment 5
-# Create analysis script with regression models
-# Add plots script with scatter plot
-# Add Makefile to automate pipeline
-# Add improved script and .gitignore
+# b)
+ggplot(df, aes(x = Apct, y = Eval)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm") +
+  theme_minimal() +
+  labs(x = "Percent receiving A or A- (%)", y = "Average course evaluation (1-5)")
+
+# ----------------------------------------------------------
+## 2. Pooled OLS baseline
+
+# a)
+m1 = lm(Eval ~ Apct + Enrollment + Required, data = df)
+summary(m1)
+
+# ----------------------------------------------------------
+## 3. Fixed effects models
+
+# a)
+m_instr = feols(Eval ~ Apct + Enrollment + Required | InstrID, data = df)
+m_twfe  = feols(Eval ~ Apct + Enrollment + Required | InstrID + Year, data = df)
+
+# b)
+modelsummary(
+  list("Pooled OLS" = m1, "Instructor FE" = m_instr, "Two-Way FE" = m_twfe),
+  vcov = ~InstrID,
+  stars = TRUE,
+  gof_map = c("r.squared", "nobs"))
+
+# ----------------------------------------------------------
+## 4. Random effects and Hausman test
+
+# a)
+pdata = pdata.frame(df, index = c("InstrID", "CourseID"))
+m_re = plm(Eval ~ Apct + Enrollment + Required,
+           data = pdata, model = "random")
+summary(m_re)
+
+# b)
+m_fe_plm = plm(Eval ~ Apct + Enrollment + Required,
+               data = pdata, model = "within")
+phtest(m_fe_plm, m_re)

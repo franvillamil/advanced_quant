@@ -1,0 +1,103 @@
+---
+title: "Assignment 5: Panel Data I -- Part 2 (Teaching Evaluations)"
+subtitle: "Applied Quantitative Methods for the Social Sciences II"
+date: "Spring 2026"
+output:
+  pdf_document:
+    toc: false
+geometry: margin=2cm
+header-includes:
+  - \renewcommand*\rmdefault{ppl}
+  - \usepackage{setspace}\setstretch{1.2}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+options(stringsAsFactors = FALSE)
+```
+
+```{r packages}
+library(readstata13)
+library(ggplot2)
+library(fixest)
+library(plm)
+library(modelsummary)
+
+df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/teaching_evals/teaching_evals.dta")
+```
+
+# 1. Data exploration
+
+**a)** Panel dimensions:
+
+```{r}
+length(unique(df$InstrID))
+length(unique(df$CourseID))
+nrow(df) / length(unique(df$InstrID))
+```
+
+The panel has relatively few instructors observed over several courses and years. The average number of observations per instructor is substantially above 1, making this a moderately long panel at the instructor level. Because a single instructor may teach multiple courses in the same year, the appropriate panel index for `plm` uses both `InstrID` and `CourseID`, not `InstrID` and `Year`.
+
+**b)** Scatter plot of evaluations against grading generosity:
+
+```{r, fig.height=3.5}
+ggplot(df, aes(x = Apct, y = Eval)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm") +
+  theme_minimal() +
+  labs(x = "Percent receiving A or A- (%)", y = "Average course evaluation (1-5)")
+```
+
+The cross-sectional relationship between `Apct` and `Eval` is positive: instructors who give more A grades tend to receive higher evaluations. This pattern is consistent with the grade-inflation hypothesis --- that lenient grading buys better evaluations --- but it could also reflect that both grading and evaluations are driven by unobserved instructor quality (e.g., more talented teachers give more deserved A grades and also teach better).
+
+# 2. Pooled OLS baseline
+
+**a)** Pooled OLS with all controls:
+
+```{r}
+m1 = lm(Eval ~ Apct + Enrollment + Required, data = df)
+summary(m1)
+```
+
+The coefficient on `Apct` gives the association between a one-percentage-point increase in the share of students receiving an A grade and the change in average evaluation score, pooling across all instructors and years. Larger enrollment and required courses are often associated with lower evaluations, which is consistent with the course-level context: students are less satisfied in large required courses.
+
+**b)** The OLS estimate of `Apct` is likely upward biased. Instructors who are genuinely excellent may both earn better evaluations and give grades that students feel are deserved --- producing a spurious positive correlation between `Apct` and `Eval`. Similarly, instructors who are more charismatic or popular may give higher grades to maintain that reputation, inflating both `Apct` and `Eval`. In both cases, unobserved instructor characteristics (talent, charisma, conscientiousness) drive both variables simultaneously, leading us to overstate the causal effect of grading leniency on evaluations.
+
+# 3. Fixed effects models
+
+**a--b)** Instructor fixed effects and two-way fixed effects:
+
+```{r}
+m_instr = feols(Eval ~ Apct + Enrollment + Required | InstrID, data = df)
+m_twfe  = feols(Eval ~ Apct + Enrollment + Required | InstrID + Year, data = df)
+
+modelsummary(
+  list("Pooled OLS" = m1, "Instructor FE" = m_instr, "Two-Way FE" = m_twfe),
+  vcov = ~InstrID,
+  stars = TRUE,
+  gof_map = c("r.squared", "nobs"),
+  output = "markdown")
+```
+
+**c)** The instructor fixed effects control for all time-invariant differences across instructors: their baseline teaching quality, personality, subject area, grading philosophy, and any other stable characteristic. Comparing `Apct` coefficients across models reveals the direction of omitted variable bias in pooled OLS. If the FE coefficient on `Apct` is smaller (in absolute value or in magnitude of the positive effect) than the pooled OLS coefficient, it means that the pooled estimate was inflated by unobserved instructor quality --- i.e., better instructors give more A grades and also receive better evaluations for reasons unrelated to grading leniency. Within the same instructor over time, increases in the share of A grades are associated with a different (typically smaller) change in evaluations than what pooled OLS suggests.
+
+# 4. Random effects and the Hausman test
+
+**a)** Random effects model via `plm`:
+
+```{r}
+pdata = pdata.frame(df, index = c("InstrID", "CourseID"))
+m_re = plm(Eval ~ Apct + Enrollment + Required,
+           data = pdata, model = "random")
+summary(m_re)
+```
+
+**b)** Hausman test:
+
+```{r}
+m_fe_plm = plm(Eval ~ Apct + Enrollment + Required,
+               data = pdata, model = "within")
+phtest(m_fe_plm, m_re)
+```
+
+**c)** The null hypothesis of the Hausman test is that the random effects estimator is consistent --- equivalently, that the unobserved instructor-level heterogeneity is uncorrelated with the regressors (`Apct`, `Enrollment`, `Required`). If the test statistic is significant (p < 0.05), we reject this null and conclude that the RE assumption is violated: instructor-specific unobservables are correlated with the covariates, and the FE estimator is preferred because it remains consistent under this correlation. The substantive reasoning from the previous section already pointed in this direction: unobserved instructor quality plausibly drives both grading behavior and evaluation scores, violating the RE assumption. Whether or not the formal test is significant, the FE estimator is the more defensible choice here, as it controls for all time-invariant instructor characteristics and directly addresses the endogeneity concern. The RE estimator would only be appropriate if we were willing to assume that instructors' grading decisions are uncorrelated with their unobserved characteristics --- an implausible assumption in this setting.
