@@ -1,0 +1,241 @@
+\input{preamble.tex}
+\textbf{\large Assignment 6: Panel Data II}\\\vspace{10pt}
+\end{center}
+
+\vspace{10pt}
+\noindent
+\textbf{\large Instructions:}
+
+\vspace{10pt}
+\begin{itemize}
+\setlength\itemsep{0pt}
+  \item {\color{red}{\textbf{Deadline}}}: \textbf{April 2, before class}
+  \item Submit your work in a separate folder in your GitHub repository
+  \begin{itemize}
+    \item You can include only the R file or additional ones (e.g. pdf with results)
+  \end{itemize}
+  \item \textbf{Always use comments} in your R code -- and use them to answer questions
+  \item You are encouraged to work together, but each person must submit their own code
+  \item Plan is to start Part 1 in class and complete Part 2 at home
+  \item I'll upload a solution file to the website after next class
+\end{itemize}
+
+\vspace{20pt}
+\tableofcontents
+\newpage
+
+% ==========================================================================
+\section{Part 1: In-Class (Card-Krueger Minimum Wage)}
+% ==========================================================================
+
+In this lab, we replicate the classic Card and Krueger (1994) study on the employment effects of minimum wage increases. In February 1992, New Jersey announced it would raise its minimum wage from \$4.25 to \$5.05, effective April 1, 1992. Pennsylvania, a neighboring state, did not change its minimum wage. Card and Krueger surveyed fast food restaurants in both states before (February 1992) and after (November 1992) the policy change. This is a canonical difference-in-differences design: NJ is the treatment group, PA is the control group, and the policy change is the treatment.
+
+Download the data here:
+\begin{itemize}
+  \item \href{https://github.com/franvillamil/AQM2/tree/master/datasets/other}{github.com/franvillamil/AQM2/tree/master/datasets/other}
+\end{itemize}
+
+Load it with \code{df = read.csv("minwage.csv")}. Key variables:
+\begin{itemize}
+  \item \code{chain} --- fast food chain (wendys, burgerking, kfc, royalrogers)
+  \item \code{location} --- state/region (PA, centralNJ, northNJ, shoreNJ, southNJ)
+  \item \code{wageBefore} --- starting wage before the minimum wage increase
+  \item \code{wageAfter} --- starting wage after the minimum wage increase
+  \item \code{fullBefore} --- number of full-time employees before
+  \item \code{fullAfter} --- number of full-time employees after
+  \item \code{partBefore} --- number of part-time employees before
+  \item \code{partAfter} --- number of part-time employees after
+\end{itemize}
+
+\subsection{Data setup and exploration}
+
+\begin{enumerate}[label=\alph*)]
+  \item Create a \code{NJ} dummy variable that equals 1 if \code{location} is not \code{"PA"} and 0 otherwise. Report the number of restaurants in NJ vs.\ PA using \code{table()}. Then compute the average \code{wageBefore} and \code{wageAfter} separately for NJ and PA restaurants using \code{group\_by()} and \code{summarise()}. In a comment, note whether wages in NJ increased relative to PA after the policy change.
+  \item Compute the simple DiD estimate manually using the following steps:
+  \begin{itemize}
+    \item For NJ: \code{mean(fullAfter) - mean(fullBefore)}
+    \item For PA: \code{mean(fullAfter) - mean(fullBefore)}
+    \item DiD $=$ (NJ after $-$ NJ before) $-$ (PA after $-$ PA before)
+  \end{itemize}
+  In a comment, interpret the result in words. What does this number say about the effect of the minimum wage increase on employment?
+  \item To run regressions, reshape the data to long format (one row per restaurant-period) using the following code:
+  \begin{lstlisting}
+library(dplyr)
+library(tidyr)
+
+df_long = df %>%
+  mutate(id = row_number()) %>%
+  pivot_longer(
+    cols = c(fullBefore, fullAfter),
+    names_to = "period",
+    values_to = "full_emp") %>%
+  mutate(
+    post = ifelse(period == "fullAfter", 1, 0),
+    NJ = ifelse(location != "PA", 1, 0))
+  \end{lstlisting}
+  Check that the resulting dataset has the correct structure: \code{nrow(df\_long)} should equal twice \code{nrow(df)}. In a comment, explain why the long format is needed for the DiD regression.
+\end{enumerate}
+
+\subsection{DiD regression}
+
+\begin{enumerate}[label=\alph*)]
+  \item Estimate the DiD regression using \code{fixest}:
+  \begin{lstlisting}
+library(fixest)
+m_did = feols(full_emp ~ post * NJ, data = df_long, cluster = ~id)
+  \end{lstlisting}
+  Report the results using \code{modelsummary()}. Identify and interpret the coefficient on the interaction term \code{post:NJ}: this is the DiD estimator. Compare it to your manual calculation from question 1.1b --- they should match.
+  \item Add chain fixed effects to absorb time-invariant differences across fast food chains:
+  \begin{lstlisting}
+m_did_fe = feols(full_emp ~ post * NJ | chain, data = df_long, cluster = ~id)
+  \end{lstlisting}
+  Compare the two models in a single \code{modelsummary()} table. Does controlling for chain type change the DiD estimate noticeably? In a comment, explain what the chain fixed effects are absorbing and why controlling for them may or may not matter here.
+  \item In a comment, state the parallel trends assumption for this specific example. What would we need to observe about NJ and PA employment trends in the pre-period to be confident in the DiD estimate? Give one concrete example of something that could violate this assumption (i.e., something that would affect NJ but not PA employment independently of the minimum wage change).
+\end{enumerate}
+
+\subsection{Wages as a validation check}
+
+\begin{enumerate}[label=\alph*)]
+  \item Repeat the DiD analysis using wages as the outcome instead of employment. Reshape the data for wages and estimate the model:
+  \begin{lstlisting}
+df_long_wage = df %>%
+  mutate(id = row_number()) %>%
+  pivot_longer(
+    cols = c(wageBefore, wageAfter),
+    names_to = "period",
+    values_to = "wage") %>%
+  mutate(
+    post = ifelse(period == "wageAfter", 1, 0),
+    NJ = ifelse(location != "PA", 1, 0))
+
+m_wage = feols(wage ~ post * NJ, data = df_long_wage, cluster = ~id)
+  \end{lstlisting}
+  Report the results. Did the minimum wage increase actually raise wages in NJ relative to PA? Is the sign and magnitude of the DiD coefficient what you would expect?
+  \item In a comment, explain why the wage result is important for interpreting the employment DiD. If wages had \textit{not} risen in NJ after the law change, what would that imply about the employment result? Why is it reassuring (or not surprising) that wages did rise in NJ?
+\end{enumerate}
+
+\newpage
+
+% ==========================================================================
+\section{Part 2: Take-Home (Staggered DiD with the \texttt{did} Package)}
+% ==========================================================================
+
+In the Card-Krueger design, all treated units (NJ restaurants) received treatment at exactly the same time. In many real-world settings, however, units adopt policies at different times --- this is called \textit{staggered treatment adoption}. Recall from lecture that the standard two-way fixed effects (TWFE) estimator can produce misleading results in staggered settings because it uses already-treated units as implicit controls for newly treated units. In this part, we work through these issues using the \code{mpdta} dataset built into the \code{did} package.
+
+Load the data with:
+\begin{lstlisting}
+library(did)
+data(mpdta)
+\end{lstlisting}
+
+Key variables:
+\begin{itemize}
+  \item \code{countyreal} --- county identifier
+  \item \code{year} --- year (2003--2007)
+  \item \code{lemp} --- log teen employment (outcome)
+  \item \code{lpop} --- log population (control variable)
+  \item \code{treat} --- whether the county was ever treated (1 = yes, 0 = no)
+  \item \code{first.treat} --- year when the county first received treatment (0 if never treated); counties adopt in 2004, 2006, or 2007
+\end{itemize}
+
+\subsection{Data structure and visualization}
+
+\begin{enumerate}[label=\alph*)]
+  \item How many counties are in the data? How many unique treatment cohorts (distinct values of \code{first.treat}) are there? Use \code{table(mpdta\$first.treat)} to see how many counties adopted treatment in each year. In a comment, explain what ``staggered treatment adoption'' means in this context: why is it a problem to simply compare treated vs.\ untreated counties?
+  \item Plot average log teen employment (\code{lemp}) over years, separately for each treatment cohort. Use the following code:
+  \begin{lstlisting}
+library(dplyr)
+library(ggplot2)
+
+mpdta_avg = mpdta %>%
+  mutate(cohort = factor(first.treat,
+    levels = c(0, 2004, 2006, 2007),
+    labels = c("Never treated", "Adopted 2004",
+               "Adopted 2006", "Adopted 2007"))) %>%
+  group_by(year, cohort) %>%
+  summarise(mean_lemp = mean(lemp, na.rm = TRUE))
+
+ggplot(mpdta_avg, aes(x = year, y = mean_lemp, color = cohort)) +
+  geom_line() +
+  geom_point() +
+  theme_minimal() +
+  labs(x = "Year", y = "Log teen employment", color = "Treatment cohort")
+  \end{lstlisting}
+  Save the plot with \code{ggsave()}. In a comment, describe the patterns: do the cohorts appear to follow similar trends before their respective treatment years? What happens after treatment? Are there any cohorts whose pre-trends look problematic?
+\end{enumerate}
+
+\subsection{Naive TWFE vs.\ Callaway-Sant\'{a}nna estimator}
+
+\begin{enumerate}[label=\alph*)]
+  \item Estimate a naive TWFE model treating all treated counties as a single group. First create a time-varying treatment indicator, then run the regression:
+  \begin{lstlisting}
+library(fixest)
+library(dplyr)
+mpdta = mpdta %>%
+  mutate(treated_post = as.integer(first.treat > 0 & year >= first.treat))
+
+m_twfe = feols(lemp ~ treated_post | countyreal + year,
+               data = mpdta, cluster = ~countyreal)
+summary(m_twfe)
+  \end{lstlisting}
+  Report and interpret the coefficient on \code{treated\_post}. In a comment, note that this model pools all treatment cohorts together --- what implicit assumption is it making about the treatment effect across cohorts and over time?
+  \item Now use the Callaway-Sant\'{a}nna (2021) estimator, which estimates group-time average treatment effects separately for each cohort and time period, using never-treated counties as the control group:
+  \begin{lstlisting}
+library(did)
+cs_out = att_gt(
+  yname = "lemp",
+  gname = "first.treat",
+  idname = "countyreal",
+  tname = "year",
+  xformla = ~ lpop,
+  data = mpdta,
+  control_group = "nevertreated")
+
+# Aggregate to an overall ATT
+aggte(cs_out, type = "simple")
+  \end{lstlisting}
+  Report the overall ATT estimate. Is it similar to or different from the naive TWFE estimate?
+  \item Examine the event-study version of the Callaway-Sant\'{a}nna results:
+  \begin{lstlisting}
+cs_dyn = aggte(cs_out, type = "dynamic")
+ggdid(cs_dyn)
+  \end{lstlisting}
+  Save the event-study plot with \code{ggsave()}. In a comment, describe what the plot shows. Are the pre-treatment estimates (leads, i.e.\ periods before treatment) statistically distinguishable from zero? What does this tell us about the parallel trends assumption? What do the post-treatment estimates (lags) show about the dynamic effects of treatment?
+\end{enumerate}
+
+\subsection{Discussion: why does TWFE fail in staggered settings?}
+
+\begin{enumerate}[label=\alph*)]
+  \item In a comment (3--5 sentences), explain intuitively why the naive TWFE estimator can produce misleading results in staggered DiD settings. What is the ``forbidden comparison'' problem? Which units get used as the control group in a way that is problematic, and why is that a problem if treatment effects are heterogeneous across cohorts or over time?
+  \item Compare the TWFE estimate from question 2.2a to the Callaway-Sant\'{a}nna estimate from question 2.2b. Are they similar or different? In a comment, based on the event-study pre-trends from question 2.2c, which estimate do you find more credible and why?
+\end{enumerate}
+
+\vspace{15pt}
+
+% ==========================================================================
+\section{Data Sources}
+% ==========================================================================
+
+\begin{itemize}
+  \item Minimum wage (Card and Krueger): \href{https://github.com/franvillamil/AQM2/tree/master/datasets/other}{\texttt{github.com/franvillamil/AQM2/tree/master/\\datasets/other}}
+  \item Teen employment (Callaway-Sant\'{a}nna): \code{mpdta} dataset in the \code{did} R package\\(\code{library(did); data(mpdta)})
+\end{itemize}
+
+\vspace{15pt}
+
+% ==========================================================================
+\section{Submission}
+% ==========================================================================
+
+Commit your file to your GitHub repository before the deadline. Put it in a separate folder, e.g.\ \texttt{assignment6}. Make sure your repository is public so I can access it.
+
+Your R script should:
+\begin{itemize}
+  \item Be well-organized with clear section headers (using comments)
+  \item Include all code needed to reproduce your analysis
+  \item Include your answers and interpretations as comments
+  \item Save any plots to files (e.g., using \code{ggsave()})
+  \item Run without errors from top to bottom
+\end{itemize}
+
+\end{document}

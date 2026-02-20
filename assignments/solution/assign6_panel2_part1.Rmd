@@ -1,0 +1,137 @@
+---
+title: "Assignment 6: Panel Data II -- Part 1 (Card-Krueger Minimum Wage)"
+subtitle: "Applied Quantitative Methods for the Social Sciences II"
+date: "Spring 2026"
+output:
+  pdf_document:
+    toc: false
+geometry: margin=2cm
+header-includes:
+  - \renewcommand*\rmdefault{ppl}
+  - \usepackage{setspace}\setstretch{1.2}
+  - \DeclareUnicodeCharacter{2212}{-}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+options(stringsAsFactors = FALSE)
+```
+
+```{r packages}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(fixest)
+library(modelsummary)
+
+df = read.csv("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/other/minwage.csv")
+```
+
+# 1. Data setup and exploration
+
+**a)** Create an `NJ` dummy and summarise wages by state:
+
+```{r}
+df = df %>% mutate(NJ = ifelse(location != "PA", 1, 0))
+table(df$NJ)
+```
+
+NJ restaurants (coded 1) outnumber PA restaurants (coded 0) because the NJ sample spans four sub-regions (centralNJ, northNJ, shoreNJ, southNJ) while PA is treated as a single region.
+
+```{r}
+df %>%
+  group_by(NJ) %>%
+  summarise(
+    mean_wage_before = mean(wageBefore, na.rm = TRUE),
+    mean_wage_after  = mean(wageAfter,  na.rm = TRUE))
+```
+
+Before the policy change, average starting wages in NJ and PA were nearly identical (both close to the federal minimum of \$4.25). After the NJ minimum wage rose to \$5.05, NJ wages increased noticeably while PA wages remained flat, confirming the policy raised wages in the treated state.
+
+**b)** Manual DiD estimate for full-time employment:
+
+```{r}
+means = df %>%
+  group_by(NJ) %>%
+  summarise(
+    before = mean(fullBefore, na.rm = TRUE),
+    after  = mean(fullAfter,  na.rm = TRUE),
+    change = after - before)
+means
+
+nj_change = means$change[means$NJ == 1]
+pa_change = means$change[means$NJ == 0]
+did_est   = nj_change - pa_change
+cat("DiD estimate:", round(did_est, 3), "\n")
+```
+
+The DiD estimate is the difference in within-group changes. A positive value means full-time employment grew more (or fell less) in NJ than in PA after the minimum wage increase, which contradicts the standard prediction that higher minimum wages reduce employment.
+
+**c)** Reshape to long format for regression:
+
+```{r}
+df_long = df %>%
+  mutate(id = row_number()) %>%
+  pivot_longer(
+    cols = c(fullBefore, fullAfter),
+    names_to = "period",
+    values_to = "full_emp") %>%
+  mutate(
+    post = ifelse(period == "fullAfter", 1, 0),
+    NJ   = ifelse(location != "PA", 1, 0))
+
+nrow(df_long)
+nrow(df)
+```
+
+The long-format dataset has exactly twice as many rows as the original. The DiD regression requires long format because the interaction `post × NJ` is the DiD estimator: it captures how the within-NJ change in employment (post − pre) differs from the corresponding within-PA change.
+
+# 2. DiD regression
+
+**a)** Basic DiD regression:
+
+```{r}
+m_did = feols(full_emp ~ post * NJ, data = df_long, cluster = ~id)
+modelsummary(m_did, stars = TRUE, gof_map = c("nobs", "r.squared"),
+             output = "markdown")
+```
+
+The coefficient on `post:NJ` is the DiD estimator and should match the manual calculation from 1.1b. The `post` coefficient captures the pre–post change in PA (the counterfactual trend), the `NJ` coefficient captures the baseline NJ–PA gap, and the interaction captures the additional change in NJ relative to that trend.
+
+**b)** Adding chain fixed effects:
+
+```{r}
+m_did_fe = feols(full_emp ~ post * NJ | chain, data = df_long, cluster = ~id)
+modelsummary(
+  list("DiD" = m_did, "DiD + Chain FE" = m_did_fe),
+  stars = TRUE, gof_map = c("nobs", "r.squared"),
+  output = "markdown")
+```
+
+The DiD estimate changes only slightly when chain fixed effects are added. Chain FEs absorb baseline differences in staffing levels across fast-food chains (e.g., Wendy's may have structurally different employment levels than KFC), but since chain type is roughly balanced across states, controlling for it has little impact on the DiD coefficient.
+
+**c)** The parallel trends assumption here requires that, absent the NJ minimum wage increase, employment trends in NJ and PA fast-food restaurants would have been the same from February to November 1992. This is plausible because both states share a similar economic environment and the two surveys were close together in time, limiting opportunities for diverging trends. A concrete violation would occur if NJ experienced an independent economic shock during this period --- for instance, if a major employer opened or closed plants in NJ between the two survey waves, this would change NJ employment for reasons unrelated to the minimum wage, biasing the DiD estimate.
+
+# 3. Wages as a validation check
+
+**a)** DiD for wages (first-stage check):
+
+```{r}
+df_long_wage = df %>%
+  mutate(id = row_number()) %>%
+  pivot_longer(
+    cols = c(wageBefore, wageAfter),
+    names_to = "period",
+    values_to = "wage") %>%
+  mutate(
+    post = ifelse(period == "wageAfter", 1, 0),
+    NJ   = ifelse(location != "PA", 1, 0))
+
+m_wage = feols(wage ~ post * NJ, data = df_long_wage, cluster = ~id)
+modelsummary(m_wage, stars = TRUE, gof_map = c("nobs", "r.squared"),
+             output = "markdown")
+```
+
+The interaction coefficient `post:NJ` is positive and statistically significant: wages rose substantially in NJ relative to PA after the policy change, and the magnitude is consistent with the \$0.80 minimum wage increase ($5.05 - $4.25). This is precisely the sign and magnitude one would expect if the law was actually binding.
+
+**b)** The wage DiD serves as a "first stage" or manipulation check. If wages had not risen in NJ after the minimum wage increase, it would be unclear whether the study is truly estimating the effect of a minimum wage change at all --- the law might not have been binding, or firms might have already been paying above the new minimum. The fact that wages did rise in NJ gives us confidence that the treatment actually occurred as intended, so the employment DiD can be credibly interpreted as a causal response to the minimum wage increase rather than a spurious or null comparison.

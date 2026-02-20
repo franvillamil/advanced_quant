@@ -1,0 +1,852 @@
+% ----------------------------------------------------
+\begin{frame}
+  \titlepage
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Today's goals}
+\centering
+
+\begin{itemize}[<+->]
+\item Understand Difference-in-Differences as an extension of TWFE
+\item Learn the 2$\times$2 DiD setup and the parallel trends assumption
+\item Interpret the DiD regression coefficient
+\item Use event studies to visualize dynamic effects and test pre-trends
+\item Understand the staggered DiD problem and modern solutions
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This lecture is the natural continuation of Panel Data I. Last session, two-way fixed effects used within-unit variation net of common time trends. Today we add the causal design layer: instead of a general panel, we have an intervention that affected some units (the treated group) but not others (the control group). DiD combines the FE logic with an explicit treatment-control comparison. The methods we cover --- especially the modern staggered DiD estimators --- are at the frontier of applied research in political science and economics.}
+
+% ====================================================
+\section{From Fixed Effects to DiD}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Recap: what fixed effects does}
+\centering
+
+\vspace{8pt}
+
+$$y_{it} = \alpha_i + \gamma_t + \beta x_{it} + \varepsilon_{it}$$
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item $\alpha_i$: absorbs all \textbf{time-invariant} unit differences
+\item $\gamma_t$: absorbs all \textbf{unit-invariant} time shocks
+\item $\hat{\beta}$: identified from within-unit variation, net of common trends
+\vspace{8pt}
+\item But TWFE treats $x_{it}$ as a continuous variable that varies continuously over time
+\item What if the variation comes from a \textbf{specific, discrete intervention}?
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Briefly ground today's lecture in the previous session. TWFE with a continuously varying $x_{it}$ is one use case of panel data. But a very important and common use case is a policy intervention: something happens at a specific point in time to a specific set of units. DiD is the framework for this. Stress that DiD does not replace TWFE --- it is TWFE with an explicit causal design layered on top. The difference is in how we think about identification and what assumption we are willing to defend.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{A new question: policy interventions}
+\centering
+
+\vspace{10pt}
+
+\begin{tikzpicture}[
+  box/.style={draw, rounded corners, minimum width=4.2cm, minimum height=0.9cm, align=center, font=\small},
+  arrow/.style={->, thick, accent}
+]
+  \node[box, fill=accent!10]  (q)  at (0, 3.0) {A policy affects \textbf{some} units\\but not others};
+  \node[box, fill=accent2!10] (p)  at (0, 1.5) {Treated group: units that received\\the policy};
+  \node[box, fill=accent2!10] (c)  at (0, 0.0) {Control group: units that did not};
+  \node[box, fill=accent!10]  (id) at (0,-1.5) {Compare: treated vs.\ control,\\before vs.\ after};
+  \draw[arrow] (q)  -- (p);
+  \draw[arrow] (p)  -- (c);
+  \draw[arrow] (c)  -- (id);
+\end{tikzpicture}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This frame sets up the conceptual scaffolding for DiD. The scenario is everywhere in social science: a minimum wage increase in one state but not another; electoral reform in some countries but not others; a public health intervention rolled out in some regions. The key is that we have a comparison group that did not receive the treatment and can serve as a counterfactual. DiD exploits this variation: we compare the change in outcomes for the treated group to the change in outcomes for the control group.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Running example: Card \& Krueger (1994)}
+\centering
+
+\vspace{8pt}
+
+\begin{itemize}[<+->]
+\item \textbf{Question}: Does raising the minimum wage reduce employment?
+\item \textbf{Policy}: NJ raised the minimum wage on April 1, 1992 --- from \$4.25 to \$5.05 per hour
+\item \textbf{Design}:
+  \begin{itemize}
+  \item \textbf{Treatment}: fast-food restaurants in New Jersey (NJ)
+  \item \textbf{Control}: fast-food restaurants in Pennsylvania (PA)
+  \item \textbf{Before}: Feb--Mar 1992; \textbf{After}: Nov--Dec 1992
+  \end{itemize}
+\item Pennsylvania did not change its minimum wage
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Card and Krueger (1994) is the classic DiD paper and remains one of the most cited papers in labor economics. The conventional wisdom at the time was that minimum wage increases reduce employment (basic supply-demand). Card and Krueger challenged this using a natural experiment: NJ happened to raise its minimum wage while neighboring PA did not. This makes PA a natural control group. The idea is that NJ and PA fast-food restaurants face similar economic conditions, so PA's employment trajectory tells us what NJ's would have been without the policy. Walk through the timing carefully: ``before'' is measured before the NJ increase, ``after'' is measured several months after.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The 2$\times$2 DiD table}
+\centering
+
+\vspace{8pt}
+
+\begin{tikzpicture}[
+  cell/.style={draw, minimum width=3.2cm, minimum height=1.1cm, align=center, font=\small},
+  head/.style={draw, minimum width=3.2cm, minimum height=0.8cm, align=center,
+               font=\small\bfseries, fill=accent!15},
+  cornerhead/.style={draw, minimum width=2.2cm, minimum height=0.8cm, align=center,
+                     font=\small\bfseries, fill=accent!5}
+]
+  % Column headers
+  \node[cornerhead]                     at (-1.1, 1.6) {};
+  \node[head]                           at ( 1.6, 1.6) {Before};
+  \node[head]                           at ( 4.8, 1.6) {After};
+  % Row headers
+  \node[head, minimum width=2.2cm]      at (-1.1, 0.5) {Control (PA)};
+  \node[head, minimum width=2.2cm]      at (-1.1,-0.7) {Treated (NJ)};
+  % Cells
+  \node[cell] (cc) at (1.6,  0.5) {$\bar{y}_{C,pre}$};
+  \node[cell] (ca) at (4.8,  0.5) {$\bar{y}_{C,post}$};
+  \node[cell] (tc) at (1.6, -0.7) {$\bar{y}_{T,pre}$};
+  \node[cell] (ta) at (4.8, -0.7) {$\bar{y}_{T,post}$};
+  % DiD annotation
+  \node[font=\footnotesize, accent2] at (3.2,-1.7)
+    {$\hat{\delta}_{\text{DiD}} = (\bar{y}_{T,post} - \bar{y}_{T,pre}) - (\bar{y}_{C,post} - \bar{y}_{C,pre})$};
+\end{tikzpicture}
+
+\vspace{8pt}
+
+\begin{itemize}[<+->]
+\item Control group change: what would have happened \textbf{without} treatment
+\item DiD subtracts this ``counterfactual trend'' from the treated group change
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This 2$\times$2 table is the most important thing to get right. Walk through each cell: top-left is average employment in PA before the NJ wage hike; top-right is average employment in PA after; bottom-left is NJ before; bottom-right is NJ after. The DiD formula subtracts the control group's change (PA's before-to-after difference) from the treated group's change (NJ's before-to-after difference). The PA change is our estimate of what would have happened to NJ employment in the absence of the policy. The residual --- the DiD --- is the causal effect. In Card and Krueger, the DiD was positive: NJ employment actually went up relative to PA, challenging the conventional view.}
+
+% ====================================================
+\section{The DiD Estimator}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The DiD formula}
+\centering
+
+\vspace{10pt}
+
+$$\hat{\delta} = \underbrace{(\bar{y}_{T,post} - \bar{y}_{T,pre})}_{\text{treated group change}} - \underbrace{(\bar{y}_{C,post} - \bar{y}_{C,pre})}_{\text{control group change}}$$
+
+\vspace{15pt}
+
+\begin{itemize}[<+->]
+\item \textbf{Treated change}: NJ employment went from 20.4 to 21.0 FTEs per restaurant ($+0.59$)
+\item \textbf{Control change}: PA employment went from 23.3 to 21.2 FTEs per restaurant ($-2.17$)
+\vspace{8pt}
+\item $\hat{\delta} = 0.59 - (-2.17) = +2.76$
+\vspace{8pt}
+\item Interpretation: the minimum wage \textbf{raised} NJ employment by $\approx$2.76 FTEs relative to PA
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Work through the Card-Krueger numbers concretely. The raw NJ change is small and positive; the raw PA change is negative. Because PA employment fell over the same period (probably due to the broader recession), the counterfactual for NJ is also a decline. DiD shows that NJ outperformed this counterfactual by about 2.76 full-time equivalent employees per restaurant. This is a striking result that upended conventional wisdom. The numbers here are rounded from the original paper --- encourage students to look up the original Table 3 in Card and Krueger (1994). Stress that the sign and magnitude of DiD depend critically on what the control group did: if we had not subtracted the PA trend, we would have dramatically underestimated the effect.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The regression formulation}
+\centering
+
+\vspace{6pt}
+
+\begin{align*}
+y_{it} &= \alpha + \beta_1 \underbrace{Post_t}_{\text{time}} + \beta_2 \underbrace{Treat_i}_{\text{group}} \\
+       &\quad + \delta \underbrace{(Post_t \times Treat_i)}_{\text{interaction = DiD}} + \varepsilon_{it}
+\end{align*}
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item $Post_t = 1$ if observation is in the post-treatment period
+\item $Treat_i = 1$ if unit is in the treatment group
+\item $\delta$ = \textbf{DiD coefficient of interest}: causal effect of treatment
+\vspace{8pt}
+\item $\alpha$: control group mean, pre-period
+\item $\beta_1$: time trend (common to both groups)
+\item $\beta_2$: pre-period difference between groups
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The regression formulation is algebraically equivalent to the 2$\times$2 table but extends easily to more units and more time periods. Walk through each coefficient: $\alpha$ is the intercept, i.e., the expected value for the control group before treatment. $\beta_1$ captures how much outcomes changed from pre to post for the control group. $\beta_2$ captures the pre-period level difference between treated and control. The interaction $\delta$ is the DiD: how much the treated group's post-period outcome deviates from what we would predict based on the common time trend plus the pre-period group difference. Emphasize that $\delta$ is the only parameter of causal interest; the others are nuisance parameters.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Regression: recovering the 2$\times$2 cells}
+\centering
+
+\vspace{5pt}
+
+{\footnotesize
+\begin{tabular}{lcc}
+\hline
+ & \textbf{Before} ($Post=0$) & \textbf{After} ($Post=1$) \\
+\hline
+\textbf{Control} ($Treat=0$) & $\alpha$ & $\alpha + \beta_1$ \\
+\textbf{Treated} ($Treat=1$) & $\alpha + \beta_2$ & $\alpha + \beta_1 + \beta_2 + \delta$ \\
+\hline
+\end{tabular}
+}
+
+\vspace{12pt}
+
+\begin{itemize}[<+->]
+\item DiD from table: $((\alpha + \beta_1 + \beta_2 + \delta) - (\alpha + \beta_2)) - ((\alpha + \beta_1) - \alpha)$
+\item $= (\beta_1 + \delta) - \beta_1 = \delta$ \checkmark
+\vspace{8pt}
+\item The regression recovers $\hat{\delta}$ automatically via OLS
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This algebraic derivation shows that the regression is doing exactly what the 2$\times$2 table does, just packaged as OLS. Plugging $Post=0, Treat=0$ gives $\alpha$ (control pre-period). Plugging $Post=1, Treat=0$ gives $\alpha+\beta_1$ (control post-period). Plugging $Post=0, Treat=1$ gives $\alpha+\beta_2$ (treated pre-period). Plugging $Post=1, Treat=1$ gives $\alpha+\beta_1+\beta_2+\delta$ (treated post-period). Take the differences as in the DiD formula and everything cancels except $\delta$. This is reassuring: the regression is a convenient way to run the same calculation with standard errors.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{DiD in R with \texttt{feols}}
+\centering
+
+\begin{itemize}[<+->]
+\item Basic 2$\times$2 DiD (two groups, two periods):
+  \begin{itemize}
+  \item[] \texttt{feols(employment \textasciitilde{} post * treat,}
+  \item[] \texttt{\hspace{12pt}data = df, cluster = \textasciitilde{}state)}
+  \end{itemize}
+\vspace{8pt}
+\item With multiple units and periods, use TWFE:
+  \begin{itemize}
+  \item[] \texttt{feols(employment \textasciitilde{} treated | unit + time,}
+  \item[] \texttt{\hspace{12pt}data = df, cluster = \textasciitilde{}unit)}
+  \end{itemize}
+\vspace{8pt}
+\item \texttt{treated} $= Post_t \times Treat_i$: a single binary indicator
+\item Unit and time FE replace the $Treat_i$ and $Post_t$ dummies
+\vspace{8pt}
+\item Always cluster standard errors at the \textbf{treatment level}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{In practice, with more than two units, the preferred formulation absorbs the $Treat_i$ and $Post_t$ terms into unit and time fixed effects and includes only the interaction (the \texttt{treated} dummy) as the regressor of interest. This is the standard panel DiD regression. Note that in \texttt{feols}, the \texttt{|} separates the regressor from the FEs, so \texttt{feols(y \textasciitilde{} treated | unit + time)} is equivalent to running OLS with unit dummies, year dummies, and the treatment dummy. Clustering at the unit level is standard: treatment is assigned at the unit level, and errors within a unit are correlated over time. The two syntaxes (interaction vs.\ FE absorbing group/time) give identical estimates in the simple 2$\times$2 case.}
+
+% ====================================================
+\section{Parallel Trends and Its Threats}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The key assumption: parallel trends}
+\centering
+
+\vspace{8pt}
+
+\begin{block}{Parallel Trends Assumption}
+In the absence of treatment, the treated and control groups would have\\
+followed the \textbf{same time trend}.
+\end{block}
+
+\vspace{12pt}
+
+\begin{itemize}[<+->]
+\item What this allows: use the control group's post-period change as the\\
+  \textbf{counterfactual trend} for the treated group
+\vspace{8pt}
+\item What this does \textbf{not} require:
+  \begin{itemize}
+  \item The two groups need not have the same baseline level
+  \item Pre-period outcomes can differ --- just not the trends
+  \end{itemize}
+\vspace{8pt}
+\item This is an \textbf{assumption}, not a testable fact\\
+  (we cannot observe the counterfactual)
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Parallel trends is the linchpin of DiD. Make sure students understand what it says and what it does not say. It does NOT require NJ and PA to have the same average employment level. They can differ by any amount (that difference is absorbed by $\beta_2$ in the regression). What it requires is that absent the minimum wage increase, the change in NJ employment would have been the same as the change in PA employment. If PA had an economic boom in 1992 that NJ missed, or if NJ had structural changes underway independently, parallel trends would be violated. The key phrase ``in the absence of treatment'' makes this counterfactual and thus untestable in the post-period --- we can only observe the actual trajectory of NJ after the wage hike.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Parallel trends: visualization}
+\centering
+
+\vspace{8pt}
+
+\begin{tikzpicture}[scale=0.85]
+  % Axes
+  \draw[->, thick] (0,0) -- (8.5,0) node[right] {\small Time};
+  \draw[->, thick] (0,0) -- (0,5.5) node[above] {\small Outcome};
+  % Treatment date line
+  \draw[dashed, asher, thick] (4.5,0) -- (4.5,5.2);
+  \node[asher, font=\footnotesize] at (4.5,-0.35) {Treatment};
+  % Control group: flat pre, flat post (same slope)
+  \draw[accent, very thick] (0.5,2.0) -- (4.5,2.8);
+  \draw[accent, very thick] (4.5,2.8) -- (8.0,3.6);
+  \node[accent, font=\footnotesize] at (1.0,1.6) {Control};
+  % Treated group: same pre-trend, diverges post
+  \draw[accent2, very thick] (0.5,1.2) -- (4.5,2.0);
+  \draw[accent2, very thick, dashed] (4.5,2.0) -- (8.0,2.8);  % counterfactual
+  \draw[accent2, very thick] (4.5,2.0) -- (8.0,4.5);           % actual
+  \node[accent2, font=\footnotesize] at (1.0,0.8) {Treated};
+  % DiD arrow
+  \draw[<->, jet, thick] (7.8,2.8) -- (7.8,4.5);
+  \node[jet, font=\footnotesize] at (8.5, 3.65) {$\hat{\delta}$};
+  % Labels
+  \node[accent2, font=\footnotesize] at (6.5,2.3) {\textit{counterfactual}};
+  % Parallel pre-trend annotation
+  \draw[<->, accent!60!jet, thin] (2.0,1.55) -- (2.0,2.35);
+  \node[accent!60!jet, font=\scriptsize] at (2.8,1.95) {level diff.\ OK};
+\end{tikzpicture}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Walk through this diagram carefully. Pre-period: both lines have the same slope (parallel trends holds). There is a level difference between them, but that is fine. At the treatment date, the treated group diverges upward. The dashed line shows the counterfactual: what treated units would have done absent treatment, following the same slope as control. The DiD estimate $\hat{\delta}$ is the vertical gap between the actual treated trajectory and the counterfactual at the post-period. The diagram also shows that a level difference in the pre-period is completely fine --- DiD subtracts it out. What would break the identification is if the two lines had different slopes in the pre-period.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{What can violate parallel trends?}
+\centering
+
+\begin{itemize}[<+->]
+\item \textbf{Selection into treatment correlated with trends}
+  \begin{itemize}
+  \item Units that adopt the policy were already on different trajectories
+  \item Example: states with rising employment pre-trend more likely to adopt minimum wage
+  \end{itemize}
+\vspace{8pt}
+\item \textbf{Simultaneous confounders}
+  \begin{itemize}
+  \item Another event coincides with the treatment
+  \item Example: NJ also changed another labor market policy in 1992
+  \end{itemize}
+\vspace{8pt}
+\item \textbf{Anticipation effects}
+  \begin{itemize}
+  \item Treated units change behavior before the official treatment date
+  \item Example: firms start hiring/firing when the wage increase is announced
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{These three threats are the main reasons DiD can fail. Selection into treatment is the hardest to rule out: if units choose to adopt a policy, they may do so precisely because they were on an upward trajectory (or downward). Simultaneous confounders are like the classic OVB story but applied to time: something else changes at the same time as the treatment. Anticipation effects shift the true treatment date earlier than the nominal date, which means the ``pre-period'' data already reflects the policy. In Card and Krueger, the anticipation concern is minor (the minimum wage increase was legislated some time before April 1992, but it is unclear how much restaurants adjusted in advance). The simultaneous confounders concern is addressed by using adjacent PA as the control: any statewide NJ confounders are unlikely to affect PA.}
+
+% ----------------------------------------------------
+\begin{frame}
+\centering
+\vspace{30pt}
+{\large The parallel trends assumption says treatment would not\\
+have changed the outcome trajectory.\\\vspace{18pt}
+When is this plausible?\\
+\vspace{18pt}
+What makes NJ and PA a good comparison?}
+\end{frame}
+% ----------------------------------------------------
+\note{Discussion prompt. Expected answers: (1) NJ and PA are geographically adjacent with similar labor markets, similar demographics, similar consumer patterns. (2) The policy change was relatively small (a \$0.80 increase). (3) The fast-food sector is similar in both states. (4) One concern: if NJ and PA have different underlying economic trends (NJ's economy was recovering faster), parallel trends might fail. (5) Another concern: if firms had already started adjusting in anticipation of the wage increase, the ``pre-period'' data from Feb-Mar 1992 might already reflect the shock. Allow 1-2 minutes of student input.}
+
+% ====================================================
+\section{Event Studies}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Beyond the single post-period}
+\centering
+
+\begin{itemize}[<+->]
+\item The 2$\times$2 DiD uses one pre and one post period
+\vspace{8pt}
+\item With panel data spanning many periods, we can do \textbf{more}:
+  \begin{itemize}
+  \item Estimate treatment effects at each time point relative to treatment
+  \item Trace out the \textbf{dynamic path} of the effect
+  \end{itemize}
+\vspace{8pt}
+\item Two purposes:
+  \begin{itemize}
+  \item \textbf{Pre-trend test}: were pre-treatment trends actually parallel?
+  \item \textbf{Dynamic effects}: does the effect grow, fade, or remain constant?
+  \end{itemize}
+\vspace{8pt}
+\item This is the \textbf{event study} design
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The event study is the modern standard for DiD analysis with multiple periods. It extends the simple post-dummy to a full set of leads and lags around the treatment date. Pre-treatment coefficients (leads) should be near zero if parallel trends holds: they test whether the treated and control groups were already diverging before the intervention. Post-treatment coefficients (lags) show how the effect evolves: does it appear immediately, build over time, or dissipate? Seeing the full dynamic profile is much more informative than a single DiD number. Most good applied papers now include an event study plot alongside the main DiD estimate.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Event study regression}
+\centering
+
+\vspace{6pt}
+
+$$y_{it} = \alpha_i + \gamma_t + \sum_{k \neq -1} \delta_k \cdot \mathbf{1}[t - T_i^* = k] + \varepsilon_{it}$$
+
+\vspace{8pt}
+
+\begin{itemize}[<+->]
+\item $T_i^*$: treatment date for unit $i$
+\item $k = t - T_i^*$: time relative to treatment ($k<0$: pre, $k \geq 0$: post)
+\item $k = -1$: \textbf{omitted reference period} (normalization)
+\vspace{8pt}
+\item \textbf{Pre-treatment} ($k < 0$): $\delta_k \approx 0$ if parallel trends holds
+\item \textbf{Post-treatment} ($k \geq 0$): trace out dynamic causal effects
+\vspace{8pt}
+\item Unit and time FE absorb levels; $\delta_k$ captures relative changes
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Walk through the notation carefully. $T_i^*$ is the period in which unit $i$ receives treatment. For unit $i$ in period $t$, $k = t - T_i^*$ is the distance from treatment. If $k = -3$, we are three periods before treatment; if $k = 2$, we are two periods after. The omitted category $k = -1$ normalizes everything relative to the period just before treatment. So all $\delta_k$ coefficients measure ``how much did outcomes change relative to the period just before treatment?'' Pre-treatment $\delta_k$ should be near zero (no pre-trend); post-treatment $\delta_k$ should reflect the causal effect. Choosing $k=-1$ as the reference is conventional and sets the comparison point cleanly just before the intervention.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Event study: coefficient plot}
+\centering
+
+\vspace{5pt}
+
+\begin{tikzpicture}[scale=0.82]
+  % Axes
+  \draw[->, thick] (-0.3,0) -- (9.8,0) node[right] {\small Relative time $k$};
+  \draw[->, thick] (0,-2.5) -- (0,3.5) node[above] {\small $\hat{\delta}_k$};
+  % Zero line
+  \draw[asher, thin] (-0.2,0) -- (9.6,0);
+  % Treatment line
+  \draw[dashed, jet, thick] (5.0,-2.4) -- (5.0,3.3);
+  \node[jet, font=\scriptsize] at (5.0,-2.7) {$k=0$};
+  % x-axis labels (k = -4 to +4, at positions 1 to 9)
+  \foreach \pos/\lab in {1/$-4$, 2/$-3$, 3/$-2$, 4/$-1$, 5/$0$, 6/$1$, 7/$2$, 8/$3$, 9/$4$}{
+    \node[font=\scriptsize, asher] at (\pos,-0.35) {\lab};
+  }
+  % Reference period (k=-1) marker
+  \node[font=\scriptsize, accent!70!jet] at (4,-0.6) {\textit{ref}};
+  % Pre-period coefficients (near zero with small CIs)
+  \foreach \pos/\est/\se in {1/0.05/0.18, 2/-0.10/0.15, 3/0.12/0.14}{
+    \draw[accent, thick] (\pos, \est-1.65*\se) -- (\pos, \est+1.65*\se);
+    \fill[accent] (\pos,\est) circle (3pt);
+  }
+  % Reference period (zero by construction)
+  \fill[asher] (4,0) circle (3pt);
+  % Post-period coefficients (rising, with growing CIs)
+  \foreach \pos/\est/\se in {5/0.85/0.22, 6/1.40/0.28, 7/1.65/0.35, 8/1.70/0.42, 9/1.50/0.50}{
+    \draw[accent2, thick] (\pos, \est-1.65*\se) -- (\pos, \est+1.65*\se);
+    \fill[accent2] (\pos,\est) circle (3pt);
+  }
+  % Annotations
+  \node[accent,  font=\scriptsize] at (2.0, 2.8) {Pre: near zero};
+  \node[accent2, font=\scriptsize] at (7.5, 2.8) {Post: causal effect};
+  \draw[->, accent,  thin] (2.0,2.5) -- (1.5,0.3);
+  \draw[->, accent2, thin] (7.5,2.5) -- (6.5,1.5);
+\end{tikzpicture}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This coefficient plot is the standard visualization for event studies. Walk through the four quadrants of interpretation: (1) Pre-period coefficients near zero --- good, this supports parallel trends. (2) Post-period coefficients rising after treatment --- the policy had a positive and growing effect. (3) Confidence intervals widening over time --- normal, since we have fewer observations far from the treatment date. (4) Reference period at zero by construction. Students sometimes confuse the reference period (which is zero by definition) with a pre-trend test result. Emphasize: the pre-trend test comes from the \textit{other} pre-period coefficients ($k = -4, -3, -2$), not from the reference period itself. In the plot shown, the pre-trend test passes: coefficients are small and statistically indistinguishable from zero.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Event study in R}
+\centering
+
+\begin{itemize}[<+->]
+\item Using \texttt{feols()} with \texttt{i()} for interaction syntax:
+  \begin{itemize}
+  \item[] \texttt{feols(y \textasciitilde{} i(rel\_time, treated, ref = -1)}
+  \item[] \texttt{\hspace{12pt}| unit + year, data = df, cluster = \textasciitilde{}unit)}
+  \end{itemize}
+\vspace{8pt}
+\item \texttt{rel\_time}: variable with $k = t - T_i^*$ (relative time to treatment)
+\item \texttt{treated}: binary indicator for treated units
+\item \texttt{ref = -1}: omit $k = -1$ as reference period
+\vspace{8pt}
+\item Plot with \texttt{iplot()} (coefficient plot with CIs):
+  \begin{itemize}
+  \item[] \texttt{iplot(m\_es, main = "Event Study")}
+  \end{itemize}
+\vspace{8pt}
+\item \texttt{fixest} makes event studies very easy to run and plot
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Walk through the \texttt{feols()} syntax for event studies. The \texttt{i()} function in \texttt{fixest} is designed for exactly this kind of interaction: it creates indicators for each value of \texttt{rel\_time}, interacted with \texttt{treated}, and omits the reference value. The output is a set of coefficients $\hat{\delta}_k$ for each $k \neq -1$. The \texttt{iplot()} function then plots these automatically with 95\% confidence intervals. The full workflow --- compute relative time variable, run \texttt{feols} with \texttt{i()}, plot with \texttt{iplot()} --- takes about 10 lines of R code. Students should practice this in the assignment. Note: \texttt{rel\_time} must be created manually as \texttt{mutate(rel\_time = year - treatment\_year)} before running the model.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Reading an event study plot}
+\centering
+
+\vspace{8pt}
+
+\begin{itemize}[<+->]
+\item \textbf{Pre-trend test}: are pre-treatment $\hat{\delta}_k$ jointly near zero?
+  \begin{itemize}
+  \item If yes: supports parallel trends (not proof, but reassuring)
+  \item If no: parallel trends likely violated --- DiD is not credible
+  \end{itemize}
+\vspace{8pt}
+\item \textbf{Dynamic effects}: what do post-treatment $\hat{\delta}_k$ look like?
+  \begin{itemize}
+  \item Immediate jump at $k=0$: effect appears right away
+  \item Gradual build-up: effect grows over time (lagged adjustment)
+  \item Decay: initial effect fades (people adapt, spillovers, attrition)
+  \end{itemize}
+\vspace{8pt}
+\item \textbf{Symmetry}: sometimes useful to check behavior far pre-treatment
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This frame provides the interpretive toolkit for reading event study plots. The pre-trend test is the most important: if the lines are bouncing around before treatment, it signals the two groups had different trends even before the policy, which undermines the entire DiD logic. The dynamic profile is also informative: labor market effects might take quarters to materialize (as firms adjust their workforce slowly); political effects might appear immediately (as people update beliefs); health effects might grow over time (as diseases progress or health habits change). Understanding the expected dynamic profile from theory helps assess whether the event study pattern is plausible.}
+
+% ====================================================
+\section{Staggered DiD and Recent Advances}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Staggered treatment adoption}
+\centering
+
+\vspace{8pt}
+
+\begin{tikzpicture}[scale=0.85]
+  % Axes
+  \draw[->, thick] (0,0) -- (9.5,0) node[right] {\small Time};
+  % Unit labels
+  \foreach \u/\lab in {1/Unit A, 2/Unit B, 3/Unit C, 4/Unit D, 5/Unit E}{
+    \node[font=\footnotesize, anchor=east] at (-0.1, 4.2 - \u*0.7) {\lab};
+    \draw[asher!40, thin] (0, 4.2-\u*0.7) -- (9.2, 4.2-\u*0.7);
+  }
+  % Year ticks
+  \foreach \t/\lab in {1/2010, 2/2011, 3/2012, 4/2013, 5/2014, 6/2015, 7/2016, 8/2017}{
+    \draw[thin] (\t, -0.1) -- (\t, 0.1);
+    \node[font=\scriptsize, asher] at (\t, -0.35) {\lab};
+  }
+  % Treatment adoption: different years for each unit
+  % Unit A: treated in 2012 (t=3)
+  \draw[accent, very thick] (0.2, 3.5) -- (3.0, 3.5);
+  \draw[accent2, very thick] (3.0, 3.5) -- (8.8, 3.5);
+  \fill[accent2] (3.0, 3.5) circle (4pt);
+  \node[font=\scriptsize, accent2] at (3.0, 3.8) {$g=2012$};
+  % Unit B: treated in 2013 (t=4)
+  \draw[accent, very thick] (0.2, 2.8) -- (4.0, 2.8);
+  \draw[accent2, very thick] (4.0, 2.8) -- (8.8, 2.8);
+  \fill[accent2] (4.0, 2.8) circle (4pt);
+  \node[font=\scriptsize, accent2] at (4.0, 3.1) {$g=2013$};
+  % Unit C: treated in 2015 (t=6)
+  \draw[accent, very thick] (0.2, 2.1) -- (6.0, 2.1);
+  \draw[accent2, very thick] (6.0, 2.1) -- (8.8, 2.1);
+  \fill[accent2] (6.0, 2.1) circle (4pt);
+  \node[font=\scriptsize, accent2] at (6.0, 2.4) {$g=2015$};
+  % Unit D: never treated
+  \draw[accent, very thick] (0.2, 1.4) -- (8.8, 1.4);
+  \node[font=\scriptsize, accent!70!jet] at (4.5, 1.1) {\textit{never treated}};
+  % Unit E: never treated
+  \draw[accent, very thick] (0.2, 0.7) -- (8.8, 0.7);
+\end{tikzpicture}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Staggered treatment is the most common pattern in observational policy research. Think of US states adopting right-to-carry laws in different years, countries implementing family leave policies at different times, or municipalities rolling out broadband internet in different waves. Units A, B, C adopt the policy at different times (their treatment cohort $g$ varies). Units D and E never adopt. The key insight is that in this setting we have multiple 2$\times$2 DiDs: early vs.\ late adopters, early vs.\ never treated, late vs.\ never treated. The question is how to aggregate these into a single treatment effect estimate, and whether naive TWFE does so correctly.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The problem with naive TWFE in staggered settings}
+\centering
+
+\begin{itemize}[<+->]
+\item With staggered timing, TWFE uses \textbf{all available 2$\times$2 comparisons}
+\vspace{8pt}
+\item Including: already-treated units as the \textbf{control group} for later-treated units
+  \begin{itemize}
+  \item Unit adopted in 2012 becomes ``control'' for unit adopted in 2015
+  \end{itemize}
+\vspace{8pt}
+\item This is the ``\textbf{forbidden comparison}'' problem
+  \begin{itemize}
+  \item Already-treated units are not a clean control
+  \item If treatment effects vary over time, their included effect contaminates the estimate
+  \end{itemize}
+\vspace{8pt}
+\item Result: TWFE can produce a \textbf{weighted average with negative weights}
+  \begin{itemize}
+  \item Estimate may not correspond to any valid ATT
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This is the key conceptual advance from recent econometrics work (Goodman-Bacon 2021, Callaway-Sant'Anna 2021, de Chaisemartin-D'Haultfoeuille 2020, Sun-Abraham 2021, Borusyak et al.\ 2024). The problem: in staggered settings, TWFE implicitly treats already-treated units as part of the control group for later-treated units. If treatment effects are heterogeneous (different cohorts have different effects, or effects grow over time), then the already-treated units' changing treatment effects contaminate the estimate. In the extreme, if early-treated units have large effects, TWFE can subtract those effects from the comparison and produce negative weights on some cohorts --- making the overall estimate meaningless or even reversed in sign. Goodman-Bacon (2021) showed that the TWFE estimate is a weighted average of all 2$\times$2 DiDs, with weights that can be negative.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Negative weights: the intuition}
+\centering
+
+\vspace{5pt}
+
+\begin{tikzpicture}[scale=0.85]
+  % Timeline: three units
+  \draw[->, thick] (0,0) -- (9.5,0) node[right] {\small Time};
+  % Periods
+  \foreach \t/\lab in {2/Pre, 5/Middle, 8/Post}{
+    \draw[thin] (\t,-0.12) -- (\t,0.12);
+    \node[font=\scriptsize, asher] at (\t,-0.35) {\lab};
+  }
+  % Early adopter (A): treated at Middle
+  \draw[accent, very thick] (0.3, 2.4) -- (5.0, 2.4);
+  \draw[accent2, very thick] (5.0, 2.4) -- (9.2, 2.4);
+  \fill[accent2] (5.0,2.4) circle (4pt);
+  \node[font=\footnotesize, anchor=east] at (0.2, 2.4) {Early (A)};
+  \node[font=\scriptsize, accent2] at (6.5, 2.7) {\textit{treated since Middle}};
+  % Late adopter (B): treated at Post
+  \draw[accent, very thick] (0.3, 1.4) -- (8.0, 1.4);
+  \draw[accent2, very thick] (8.0, 1.4) -- (9.2, 1.4);
+  \fill[accent2] (8.0,1.4) circle (4pt);
+  \node[font=\footnotesize, anchor=east] at (0.2, 1.4) {Late (B)};
+  % Never treated
+  \draw[accent, very thick] (0.3, 0.4) -- (9.2, 0.4);
+  \node[font=\footnotesize, anchor=east] at (0.2, 0.4) {Never (C)};
+  % Forbidden comparison label
+  \draw[<->, jet, thick, dashed] (6.5, 1.4) -- (6.5, 2.4);
+  \node[jet, font=\scriptsize, align=center] at (6.5, 0.9)
+    {\textbf{Forbidden:} A (already treated)\\used as control for B};
+\end{tikzpicture}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This diagram makes the forbidden comparison concrete. Consider the Middle-to-Post window: unit B is being treated in the Post period, so the natural DiD comparison is Middle-to-Post for B vs.\ C (never treated). But TWFE also uses A vs.\ B in this window, treating A as the control --- even though A has already been treated since the Middle period and its outcome is changing due to the ongoing treatment effect. If A's treatment effect is growing from Middle to Post, then using A as the control produces a negative contribution to the B estimate. The fix is to restrict comparisons to ``clean'' control groups: never-treated or not-yet-treated units.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Modern alternatives: Callaway-Sant'Anna (2021)}
+\centering
+
+\begin{itemize}[<+->]
+\item Key idea: estimate \textbf{group-time ATTs} $ATT(g,t)$ separately
+  \begin{itemize}
+  \item $g$: treatment cohort (when the unit was first treated)
+  \item $t$: calendar time
+  \item Compare cohort $g$ to clean controls (never-treated or not-yet-treated)
+  \end{itemize}
+\vspace{8pt}
+\item Then \textbf{aggregate} $ATT(g,t)$ as desired:
+  \begin{itemize}
+  \item Overall average ATT
+  \item ATT by event-time (dynamic/event study)
+  \item ATT by calendar time
+  \end{itemize}
+\vspace{8pt}
+\item Avoids forbidden comparisons entirely
+\item Works even with \textbf{heterogeneous treatment effects}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Callaway and Sant'Anna (2021) is now the standard reference for staggered DiD. The key innovation is to go back to basics: estimate a separate DiD for every (treatment cohort, calendar time) pair, using only clean controls. These group-time average treatment effects $ATT(g,t)$ are then aggregated using researcher-specified weights. This modular approach is more transparent and honest about what comparisons are being made. The aggregation step is flexible: you can get an overall average, a dynamic (event-time) profile, or a period-by-period estimate. The cost is slightly less precision (fewer observations in each cell), but the benefit is that the estimates are interpretable under much weaker assumptions.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Modern alternatives: ETWFE (Wooldridge 2021)}
+\centering
+
+\begin{itemize}[<+->]
+\item \textbf{Extended TWFE}: stays within the regression framework
+\vspace{8pt}
+\item Key idea: interact treatment with cohort dummies and time dummies
+  \begin{itemize}
+  \item Each cohort gets its own treatment effect profile
+  \item Avoids the averaging-over-cohorts problem of naive TWFE
+  \end{itemize}
+\vspace{8pt}
+\item Estimating a richer model, not a simpler one
+\vspace{8pt}
+\item Same identifying assumptions as Callaway-Sant'Anna
+\item Easier to implement in standard regression software
+\vspace{8pt}
+\item In R: \texttt{etwfe} package by Grant McDermott
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{ETWFE (Wooldridge 2021, implemented in R by McDermott) is a practical alternative to Callaway-Sant'Anna that stays closer to the regression-based TWFE framework that researchers are used to. Instead of running a single \texttt{treated} dummy in TWFE, ETWFE interacts the treatment indicator with cohort fixed effects and time fixed effects, allowing each cohort to have a different treatment effect at each time period. The estimates are then marginal effects (average treatment effects on the treated), aggregated appropriately. The advantage is simplicity: it runs as a single regression with standard post-estimation commands. Students who are comfortable with \texttt{feols} will find \texttt{etwfe} intuitive.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{In R: \texttt{did} and \texttt{etwfe} packages}
+\centering
+
+\begin{itemize}[<+->]
+\item \textbf{Callaway-Sant'Anna} via \texttt{did} package:
+  \begin{itemize}
+  \item[] \texttt{library(did)}
+  \item[] \texttt{cs = att\_gt(yname = "y", gname = "g", idname = "id",}
+  \item[] \texttt{\hspace{20pt}tname = "year", data = df)}
+  \item[] \texttt{aggte(cs, type = "simple")  \# overall ATT}
+  \item[] \texttt{aggte(cs, type = "dynamic") \# event-study ATT}
+  \end{itemize}
+\vspace{8pt}
+\item \textbf{ETWFE} via \texttt{etwfe} package:
+  \begin{itemize}
+  \item[] \texttt{library(etwfe)}
+  \item[] \texttt{m = etwfe(y \textasciitilde{} 1, tvar = year, gvar = g,}
+  \item[] \texttt{\hspace{20pt}data = df, vcov = \textasciitilde{}id)}
+  \item[] \texttt{emfx(m)  \# marginal effects = ATT}
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Walk through the syntax of both packages. For \texttt{att\_gt()}: \texttt{gname} is the variable containing the treatment cohort (year of first treatment, 0 for never treated); \texttt{tname} is the calendar time variable; \texttt{idname} is the unit identifier. The output is a large set of $ATT(g,t)$ estimates which are then passed to \texttt{aggte()} for aggregation. \texttt{type = "simple"} gives a single overall ATT; \texttt{type = "dynamic"} gives an event-study plot. For \texttt{etwfe()}: \texttt{tvar} is calendar time, \texttt{gvar} is the cohort variable, and \texttt{vcov = \textasciitilde{}id} clusters SEs by unit. The formula \texttt{y \textasciitilde{} 1} indicates no additional controls (add them as \texttt{y \textasciitilde{} x1 + x2}). After running \texttt{etwfe()}, use \texttt{emfx()} to compute marginal effects.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Naive TWFE vs.\ modern estimators}
+\centering
+
+\vspace{8pt}
+
+{\footnotesize
+\begin{tabular}{lccc}
+\hline
+ & \textbf{Naive TWFE} & \textbf{Callaway-Sant'Anna} & \textbf{ETWFE} \\
+\hline
+Clean control groups  & \textcolor{accent2}{No}  & \textcolor{accent}{Yes} & \textcolor{accent}{Yes} \\
+Heterogeneous effects & \textcolor{accent2}{Biased} & \textcolor{accent}{Handles} & \textcolor{accent}{Handles} \\
+Negative weights      & \textcolor{accent2}{Possible} & \textcolor{accent}{None} & \textcolor{accent}{None} \\
+Pre-trend test        & Via event study & Built-in & Via \texttt{emfx} \\
+Implementation        & \texttt{feols} & \texttt{did} & \texttt{etwfe} \\
+\hline
+\end{tabular}
+}
+
+\vspace{12pt}
+
+\begin{itemize}[<+->]
+\item With simultaneous treatment (all treated at same time): TWFE is fine
+\item With staggered adoption and homogeneous effects: TWFE is approximately fine
+\item With staggered adoption and \textbf{heterogeneous effects}: use CS or ETWFE
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This summary table helps students decide which estimator to use. The key question is whether treatment timing is staggered (different units treated at different times) and whether treatment effects are likely heterogeneous across cohorts or over time. If treatment is simultaneous (everyone treated in the same period), naive TWFE is fine. If treatment is staggered but effects are homogeneous across cohorts, TWFE gives approximately correct results. The problem only arises when both (a) treatment is staggered and (b) effects are heterogeneous. In practice, heterogeneity is the norm: early adopters often differ from late adopters in ways that affect how the policy operates. As a rule of thumb: in staggered settings, report both the naive TWFE and one of the robust estimators; if they agree, TWFE is fine; if they disagree, use the robust estimate.}
+
+% ====================================================
+\section{Wrap-up}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{DiD: putting it all together}
+\centering
+
+\vspace{5pt}
+
+\begin{tikzpicture}[
+  box/.style={draw, rounded corners, minimum width=4.4cm, minimum height=0.85cm, align=center, font=\small},
+  arrow/.style={->, thick, accent}
+]
+  \node[box, fill=accent!10]  (did)  at (0, 3.2) {Parallel trends + treatment/control\\design $\Rightarrow$ DiD};
+  \node[box, fill=accent!10]  (es)   at (0, 1.9) {Event study: test pre-trends\\+ trace dynamic effects};
+  \node[box, fill=accent2!10] (stag) at (0, 0.6) {Staggered adoption:\\naive TWFE can be biased};
+  \node[box, fill=accent!10]  (fix)  at (0,-0.7) {Modern fix: Callaway-Sant'Anna\\or ETWFE};
+  \draw[arrow] (did)  -- (es);
+  \draw[arrow] (es)   -- (stag);
+  \draw[arrow] (stag) -- (fix);
+\end{tikzpicture}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Use this summary diagram to consolidate the narrative arc of the lecture. DiD adds a causal design layer on top of TWFE: treated vs.\ control groups, before vs.\ after the intervention. The parallel trends assumption is the identification engine. Event studies extend DiD to multiple periods, allowing both a pre-trend test and estimation of dynamic effects. The staggered DiD problem arises when units adopt treatment at different times --- naive TWFE can be biased due to forbidden comparisons and negative weights. Modern estimators (Callaway-Sant'Anna, ETWFE) fix this by restricting comparisons to clean controls. Connect back to the broader course theme: good causal inference requires transparent assumptions and careful design, not just powerful methods.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Key takeaways}
+\centering
+
+\begin{itemize}[<+->]
+\item \textbf{DiD}: compare treated vs.\ control, before vs.\ after
+  \begin{itemize}
+  \item Subtract the control trend as the counterfactual
+  \end{itemize}
+\item \textbf{Parallel trends}: the key identification assumption
+  \begin{itemize}
+  \item Untestable in the post-period; probe with pre-trend tests
+  \end{itemize}
+\item \textbf{Event studies}: leads and lags around treatment
+  \begin{itemize}
+  \item Pre-treatment $\hat{\delta}_k \approx 0$: supports parallel trends
+  \end{itemize}
+\item \textbf{Staggered DiD}: naive TWFE can fail with heterogeneous effects
+  \begin{itemize}
+  \item Use Callaway-Sant'Anna (\texttt{did}) or ETWFE (\texttt{etwfe})
+  \end{itemize}
+\item Always \textbf{cluster SEs} at the treatment-assignment level
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This is the slide students should be able to reconstruct from memory. Five key points: (1) DiD logic: difference out the control trend. (2) Parallel trends: the core assumption. (3) Event studies: pre-trend test plus dynamic effects. (4) Staggered DiD: the modern problem and its solutions. (5) Clustering. Emphasize that these methods are now standard in top journals in political science, economics, sociology, and public health. Reading a recent applied paper in their field, students should be able to identify which of these elements are being used and evaluate their credibility.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{For next session}
+\centering
+
+\begin{itemize}
+\item Complete Assignment 6 (DiD application)
+\vspace{8pt}
+\item Read the assigned paper (DiD design)
+\vspace{8pt}
+\item Next session: Spatial Data (I)
+  \begin{itemize}
+  \item Spatial data structures and visualization
+  \item Spatial autocorrelation
+  \item Spatial regression models
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Preview the next session. Regression discontinuity is another quasi-experimental design that uses a cutoff rule to assign treatment. Like DiD, it relies on a specific identification assumption (no manipulation around the cutoff, continuity of potential outcomes). It is widely used in political science (electoral threshold studies, policy eligibility cutoffs). The key parallel with DiD: both designs exploit a specific feature of the data-generating process to construct a valid counterfactual. RDD uses spatial/score discontinuities; DiD uses temporal discontinuities combined with a control group.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{}
+\centering
+
+Questions?
+
+\end{frame}
+% ----------------------------------------------------
+\note{}

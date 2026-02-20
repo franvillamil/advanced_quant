@@ -1,0 +1,109 @@
+---
+title: "Assignment 6: Panel Data II -- Part 2 (Staggered DiD)"
+subtitle: "Applied Quantitative Methods for the Social Sciences II"
+date: "Spring 2026"
+output:
+  pdf_document:
+    toc: false
+geometry: margin=2cm
+header-includes:
+  - \renewcommand*\rmdefault{ppl}
+  - \usepackage{setspace}\setstretch{1.2}
+  - \DeclareUnicodeCharacter{2212}{-}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+options(stringsAsFactors = FALSE)
+```
+
+```{r packages}
+library(did)
+library(dplyr)
+library(ggplot2)
+library(fixest)
+
+data(mpdta)
+```
+
+# 1. Data structure and visualization
+
+**a)** Number of counties and treatment cohorts:
+
+```{r}
+length(unique(mpdta$countyreal))
+table(mpdta$first.treat)
+```
+
+There are 500 counties observed over five years (2003--2007). The `first.treat` variable shows four distinct values: 0 (never treated), 2004, 2006, and 2007 --- representing four treatment cohorts. This is a staggered adoption design: counties adopted a minimum wage policy in different years. Simply comparing treated vs. untreated counties ignores this timing variation and can produce biased estimates, because counties that adopted earlier may differ systematically from those that adopted later, and treatment effects may accumulate or fade over time in ways that a single treated/untreated dummy cannot capture.
+
+**b)** Average log teen employment by cohort over time:
+
+```{r, fig.height=4}
+mpdta_avg = mpdta %>%
+  mutate(cohort = factor(first.treat,
+    levels = c(0, 2004, 2006, 2007),
+    labels = c("Never treated", "Adopted 2004",
+               "Adopted 2006", "Adopted 2007"))) %>%
+  group_by(year, cohort) %>%
+  summarise(mean_lemp = mean(lemp, na.rm = TRUE))
+
+ggplot(mpdta_avg, aes(x = year, y = mean_lemp, color = cohort)) +
+  geom_line() +
+  geom_point() +
+  theme_minimal() +
+  labs(x = "Year", y = "Log teen employment", color = "Treatment cohort")
+
+ggsave("mpdta_cohort_trends.pdf", width = 7, height = 4)
+```
+
+Pre-treatment, all cohorts track relatively similar trends in log teen employment, which is encouraging for parallel trends. After treatment, the cohorts that adopted the minimum wage (particularly in 2004) tend to have lower teen employment relative to the never-treated counties, consistent with a negative employment effect of minimum wages. The 2007 cohort has only a within-sample post-treatment period in 2007, so its post-treatment pattern is limited.
+
+# 2. Naive TWFE vs. Callaway-Sant'Anna estimator
+
+**a)** Naive TWFE with a time-varying treatment indicator:
+
+```{r}
+mpdta = mpdta %>%
+  mutate(treated_post = as.integer(first.treat > 0 & year >= first.treat))
+
+m_twfe = feols(lemp ~ treated_post | countyreal + year,
+               data = mpdta, cluster = ~countyreal)
+summary(m_twfe)
+```
+
+The coefficient on `treated_post` is the TWFE estimate of the average effect of minimum wage adoption on log teen employment. This model pools all treated counties into a single group and implicitly assumes that the treatment effect is constant across cohorts and over time. If effects differ by cohort or grow/shrink after treatment --- a condition called treatment effect heterogeneity --- TWFE can be badly biased and can even recover negative weights, yielding estimates that do not correspond to any interpretable treatment effect.
+
+**b)** Callaway-Sant'Anna estimator:
+
+```{r}
+cs_out = att_gt(
+  yname         = "lemp",
+  gname         = "first.treat",
+  idname        = "countyreal",
+  tname         = "year",
+  xformla       = ~ lpop,
+  data          = mpdta,
+  control_group = "nevertreated")
+
+aggte(cs_out, type = "simple")
+```
+
+The Callaway-Sant'Anna overall ATT aggregates group-time average treatment effects using only clean comparisons: each cohort is compared to never-treated counties before and after its adoption year. Compare this estimate to the naive TWFE coefficient --- they may differ substantially, illustrating that TWFE can produce a distorted average when cohort-specific effects are heterogeneous.
+
+**c)** Dynamic event-study estimates:
+
+```{r, fig.height=4}
+cs_dyn = aggte(cs_out, type = "dynamic")
+ggdid(cs_dyn)
+
+ggsave("mpdta_event_study.pdf", width = 7, height = 4)
+```
+
+The event-study plot shows estimates for each period relative to the cohort's treatment date (negative values are pre-treatment periods, positive values are post-treatment). The pre-treatment estimates should be close to zero and statistically indistinguishable from zero; if they are, this supports the parallel trends assumption --- treated and control counties were on similar trajectories before treatment. The post-treatment estimates show the dynamic treatment effect: the immediate impact and how it evolves in subsequent periods. A growing negative effect over time would indicate that minimum wage increases progressively reduce teen employment.
+
+# 3. Discussion: why does TWFE fail in staggered settings?
+
+**a)** In a staggered DiD setting, the naive TWFE estimator implicitly uses already-treated units as part of the control group for units that receive treatment later. This is the "forbidden comparison": if a county that adopted the minimum wage in 2004 is used as a control for a county adopting in 2006, its outcome in 2006 already reflects (potentially growing) effects of its own treatment. When treatment effects are heterogeneous --- varying across cohorts or accumulating over time --- these forbidden comparisons contaminate the TWFE estimate, assigning negative weights to some group-time comparisons and potentially reversing the sign of the overall estimate. The result is a weighted average where the weights do not correspond to any meaningful population quantity.
+
+**b)** The TWFE estimate from question 2.2a and the Callaway-Sant'Anna overall ATT from question 2.2b may differ in both magnitude and, in some datasets, sign. The event-study pre-trends from question 2.2c are the key diagnostic: if the pre-treatment estimates are all close to zero, the parallel trends assumption is supported, and the Callaway-Sant'Anna estimate is more credible because it uses only valid comparisons (never-treated counties as controls) and allows for cohort-specific treatment effects. The TWFE estimate should be treated with skepticism whenever the staggered design involves heterogeneous timing and potentially heterogeneous effects, as is typical in minimum wage research where economic conditions at adoption differ across states and years.
