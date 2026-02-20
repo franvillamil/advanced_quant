@@ -9,7 +9,7 @@
 \vspace{10pt}
 \begin{itemize}
 \setlength\itemsep{0pt}
-  \item {\color{red}{\textbf{Deadline}}}: \textbf{April 2, before class}
+  \item {\color{red}{\textbf{Deadline}}}: \textbf{April 9, before class}
   \item Submit your work in a separate folder in your GitHub repository
   \begin{itemize}
     \item You can include only the R file or additional ones (e.g. pdf with results)
@@ -201,6 +201,65 @@ cs_dyn = aggte(cs_out, type = "dynamic")
 ggdid(cs_dyn)
   \end{lstlisting}
   Save the event-study plot with \code{ggsave()}. In a comment, describe what the plot shows. Are the pre-treatment estimates (leads, i.e.\ periods before treatment) statistically distinguishable from zero? What does this tell us about the parallel trends assumption? What do the post-treatment estimates (lags) show about the dynamic effects of treatment?
+\end{enumerate}
+
+\subsection{Pre-testing the parallel trends assumption}
+
+The group-time ATT estimates from \code{att\_gt()} include pre-treatment periods --- specifically, ATT$(g,t)$ for $t < g$ --- which can be used to construct a formal joint test of the parallel trends assumption.
+
+\begin{enumerate}[label=\alph*)]
+  \item Re-run the CS estimator with bootstrapped standard errors to obtain valid uniform confidence bands and a joint pre-test:
+  \begin{lstlisting}
+cs_out_bt = att_gt(
+  yname = "lemp",
+  gname = "first.treat",
+  idname = "countyreal",
+  tname = "year",
+  xformla = ~ lpop,
+  data = mpdta,
+  control_group = "nevertreated",
+  bstrap = TRUE,
+  cband = TRUE)
+
+summary(cs_out_bt)
+  \end{lstlisting}
+  The \code{summary()} output includes a p-value for the pre-test of the parallel trends assumption. Report this p-value. In a comment, explain what the test is doing: what is the null hypothesis, and what does a large p-value tell us?
+  \item Visualize all group-time ATT estimates --- both pre- and post-treatment --- with:
+  \begin{lstlisting}
+ggdid(cs_out_bt)
+ggsave("mpdta_att_gt.pdf", width = 10, height = 6)
+  \end{lstlisting}
+  Save the plot. Each panel corresponds to a treatment cohort; negative event-time values are pre-treatment periods. In a comment, describe what you see: are the pre-treatment ATT$(g,t)$ estimates close to zero and statistically indistinguishable from zero across all cohorts?
+  \item In a comment (2--3 sentences), reflect on the limitations of pre-testing. Even if we cannot reject parallel trends in the pre-period, can we be certain the assumption holds during the post-treatment period? What is the pre-test actually telling us, and what is it \textit{not} telling us?
+\end{enumerate}
+
+\subsection{Comparing control group specifications}
+
+By default, the CS estimator uses \textit{never-treated} units as the control group. An alternative is \textit{not-yet-treated} units --- counties that will eventually receive treatment but have not yet been treated at time $t$. This expands the control group (more observations, potentially more precision) but introduces a different assumption: that outcomes for not-yet-treated units are unaffected by anticipation of their own future treatment.
+
+\begin{enumerate}[label=\alph*)]
+  \item Re-estimate the CS model using not-yet-treated counties as the control group:
+  \begin{lstlisting}
+cs_out_nyt = att_gt(
+  yname = "lemp",
+  gname = "first.treat",
+  idname = "countyreal",
+  tname = "year",
+  xformla = ~ lpop,
+  data = mpdta,
+  control_group = "notyettreated")
+
+aggte(cs_out_nyt, type = "simple")
+  \end{lstlisting}
+  Report the overall ATT. Compare it to the never-treated estimate from Section~2.2b. Are they similar or different in sign and magnitude?
+  \item Produce and save an event-study plot for this specification:
+  \begin{lstlisting}
+cs_dyn_nyt = aggte(cs_out_nyt, type = "dynamic")
+ggdid(cs_dyn_nyt)
+ggsave("mpdta_event_study_nyt.pdf", width = 7, height = 4)
+  \end{lstlisting}
+  In a comment, compare the pre-trends and post-treatment patterns to the never-treated event study from Section~2.2c. Does using the broader control group change the conclusions?
+  \item In a comment (2--3 sentences), discuss the trade-off between the two control group choices. Under what conditions would you prefer never-treated as the control group? When might not-yet-treated be preferable despite the additional assumption it requires?
 \end{enumerate}
 
 \subsection{Discussion: why does TWFE fail in staggered settings?}

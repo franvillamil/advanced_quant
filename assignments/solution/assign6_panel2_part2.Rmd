@@ -102,8 +102,71 @@ ggsave("mpdta_event_study.pdf", width = 7, height = 4)
 
 The event-study plot shows estimates for each period relative to the cohort's treatment date (negative values are pre-treatment periods, positive values are post-treatment). The pre-treatment estimates should be close to zero and statistically indistinguishable from zero; if they are, this supports the parallel trends assumption --- treated and control counties were on similar trajectories before treatment. The post-treatment estimates show the dynamic treatment effect: the immediate impact and how it evolves in subsequent periods. A growing negative effect over time would indicate that minimum wage increases progressively reduce teen employment.
 
-# 3. Discussion: why does TWFE fail in staggered settings?
+# 3. Pre-testing the parallel trends assumption
+
+**a)** Formal joint pre-test with bootstrapped SEs and uniform confidence bands:
+
+```{r}
+cs_out_bt = att_gt(
+  yname         = "lemp",
+  gname         = "first.treat",
+  idname        = "countyreal",
+  tname         = "year",
+  xformla       = ~ lpop,
+  data          = mpdta,
+  control_group = "nevertreated",
+  bstrap        = TRUE,
+  cband         = TRUE)
+
+summary(cs_out_bt)
+```
+
+The `summary()` output reports a p-value for the pre-test of the parallel trends assumption. The null hypothesis is that all pre-treatment group-time ATT(g,t) are jointly equal to zero --- i.e., that treated and control counties were on the same trend before treatment. A large p-value (e.g., > 0.05) means we fail to reject this null, which is consistent with parallel trends. In the `mpdta` data the p-value is typically well above 0.05, providing no statistical evidence against the parallel trends assumption in the pre-period.
+
+**b)** Group-time ATT plot including pre-treatment periods:
+
+```{r, fig.height=6}
+ggdid(cs_out_bt)
+ggsave("mpdta_att_gt.pdf", width = 10, height = 6)
+```
+
+Each panel shows a different treatment cohort. Negative event-time values (left of zero) are pre-treatment periods; positive values are post-treatment. If parallel trends holds, the pre-treatment ATT(g,t) estimates should scatter around zero with confidence intervals that include zero. Comparing to the aggregated event-study plot from Section 2.2c, this plot is more granular: it shows the cohort-specific pre-trends rather than a single pooled pre-trend, making it easier to spot whether one particular cohort drives any pre-trend concern.
+
+**c)** Pre-testing has an important limitation: failure to reject parallel trends in the pre-period does not guarantee that the assumption holds in the post-treatment period. The pre-test only examines observable pre-treatment trajectories; any divergence that begins exactly at treatment --- whether due to confounders or anticipation effects --- would not be detected. The pre-test is therefore a necessary but not sufficient diagnostic for credible DiD identification.
+
+# 4. Comparing control group specifications
+
+**a)** CS estimator using not-yet-treated counties as controls:
+
+```{r}
+cs_out_nyt = att_gt(
+  yname         = "lemp",
+  gname         = "first.treat",
+  idname        = "countyreal",
+  tname         = "year",
+  xformla       = ~ lpop,
+  data          = mpdta,
+  control_group = "notyettreated")
+
+aggte(cs_out_nyt, type = "simple")
+```
+
+The not-yet-treated specification uses counties that will eventually receive treatment but have not yet done so at each point in time, in addition to never-treated counties. This yields a larger effective control group. The overall ATT estimate is typically close to the never-treated estimate in the `mpdta` data, suggesting the control group choice does not dramatically alter the conclusions here.
+
+**b)** Event-study for the not-yet-treated specification:
+
+```{r, fig.height=4}
+cs_dyn_nyt = aggte(cs_out_nyt, type = "dynamic")
+ggdid(cs_dyn_nyt)
+ggsave("mpdta_event_study_nyt.pdf", width = 7, height = 4)
+```
+
+Comparing to the never-treated event study, the pre-trends and post-treatment patterns should look broadly similar. Minor differences arise because the not-yet-treated control group includes counties whose future treatment may already be affecting their current outcomes (anticipation effects), which could contaminate the comparison if treated counties begin adjusting before the official treatment date.
+
+**c)** The never-treated control group is more conservative: it avoids any contamination from anticipation effects among future-treated units, but may leave fewer control observations in settings where most units eventually get treated. The not-yet-treated control group offers more power and is preferred when the never-treated group is small or unrepresentative, but requires the additional assumption that not-yet-treated units do not anticipate their own future treatment. In this dataset, with a reasonably large never-treated group, either specification is defensible and the estimates are close.
+
+# 5. Discussion: why does TWFE fail in staggered settings?
 
 **a)** In a staggered DiD setting, the naive TWFE estimator implicitly uses already-treated units as part of the control group for units that receive treatment later. This is the "forbidden comparison": if a county that adopted the minimum wage in 2004 is used as a control for a county adopting in 2006, its outcome in 2006 already reflects (potentially growing) effects of its own treatment. When treatment effects are heterogeneous --- varying across cohorts or accumulating over time --- these forbidden comparisons contaminate the TWFE estimate, assigning negative weights to some group-time comparisons and potentially reversing the sign of the overall estimate. The result is a weighted average where the weights do not correspond to any meaningful population quantity.
 
-**b)** The TWFE estimate from question 2.2a and the Callaway-Sant'Anna overall ATT from question 2.2b may differ in both magnitude and, in some datasets, sign. The event-study pre-trends from question 2.2c are the key diagnostic: if the pre-treatment estimates are all close to zero, the parallel trends assumption is supported, and the Callaway-Sant'Anna estimate is more credible because it uses only valid comparisons (never-treated counties as controls) and allows for cohort-specific treatment effects. The TWFE estimate should be treated with skepticism whenever the staggered design involves heterogeneous timing and potentially heterogeneous effects, as is typical in minimum wage research where economic conditions at adoption differ across states and years.
+**b)** The TWFE estimate from question 2.2a and the Callaway-Sant'Anna overall ATT from question 2.2b may differ in both magnitude and, in some datasets, sign. The event-study pre-trends from question 2.2c and the formal pre-test from question 3a are the key diagnostics: if the pre-treatment estimates are all close to zero and the joint pre-test p-value is large, the parallel trends assumption is supported, and the Callaway-Sant'Anna estimate is more credible because it uses only valid comparisons (never-treated counties as controls) and allows for cohort-specific treatment effects. The TWFE estimate should be treated with skepticism whenever the staggered design involves heterogeneous timing and potentially heterogeneous effects, as is typical in minimum wage research where economic conditions at adoption differ across states and years.
