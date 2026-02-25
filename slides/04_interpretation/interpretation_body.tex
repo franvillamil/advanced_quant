@@ -22,6 +22,110 @@
 % ----------------------------------------------------
 \note{This session bridges estimation and communication. Last week we saw that logit coefficients are hard to interpret and learned to use marginal effects and predicted probabilities. Today we generalize that lesson: even in OLS, raw coefficients are often not the best way to communicate results. We'll learn a toolkit for computing and presenting quantities of interest, plus some basic diagnostics to check whether our model assumptions hold.}
 
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{A motivating puzzle: Simpson's paradox}
+\centering
+
+\vspace{5pt}
+
+\begin{tikzpicture}[scale=0.75]
+  % Axes
+  \draw[->, thick] (0,0) -- (10,0) node[right] {\small $X$};
+  \draw[->, thick] (0,0) -- (0,6.5) node[above] {\small $Y$};
+  % Group A points (low X, high Y)
+  \foreach \x/\y in {1/3.2, 1.5/3.9, 2/3.5, 2.5/4.3, 3/4.5, 3.5/4.9, 4/5.3, 1.8/4.1, 3.2/4.1} {
+    \fill[accent, opacity=0.7] (\x,\y) circle (3pt);
+  }
+  % Group B points (high X, low Y)
+  \foreach \x/\y in {5.5/1.5, 6/2.0, 6.5/2.4, 7/2.9, 7.5/3.3, 8/3.6, 8.5/3.9, 6.2/1.9, 7.8/3.1} {
+    \fill[accent2, opacity=0.7] (\x,\y) circle (3pt);
+  }
+  % Overall fitted line (negative slope) - dashed
+  \draw[asher, very thick, dashed] (0.5,4.8) -- (9,2.0);
+  \node[asher, font=\footnotesize] at (8.2,1.5) {Overall};
+  % Group A fitted line (positive slope)
+  \draw[accent, very thick] (0.7,2.9) -- (4.3,5.4);
+  \node[accent, font=\footnotesize, above] at (3.8,5.5) {$Z = 0$};
+  % Group B fitted line (positive slope)
+  \draw[accent2, very thick] (5.2,1.2) -- (8.8,3.9);
+  \node[accent2, font=\footnotesize, above] at (8.3,4.0) {$Z = 1$};
+\end{tikzpicture}
+
+\vspace{8pt}
+
+\begin{itemize}
+\item Overall trend is \textbf{negative}, but within each group it's \textbf{positive}
+\item Ignoring $Z$ gives the \textbf{wrong answer} --- we need to account for it
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This is Simpson's paradox: the overall association between $X$ and $Y$ reverses when you account for a third variable $Z$. The dashed line suggests $X$ and $Y$ are negatively related. But within each group (defined by $Z$), the relationship is positive. The overall negative trend is an artifact of group composition: the group with low $X$ values happens to have high $Y$, and vice versa. This is a concrete example of omitted variable bias. It motivates two key questions we address next: what does ``controlling for $Z$'' actually do to the fitted line, and how is that different from ``interacting with $Z$''?}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Controlling vs.\ interacting}
+\centering
+
+\vspace{3pt}
+
+\begin{tikzpicture}[scale=0.7]
+  % === LEFT PANEL: Controlling ===
+  \begin{scope}[xshift=0cm]
+    \node[above, font=\small\bfseries] at (2.5,4.8) {Control: $Y = \beta_1 X + \beta_2 Z$};
+    % Axes
+    \draw[->, thick] (-0.3,0) -- (5,0) node[right] {\scriptsize $X$};
+    \draw[->, thick] (0,-0.3) -- (0,4.5) node[above] {\scriptsize $Y$};
+    % Group A points
+    \foreach \x/\y in {0.5/2.2, 0.8/2.6, 1.1/2.4, 1.4/2.9, 1.7/3.1, 2.0/3.3, 2.3/3.5, 1.0/2.8, 1.8/2.8} {
+      \fill[accent, opacity=0.5] (\x,\y) circle (2.5pt);
+    }
+    % Group B points
+    \foreach \x/\y in {2.8/0.7, 3.1/1.0, 3.4/1.2, 3.6/1.5, 3.9/1.7, 4.1/1.9, 4.4/2.1, 3.2/0.9, 4.0/1.6} {
+      \fill[accent2, opacity=0.5] (\x,\y) circle (2.5pt);
+    }
+    % Parallel fitted lines (same slope = 0.65)
+    \draw[accent, very thick] (0.3,2.0) -- (2.5,3.43);
+    \draw[accent2, very thick] (2.6,0.5) -- (4.6,1.8);
+    % Annotation
+    \node[jet, font=\scriptsize, align=center] at (2.5,4.2) {Same slope};
+    \draw[<->, jet, thin] (1.0,2.2) -- (1.0,0.85);
+    \node[jet, font=\tiny, right] at (1.05,1.5) {$\beta_2$};
+  \end{scope}
+  % === RIGHT PANEL: Interacting ===
+  \begin{scope}[xshift=7cm]
+    \node[above, font=\small\bfseries] at (2.5,4.8) {Interaction: $+ \beta_3 X \cdot Z$};
+    % Axes
+    \draw[->, thick] (-0.3,0) -- (5,0) node[right] {\scriptsize $X$};
+    \draw[->, thick] (0,-0.3) -- (0,4.5) node[above] {\scriptsize $Y$};
+    % Group A points (same)
+    \foreach \x/\y in {0.5/2.2, 0.8/2.6, 1.1/2.4, 1.4/2.9, 1.7/3.1, 2.0/3.3, 2.3/3.5, 1.0/2.8, 1.8/2.8} {
+      \fill[accent, opacity=0.5] (\x,\y) circle (2.5pt);
+    }
+    % Group B points (same)
+    \foreach \x/\y in {2.8/0.7, 3.1/1.0, 3.4/1.2, 3.6/1.5, 3.9/1.7, 4.1/1.9, 4.4/2.1, 3.2/0.9, 4.0/1.6} {
+      \fill[accent2, opacity=0.5] (\x,\y) circle (2.5pt);
+    }
+    % Different slopes (Group A flatter, Group B steeper)
+    \draw[accent, very thick] (0.3,2.3) -- (2.5,3.2);
+    \draw[accent2, very thick] (2.6,0.3) -- (4.6,2.3);
+    % Annotation
+    \node[jet, font=\scriptsize, align=center] at (2.5,4.2) {Different slopes};
+  \end{scope}
+\end{tikzpicture}
+
+\vspace{5pt}
+
+\begin{itemize}
+\item \textbf{Controlling}: adjusts the level (intercept) --- the effect of $X$ stays the same
+\item \textbf{Interacting}: allows the \textbf{slope} of $X$ to differ across groups
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This is the key visual distinction. On the left, we control for $Z$: the two fitted lines are parallel, meaning the effect of $X$ on $Y$ (the slope) is the same for both groups. $Z$ only shifts the line up or down. On the right, we add an interaction $X \times Z$: the slopes differ, meaning the effect of $X$ depends on which group you are in. In many real applications, you need to decide which model is appropriate. If you believe the relationship between $X$ and $Y$ is the same in both groups, control is enough. If the relationship itself might differ, you need an interaction. We will see how to test and visualize this distinction using the marginaleffects package later in the session.}
+
 % ====================================================
 \section{Beyond Coefficient Tables}
 % ====================================================
@@ -34,7 +138,7 @@
 \begin{itemize}[<+->]
 \item We know how to estimate models and read output
 \item But what do the numbers actually \textbf{mean}?
-\vspace{8pt}
+\vspace{4pt}
 \item Raw coefficients are often not directly informative:
   \begin{itemize}
   \item Logit: coefficients are in log-odds (last week)
@@ -105,7 +209,8 @@
 \item In R:
   \begin{itemize}
   \item \texttt{predictions(model)}
-  \item \texttt{predictions(model, newdata = datagrid(age = 35, college = 1))}
+  \item \texttt{predictions(model,}\\
+  \texttt{\hspace{30pt}newdata = datagrid(age = 35, college = 1))}
   \end{itemize}
 \end{itemize}
 
@@ -124,13 +229,14 @@
 \item \texttt{plot\_predictions(model, condition = "age")}
   \begin{itemize}
   \item Shows $\hat{Y}$ across values of \texttt{age}
-  \item Includes 95\% confidence band
+  \item Includes 95\% confidence band (for the mean, not individual predictions)
   \item Holds other variables at their means (or modes)
   \end{itemize}
 \vspace{8pt}
 \item With two conditions:
   \begin{itemize}
-  \item \texttt{plot\_predictions(model, condition = c("age", "female"))}
+  \item \texttt{plot\_predictions(model,}\\
+  \texttt{\hspace{30pt}condition = c("age", "female"))}
   \item Separate lines/panels for each group
   \end{itemize}
 \end{itemize}
@@ -175,7 +281,7 @@ $$\text{Marginal effect of } X_1 = \frac{\partial E[Y \mid X]}{\partial X_1}$$
 
 {\small $Y = \beta_0 + \beta_1 \text{Education} + \beta_2 \text{Female} + \beta_3 (\text{Education} \times \text{Female}) + \varepsilon$}
 
-\vspace{15pt}
+\vspace{8pt}
 
 \begin{tikzpicture}[scale=0.75]
   % Axes
@@ -192,7 +298,7 @@ $$\text{Marginal effect of } X_1 = \frac{\partial E[Y \mid X]}{\partial X_1}$$
   \node[jet, right, font=\footnotesize] at (7.1,3.6) {Gap varies};
 \end{tikzpicture}
 
-\vspace{5pt}
+\vspace{2pt}
 
 \begin{itemize}
 \item ME of Education for males: $\beta_1$
@@ -235,18 +341,19 @@ $$\text{Marginal effect of } X_1 = \frac{\partial E[Y \mid X]}{\partial X_1}$$
 
 \begin{itemize}[<+->]
 \item ``How different is $\hat{Y}$ between two scenarios?''
-\vspace{8pt}
+\vspace{4pt}
 \item Example: predicted income for college vs.\ no college
   \begin{itemize}
   \item $\Delta = E[Y \mid \text{college} = 1] - E[Y \mid \text{college} = 0]$
   \end{itemize}
-\vspace{8pt}
+\vspace{4pt}
 \item In R:
   \begin{itemize}
-  \item \texttt{comparisons(model, variables = list(college = c(0, 1)))}
+  \item \texttt{comparisons(model,}\\
+  \texttt{\hspace{30pt}variables = list(college = c(0, 1)))}
   \item \texttt{avg\_comparisons(model, variables = "college")}
   \end{itemize}
-\vspace{8pt}
+\vspace{4pt}
 \item Especially useful for:
   \begin{itemize}
   \item Binary/categorical predictors
@@ -301,7 +408,7 @@ First difference & How different are two scenarios? & \texttt{comparisons()} \\
 
 \begin{itemize}[<+->]
 \item We already know \texttt{modelsummary()} from Session 2
-\vspace{8pt}
+\vspace{4pt}
 \item Key options:
   \begin{itemize}
   \item \texttt{stars = TRUE} for significance stars
@@ -309,12 +416,12 @@ First difference & How different are two scenarios? & \texttt{comparisons()} \\
   \item \texttt{coef\_rename} to clean up variable names
   \item \texttt{gof\_map} to select goodness-of-fit statistics
   \end{itemize}
-\vspace{8pt}
+\vspace{4pt}
 \item Multiple models side by side:
   \begin{itemize}
   \item \texttt{modelsummary(list("OLS" = m1, "Logit" = m2))}
   \end{itemize}
-\vspace{8pt}
+\vspace{4pt}
 \item Output to LaTeX, Word, HTML, or the console
 \end{itemize}
 
@@ -329,20 +436,20 @@ First difference & How different are two scenarios? & \texttt{comparisons()} \\
 
 \begin{itemize}[<+->]
 \item Visual alternative to coefficient tables
-\vspace{8pt}
+\vspace{4pt}
 \item \texttt{modelplot(model)}
   \begin{itemize}
   \item Point = estimate, line = 95\% CI
   \item Vertical line at zero = ``no effect''
   \end{itemize}
-\vspace{8pt}
+\vspace{4pt}
 \item When are coefficient plots better than tables?
   \begin{itemize}
   \item Many predictors
   \item Comparing across model specifications
   \item Audience that finds tables intimidating
   \end{itemize}
-\vspace{8pt}
+\vspace{4pt}
 \item \texttt{modelplot(list("Model 1" = m1, "Model 2" = m2))}
 \end{itemize}
 
@@ -426,15 +533,15 @@ Appendix / robustness checks & $\checkmark$ & \\
 
 \begin{itemize}[<+->]
 \item All quantities of interest have \textbf{uncertainty}
-\item Standard approach: delta method (what marginaleffects uses)
-\vspace{8pt}
+\item Standard approach: delta method (a linear approximation for SEs of nonlinear functions)
+\vspace{4pt}
 \item Alternative: \textbf{simulation}
   \begin{itemize}
   \item Draw $\tilde{\beta}$ from $N(\hat{\beta}, \hat{V})$ many times
   \item Compute the quantity of interest for each draw
   \item Use the distribution of results as the uncertainty estimate
   \end{itemize}
-\vspace{8pt}
+\vspace{4pt}
 \item Why simulate?
   \begin{itemize}
   \item Works for any quantity, no matter how complex
@@ -454,27 +561,27 @@ Appendix / robustness checks & $\checkmark$ & \\
 
 \vspace{5pt}
 
-\begin{tikzpicture}[
+\begin{tikzpicture}[scale=0.85,
   box/.style={draw, rounded corners, minimum width=3cm, minimum height=0.9cm, align=center, font=\footnotesize},
   arrow/.style={->, thick, accent}
 ]
   % Step 1
   \node[box, fill=accent!10] (est) at (0,3) {Estimate model\\$\hat{\beta}, \hat{V}$};
   % Step 2
-  \node[box, fill=accent!10] (draw) at (0,1.2) {Draw $\tilde{\beta}^{(s)}$ from\\$N(\hat{\beta}, \hat{V})$, $s = 1, \ldots, S$};
+  \node[box, fill=accent!10] (draw) at (0,1.5) {Draw $\tilde{\beta}^{(s)}$ from\\$N(\hat{\beta}, \hat{V})$, $s = 1, \ldots, S$};
   % Step 3
-  \node[box, fill=accent!10] (compute) at (0,-0.6) {For each draw, compute\\quantity of interest $Q^{(s)}$};
+  \node[box, fill=accent!10] (compute) at (0,0) {For each draw, compute\\quantity of interest $Q^{(s)}$};
   % Step 4
-  \node[box, fill=accent2!10] (result) at (0,-2.4) {Use distribution of\\$Q^{(1)}, \ldots, Q^{(S)}$};
+  \node[box, fill=accent2!10] (result) at (0,-1.5) {Use distribution of\\$Q^{(1)}, \ldots, Q^{(S)}$};
   % Arrows
   \draw[arrow] (est) -- (draw);
   \draw[arrow] (draw) -- (compute);
   \draw[arrow] (compute) -- (result);
   % Right side annotations
   \node[right, font=\scriptsize, asher] at (2.2,3) {\texttt{m = lm(y \textasciitilde{} x, data = df)}};
-  \node[right, font=\scriptsize, asher] at (2.2,1.2) {\texttt{sim\_betas = MASS::mvrnorm(1000, coef(m), vcov(m))}};
-  \node[right, font=\scriptsize, asher] at (2.2,-0.6) {\texttt{sim\_pred = sim\_betas \%*\% x\_scenario}};
-  \node[right, font=\scriptsize, asher] at (2.2,-2.4) {\texttt{quantile(sim\_pred, c(0.025, 0.975))}};
+  \node[right, font=\scriptsize, asher] at (2.2,1.5) {\texttt{mvrnorm(1000, coef(m), vcov(m))}};
+  \node[right, font=\scriptsize, asher] at (2.2,0) {\texttt{sim\_pred = sim\_betas \%*\% x\_scenario}};
+  \node[right, font=\scriptsize, asher] at (2.2,-1.5) {\texttt{quantile(sim\_pred, c(0.025, 0.975))}};
 \end{tikzpicture}
 
 \end{frame}
@@ -493,7 +600,8 @@ Appendix / robustness checks & $\checkmark$ & \\
 \item[] \texttt{m = lm(income \textasciitilde{} age + education + female, data = df)}
 \item[]
 \item[] \texttt{\# Using marginaleffects (delta method)}
-\item[] \texttt{predictions(m, newdata = datagrid(age = 40, education = 16, female = 1))}
+\item[] \texttt{predictions(m,}
+\item[] \texttt{\hspace{10pt}newdata = datagrid(age = 40, education = 16, female = 1))}
 \item[]
 \item[] \texttt{\# Using simulation}
 \item[] \texttt{library(MASS)}
@@ -530,14 +638,14 @@ Appendix / robustness checks & $\checkmark$ & \\
   \item Constant error variance (\textbf{homoskedasticity})
   \item No extreme outliers driving results
   \end{itemize}
-\vspace{8pt}
+\vspace{4pt}
 \item When these fail:
   \begin{itemize}
   \item Coefficients may be biased (non-linearity)
   \item Standard errors may be wrong (heteroskedasticity)
   \item Results may be driven by a few observations (outliers)
   \end{itemize}
-\vspace{8pt}
+\vspace{4pt}
 \item How do we check? \textbf{Residual diagnostics}
 \end{itemize}
 
@@ -593,19 +701,28 @@ Appendix / robustness checks & $\checkmark$ & \\
 
 % ----------------------------------------------------
 \begin{frame}
+\centering
+\vspace{30pt}
+{\large You plot residuals vs.\ fitted values and see a clear funnel shape.\\\vspace{15pt}What does this tell you about your model?\\\vspace{5pt}What would you do about it?}
+\end{frame}
+% ----------------------------------------------------
+\note{Discussion prompt. The funnel shape indicates heteroskedasticity: the error variance increases with the fitted value. This means the coefficients are still unbiased, but the standard errors are wrong, so confidence intervals and p-values are unreliable. The fix: use robust (heteroskedasticity-consistent) standard errors. Alternatively, a log transformation of the dependent variable can sometimes stabilize the variance. Ask students to think about why income models typically show this pattern: richer countries have more variation in outcomes.}
+
+% ----------------------------------------------------
+\begin{frame}
 \frametitle{Heteroskedasticity}
 \centering
 
 \begin{itemize}[<+->]
 \item \textbf{Heteroskedasticity}: $\text{Var}(\varepsilon \mid X)$ is not constant
-\vspace{8pt}
+\vspace{4pt}
 \item Consequences:
   \begin{itemize}
   \item Coefficients are still unbiased
   \item But standard errors are \textbf{wrong}
   \item So confidence intervals and p-values are unreliable
   \end{itemize}
-\vspace{8pt}
+\vspace{4pt}
 \item Very common in practice:
   \begin{itemize}
   \item Income models (richer countries, more variance)
@@ -651,6 +768,8 @@ Appendix / robustness checks & $\checkmark$ & \\
 \centering
 
 \begin{itemize}[<+->]
+\item Another common fix for heteroskedasticity and non-linearity: \textbf{transform the variables}
+\vspace{4pt}
 \item Many variables are right-skewed:
   \begin{itemize}
   \item Income, GDP, population, firm size, casualties
@@ -675,7 +794,7 @@ Appendix / robustness checks & $\checkmark$ & \\
 \vspace{10pt}
 
 {\footnotesize
-\begin{tabular}{llll}
+\begin{tabular}{lll}
 \hline
 \textbf{Model} & \textbf{Equation} & \textbf{Interpretation of $\beta_1$} \\
 \hline
@@ -698,6 +817,35 @@ Log-log & $\log(Y) = \beta_0 + \beta_1 \log(X)$ & $\%\Delta X = 1 \Rightarrow \%
 \end{frame}
 % ----------------------------------------------------
 \note{This table is the key reference for interpreting logged variables. Walk through each row. Level-level: the standard OLS interpretation. Log-level: a one-unit change in $X$ is associated with a $100\beta_1$\% change in $Y$. For example, if $\beta_1 = 0.05$, a one-unit increase in $X$ is associated with a 5\% increase in $Y$. Level-log: a 1\% change in $X$ is associated with a $\beta_1/100$ change in $Y$. Log-log: the elasticity --- a 1\% change in $X$ is associated with a $\beta_1$\% change in $Y$. The approximation $\log(1 + r) \approx r$ for small $r$ is what makes these interpretations work. For large changes (say $\beta_1 > 0.2$), the exact formula $e^{\beta_1} - 1$ gives the percent change more accurately.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Interpreting logs: a worked example}
+\centering
+
+\vspace{10pt}
+
+{\small $\log(\text{Income}) = 8.2 + 0.05 \cdot \text{Education}$}
+
+\vspace{15pt}
+
+\begin{itemize}[<+->]
+\item This is a \textbf{log-level} model
+\item One additional year of education $\Rightarrow$ $\approx 5\%$ higher income
+\vspace{4pt}
+\item What about 10 extra years?
+  \begin{itemize}
+  \item Approximation: $10 \times 5\% = 50\%$
+  \item Exact: $e^{0.05 \times 10} - 1 = e^{0.5} - 1 \approx 65\%$
+  \end{itemize}
+\vspace{4pt}
+\item The approximation breaks down for large $\beta_1 \cdot \Delta X$
+\item Rule of thumb: use approximation when $\beta_1 \cdot \Delta X < 0.1$
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This example grounds the log interpretation table in a concrete calculation. The key point: the approximation $100 \cdot \beta_1$ for the percent change works well for small $\beta_1$ (say under 0.1), but becomes increasingly inaccurate for larger values. For a 10-year change with $\beta_1 = 0.05$, the product $0.5$ is too large for the linear approximation. The exact formula $e^{\beta_1 \cdot \Delta X} - 1$ always works. In practice, most coefficients in log-level models are small enough that the approximation is fine, but students should know when to switch to the exact formula.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -750,13 +898,13 @@ Log-log & $\log(Y) = \beta_0 + \beta_1 \log(X)$ & $\%\Delta X = 1 \Rightarrow \%
 
 \begin{itemize}[<+->]
 \item Some observations can disproportionately influence results
-\vspace{8pt}
+\vspace{4pt}
 \item \textbf{Cook's distance}: measures how much the model changes if you remove observation $i$
   \begin{itemize}
   \item In R: \texttt{plot(model, which = 4)}
   \item Observations with Cook's $D > 4/n$: investigate further
   \end{itemize}
-\vspace{8pt}
+\vspace{4pt}
 \item What to do with influential observations?
   \begin{itemize}
   \item Do NOT automatically delete them
@@ -781,15 +929,12 @@ Log-log & $\log(Y) = \beta_0 + \beta_1 \log(X)$ & $\%\Delta X = 1 \Rightarrow \%
 
 \begin{itemize}[<+->]
 \item Raw coefficients are rarely enough --- compute \textbf{quantities of interest}
-\item Predicted values, marginal effects, and first differences are your tools
-\item The \texttt{marginaleffects} package handles everything
-\vspace{8pt}
-\item Present results with plots (prediction plots, coefficient plots)
-\item Tables go in the appendix, plots in the main text
-\vspace{8pt}
-\item Always check diagnostics: residual plots, heteroskedasticity
-\item Always use robust standard errors
-\item Use log transformations for skewed variables (but interpret carefully)
+\item Predicted values, marginal effects, and first differences (all via \texttt{marginaleffects})
+\vspace{4pt}
+\item Present with plots (main text) and tables (appendix)
+\vspace{4pt}
+\item Always use robust standard errors and check residual diagnostics
+\item Log-transform skewed variables (but interpret carefully)
 \end{itemize}
 
 \end{frame}

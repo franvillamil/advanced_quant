@@ -1,6 +1,6 @@
 ---
-title: "Assignment 5 - Part 2: Code Quality and Git (Take-Home)"
-subtitle: "AQM2 - UC3M"
+title: "Assignment 5: Panel Data I -- Part 2 (Teaching Evaluations)"
+subtitle: "Applied Quantitative Methods for the Social Sciences II"
 date: "Spring 2026"
 output:
   pdf_document:
@@ -16,134 +16,88 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 options(stringsAsFactors = FALSE)
 ```
 
-# 1. Code improvement
-
-The original script has the following problems: single-letter variable names (`x`, `m`), no comments, no constants, repeated plotting code, no assertions, poor formatting (no spaces around operators, `$` notation in `lm()`), and no diagnostics after data transformations.
-
-Below is the improved version saved as `improved_script.R`. Each of the seven required improvements is marked with a comment.
-
-```{r, eval=FALSE}
-# setwd("~/path/to/assignment5")
-options(stringsAsFactors = FALSE)
-
-# ============================================================
-# Improved analysis script
-# ============================================================
-
-# ============================================================
-# Load packages
-# ============================================================
-
+```{r packages}
+library(readstata13)
+library(ggplot2)
+library(fixest)
+library(plm)
 library(modelsummary)
 
-# ============================================================
-# Constants (Improvement 2: constants at top)
-# ============================================================
+df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/teaching_evals/teaching_evals.dta")
+```
 
-start_year = 2000
-end_year = 2020
+# 1. Data exploration
 
-# ============================================================
-# Load and clean data
-# ============================================================
+**a)** Panel dimensions:
 
-# (Improvement 1: meaningful variable name instead of 'x')
-panel = read.csv("mydata.csv")
+```{r}
+length(unique(df$InstrID))
+length(unique(df$CourseID))
+nrow(df) / length(unique(df$InstrID))
+```
 
-# (Improvement 5: assertion after loading)
-if(nrow(panel) == 0) stop("Dataset is empty")
-expected_cols = c("year", "outcome", "gdp", "pop", "education", "health")
-missing_cols = setdiff(expected_cols, names(panel))
-if(length(missing_cols) > 0) stop("Missing columns: ", paste(missing_cols, collapse = ", "))
+The panel has relatively few instructors observed over several courses and years. The average number of observations per instructor is substantially above 1, making this a moderately long panel at the instructor level. Because a single instructor may teach multiple courses in the same year, the appropriate panel index for `plm` uses both `InstrID` and `CourseID`, not `InstrID` and `Year`.
 
-# Filter to analysis period using constants
-panel = panel[panel$year >= start_year & panel$year <= end_year, ]
+**b)** Scatter plot of evaluations against grading generosity:
 
-# (Improvement 7: diagnostic print after filtering)
-cat("Rows after filtering:", nrow(panel), "\n")
+```{r, fig.height=3.5}
+ggplot(df, aes(x = Apct, y = Eval)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm") +
+  theme_minimal() +
+  labs(x = "Percent receiving A or A- (%)", y = "Average course evaluation (1-5)")
+```
 
-# ============================================================
-# Estimate models
-# (Improvement 6: spaces around operators, data = argument)
-# ============================================================
+The cross-sectional relationship between `Apct` and `Eval` is positive: instructors who give more A grades tend to receive higher evaluations. This pattern is consistent with the grade-inflation hypothesis --- that lenient grading buys better evaluations --- but it could also reflect that both grading and evaluations are driven by unobserved instructor quality (e.g., more talented teachers give more deserved A grades and also teach better).
 
-# (Improvement 1: meaningful model names)
-m_base = lm(outcome ~ gdp + pop, data = panel)
-m_educ = lm(outcome ~ gdp + pop + education, data = panel)
-m_full = lm(outcome ~ gdp + pop + education + health, data = panel)
+# 2. Pooled OLS baseline
 
-# Print summary table
+**a)** Pooled OLS with all controls:
+
+```{r}
+m1 = lm(Eval ~ Apct + Enrollment + Required, data = df)
+summary(m1)
+```
+
+The coefficient on `Apct` gives the association between a one-percentage-point increase in the share of students receiving an A grade and the change in average evaluation score, pooling across all instructors and years. Larger enrollment and required courses are often associated with lower evaluations, which is consistent with the course-level context: students are less satisfied in large required courses.
+
+**b)** The OLS estimate of `Apct` is likely upward biased. Instructors who are genuinely excellent may both earn better evaluations and give grades that students feel are deserved --- producing a spurious positive correlation between `Apct` and `Eval`. Similarly, instructors who are more charismatic or popular may give higher grades to maintain that reputation, inflating both `Apct` and `Eval`. In both cases, unobserved instructor characteristics (talent, charisma, conscientiousness) drive both variables simultaneously, leading us to overstate the causal effect of grading leniency on evaluations.
+
+# 3. Fixed effects models
+
+**a--b)** Instructor fixed effects and two-way fixed effects:
+
+```{r}
+m_instr = feols(Eval ~ Apct + Enrollment + Required | InstrID, data = df)
+m_twfe  = feols(Eval ~ Apct + Enrollment + Required | InstrID + Year, data = df)
+
 modelsummary(
-  list("Base" = m_base, "Education" = m_educ, "Full" = m_full),
+  list("Pooled OLS" = m1, "Instructor FE" = m_instr, "Two-Way FE" = m_twfe),
+  vcov = ~InstrID,
   stars = TRUE,
-  gof_map = c("r.squared", "nobs"))
-
-# ============================================================
-# Scatter plots
-# (Improvement 4: function to avoid repeating pdf/plot/dev.off)
-# ============================================================
-
-save_scatter = function(data, xvar, yvar, filename) {
-  pdf(filename, width = 7, height = 5)
-  plot(data[[xvar]], data[[yvar]],
-    xlab = xvar, ylab = yvar,
-    pch = 16, col = rgb(0, 0, 0, 0.5))
-  dev.off()
-  cat("Saved:", filename, "\n")
-}
-
-save_scatter(panel, "gdp", "outcome", "fig_gdp.pdf")
-save_scatter(panel, "education", "outcome", "fig_education.pdf")
+  gof_map = c("r.squared", "nobs"),
+  output = "markdown")
 ```
 
-Summary of all seven improvements:
+**c)** The instructor fixed effects control for all time-invariant differences across instructors: their baseline teaching quality, personality, subject area, grading philosophy, and any other stable characteristic. Comparing `Apct` coefficients across models reveals the direction of omitted variable bias in pooled OLS. If the FE coefficient on `Apct` is smaller (in absolute value or in magnitude of the positive effect) than the pooled OLS coefficient, it means that the pooled estimate was inflated by unobserved instructor quality --- i.e., better instructors give more A grades and also receive better evaluations for reasons unrelated to grading leniency. Within the same instructor over time, increases in the share of A grades are associated with a different (typically smaller) change in evaluations than what pooled OLS suggests.
 
-1. **Meaningful variable names**: `panel` instead of `x`; `m_base`, `m_educ`, `m_full` instead of `m`, `m2`, `m3`.
-2. **Constants at top**: `start_year` and `end_year` defined once, used in the filter.
-3. **Comments with section dividers**: Each section has a header using `# ============` dividers explaining what the code does.
-4. **Function for repeated pattern**: `save_scatter()` replaces the duplicated `pdf()`/`plot()`/`dev.off()` blocks.
-5. **Assertion after loading**: Checks that the dataset is non-empty and that expected columns exist.
-6. **Proper formatting**: Spaces around `=`, `~`, `+`; consistent indentation; `data = panel` argument in `lm()` instead of `x$outcome ~ x$gdp`.
-7. **Diagnostic print**: `cat("Rows after filtering:", nrow(panel), "\n")` after subsetting.
+# 4. Random effects and the Hausman test
 
-# 2. Git practices
+**a)** Random effects model via `plm`:
 
-**a--b)** The `assignment5` folder should be part of the course repository. Make at least 3 commits, each corresponding to a logical unit of work.
-
-**c)** Example commit messages (each completes "This commit will..."):
-
-- `Add folder structure and README for assignment 5`
-- `Create analysis script with regression models`
-- `Add plots script with scatter plot`
-- `Add Makefile to automate pipeline`
-- `Add improved script and .gitignore`
-
-**d)** Example `.gitignore`:
-
-```{bash, eval=FALSE}
-# Generated output files
-*.pdf
-*.aux
-*.log
-analysis/output/
-plots/output/
-
-# System files
-.DS_Store
+```{r}
+pdata = pdata.frame(df, index = c("InstrID", "CourseID"))
+m_re = plm(Eval ~ Apct + Enrollment + Required,
+           data = pdata, model = "random")
+summary(m_re)
 ```
 
-This `.gitignore` prevents generated outputs (which can be reproduced by running `make`) and system files from being tracked. The key principle is that anything that can be regenerated from the source code should not be committed.
+**b)** Hausman test:
 
-**e)** Push to GitHub with `git push origin main`.
+```{r}
+m_fe_plm = plm(Eval ~ Apct + Enrollment + Required,
+               data = pdata, model = "within")
+phtest(m_fe_plm, m_re)
+```
 
-**f)** List the commit messages used at the end of the `README.md`.
-
-# 3. Reflection
-
-Example answers (students should write their own):
-
-**a)** The most useful practice was organizing a project into separate folders for data, analysis, and plots, with a Makefile tying them together. This makes it clear what each script does and ensures that outputs can be reproduced with a single command, rather than manually running scripts in the right order.
-
-**b)** For the final project, I would set up the same folder structure from the beginning: a `data/` folder for raw data, separate scripts for cleaning, analysis, and visualization, and a Makefile to run the full pipeline. I would also define constants at the top of each script and use assertions to catch data problems early.
-
-**c)** I recognized the habit of using single-letter variable names like `x` and `m` when working quickly, and not adding comments because the code "makes sense to me right now." The exercise showed that even a short script becomes hard to read without meaningful names and section dividers.
+**c)** The null hypothesis of the Hausman test is that the random effects estimator is consistent --- equivalently, that the unobserved instructor-level heterogeneity is uncorrelated with the regressors (`Apct`, `Enrollment`, `Required`). If the test statistic is significant (p < 0.05), we reject this null and conclude that the RE assumption is violated: instructor-specific unobservables are correlated with the covariates, and the FE estimator is preferred because it remains consistent under this correlation. The substantive reasoning from the previous section already pointed in this direction: unobserved instructor quality plausibly drives both grading behavior and evaluation scores, violating the RE assumption. Whether or not the formal test is significant, the FE estimator is the more defensible choice here, as it controls for all time-invariant instructor characteristics and directly addresses the endogeneity concern. The RE estimator would only be appropriate if we were willing to assume that instructors' grading decisions are uncorrelated with their unobserved characteristics --- an implausible assumption in this setting.

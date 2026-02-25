@@ -33,6 +33,7 @@ summary(df$ti_cpi)
 sd(df$ti_cpi)
 summary(df$undp_gdp)
 sd(df$undp_gdp)
+## right-skewness: mean > median
 
 # ----------------------------------------------------------
 ## 2. Exploratory visualization
@@ -41,13 +42,18 @@ sd(df$undp_gdp)
 ggplot(df, aes(x = undp_gdp, y = ti_cpi)) +
   geom_point() +
   geom_smooth(method = "lm") +
-  labs(x = "GDP per capita (PPP)", y = "Corruption Perceptions Index")
+  labs(
+    x = "GDP per capita (PPP)",
+    y = "Corruption Perceptions Index")
 
 # c)
 ggplot(df, aes(x = log(undp_gdp), y = ti_cpi)) +
   geom_point() +
   geom_smooth(method = "lm") +
-  labs(x = "log(GDP per capita)", y = "Corruption Perceptions Index")
+  labs(
+    x = "log(GDP per capita)",
+    y = "Corruption Perceptions Index") +
+  theme_bw()
 
 # ----------------------------------------------------------
 ## 3. Bivariate regression
@@ -73,11 +79,12 @@ m2 = lm(ti_cpi ~ log(undp_gdp), data = df)
 tidy(m2)
 
 # b)
-coef(m2)["log(undp_gdp)"] * log(2)
+plot_predictions(m2, condition = "undp_gdp")
 
 # c)
 m3 = lm(ti_cpi ~ undp_gdp + I(undp_gdp^2), data = df)
 tidy(m3)
+plot_predictions(m3, condition = "undp_gdp")
 
 # d)
 r2 = c(
@@ -95,6 +102,12 @@ avg_slopes(m2, variables = "undp_gdp")
 # c)
 slopes(m3, variables = "undp_gdp",
        newdata = datagrid(undp_gdp = c(2000, 10000, 30000)))
+
+### SHOW WHAT DATAGRID DOES
+smalldf = data.frame(x = 1:10, y = 11:20, z = 101:110)
+datagrid(newdata = smalldf, x = 5)
+datagrid(newdata = smalldf, x = c(1,5))
+
 
 # ----------------------------------------------------------
 ## 6. Prediction plots
@@ -141,6 +154,31 @@ modelsummary(
   vcov = "robust",
   stars = TRUE,
   gof_map = c("r.squared", "nobs"))
+
+modelsummary(
+  list("Level-Level" = m1, "Level-Log" = m2, "Quadratic" = m3),
+  vcov = "robust",
+  stars = TRUE,
+  gof_map = c("r.squared", "nobs"),
+  output = "latex")
+
+modelsummary(
+  list("Level-Level" = m1, "Level-Log" = m2, "Quadratic" = m3),
+  vcov = "robust",
+  stars = TRUE,
+  gof_map = c("r.squared", "nobs"),
+  coef_rename = c(
+    "undp_gdp" = "GDPpc",
+    "log(undp_gdp)" = "Log. GDPpc"))
+
+modelsummary(
+  list("Level-Level" = m1, "Level-Log" = m2, "Quadratic" = m3),
+  vcov = "robust",
+  stars = TRUE,
+  gof_map = c("r.squared", "nobs"),
+  coef_map = c(
+    "undp_gdp" = "GDPpc",
+    "log(undp_gdp)" = "Log. GDPpc"))
 
 # ==========================================================================
 # Part 2: Wealth and Infant Mortality

@@ -2,71 +2,101 @@
 options(stringsAsFactors = FALSE)
 
 # ============================================================
-# Assignment 5 -- Part 2: Improved Script
-# Applied Quantitative Methods II, UC3M
+# Assignment 5 -- Part 2: Teaching Evaluations (Panel Data I)
+# Applied Quantitative Methods for the Social Sciences II
 # ============================================================
 
-# ============================================================
-# Load packages
-# ============================================================
-
+# List of packages
+library(readstata13)
+library(ggplot2)
+library(fixest)
+library(plm)
 library(modelsummary)
 
-# ============================================================
-# Constants (Improvement 2)
-# ============================================================
+# Load data
+df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/teaching_evals/teaching_evals.dta")
 
-start_year = 2000
-end_year = 2020
+# --------
+## 1. Data exploration
 
-# ============================================================
-# Load and clean data
-# ============================================================
+# a) Panel dimensions
+length(unique(df$InstrID))
+length(unique(df$CourseID))
+nrow(df) / length(unique(df$InstrID))
+# Moderately long panel: each instructor appears in multiple course-year pairs.
+# Panel index uses InstrID + CourseID (not Year) because instructors teach
+# multiple courses in the same year.
 
-# Improvement 1: meaningful variable name instead of 'x'
-panel = read.csv("mydata.csv")
+# b) Scatter of evaluations vs grading generosity
+ggplot(df, aes(x = Apct, y = Eval)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm") +
+  theme_minimal() +
+  labs(x = "Percent receiving A or A- (%)", y = "Average course evaluation (1-5)")
+# Positive cross-sectional relationship: instructors who give more A grades
+# tend to receive higher evaluations. Could reflect grading leniency OR
+# that better teachers legitimately give more A grades AND get better reviews.
 
-# Improvement 5: assertion after loading
-if(nrow(panel) == 0) stop("Dataset is empty")
-expected_cols = c("year", "outcome", "gdp", "pop", "education", "health")
-missing_cols = setdiff(expected_cols, names(panel))
-if(length(missing_cols) > 0) stop("Missing columns: ", paste(missing_cols, collapse = ", "))
+# --------
+## 2. Pooled OLS baseline
 
-# Filter to analysis period using constants
-panel = panel[panel$year >= start_year & panel$year <= end_year, ]
+# a) Pooled OLS
+m1 = lm(Eval ~ Apct + Enrollment + Required, data = df)
+summary(m1)
+# Apct coefficient: positive association between grading generosity and
+# evaluation scores, pooling all instructors and years.
+# Larger enrollment and required courses are associated with lower evaluations.
 
-# Improvement 7: diagnostic print after filtering
-cat("Rows after filtering:", nrow(panel), "\n")
+# b) Expected bias in OLS: upward bias
+# Unobserved instructor characteristics (talent, charisma) drive both grading
+# generosity and evaluations. Examples:
+# (1) Highly skilled instructors may give more deserved A grades and also
+#     receive better evaluations independently of their grading.
+# (2) Popular instructors may give higher grades to maintain popularity,
+#     inflating both Apct and Eval.
+# => OLS overstates the causal effect of grading leniency.
 
-# ============================================================
-# Estimate models
-# Improvement 6: spaces around operators, data = argument
-# ============================================================
+# --------
+## 3. Fixed effects models
 
-# Improvement 1: meaningful model names
-m_base = lm(outcome ~ gdp + pop, data = panel)
-m_educ = lm(outcome ~ gdp + pop + education, data = panel)
-m_full = lm(outcome ~ gdp + pop + education + health, data = panel)
+# a) Instructor FE and two-way FE
+m_instr = feols(Eval ~ Apct + Enrollment + Required | InstrID, data = df)
+m_twfe  = feols(Eval ~ Apct + Enrollment + Required | InstrID + Year, data = df)
 
-# Print summary table
+# b) Three-model comparison with clustered SEs
 modelsummary(
-  list("Base" = m_base, "Education" = m_educ, "Full" = m_full),
+  list("Pooled OLS" = m1, "Instructor FE" = m_instr, "Two-Way FE" = m_twfe),
+  vcov = ~InstrID,
   stars = TRUE,
   gof_map = c("r.squared", "nobs"))
 
-# ============================================================
-# Scatter plots
-# Improvement 4: function to avoid repeating pdf/plot/dev.off
-# ============================================================
+# c) Instructor FE controls for all time-invariant instructor characteristics:
+# baseline teaching quality, personality, subject area, grading culture, etc.
+# If the FE coefficient on Apct is smaller than pooled OLS, the pooled
+# estimate was inflated by unobserved instructor quality (better instructors
+# give more A grades AND get better evaluations for other reasons).
+# => Direction of OVB: upward (more lenient graders are unobservably better
+#    evaluators, not because of leniency itself).
 
-save_scatter = function(data, xvar, yvar, filename) {
-  pdf(filename, width = 7, height = 5)
-  plot(data[[xvar]], data[[yvar]],
-    xlab = xvar, ylab = yvar,
-    pch = 16, col = rgb(0, 0, 0, 0.5))
-  dev.off()
-  cat("Saved:", filename, "\n")
-}
+# --------
+## 4. Random effects and Hausman test
 
-save_scatter(panel, "gdp", "outcome", "fig_gdp.pdf")
-save_scatter(panel, "education", "outcome", "fig_education.pdf")
+# a) Random effects model
+pdata = pdata.frame(df, index = c("InstrID", "CourseID"))
+m_re = plm(Eval ~ Apct + Enrollment + Required,
+           data = pdata, model = "random")
+summary(m_re)
+
+# b) Hausman test: FE vs RE
+m_fe_plm = plm(Eval ~ Apct + Enrollment + Required,
+               data = pdata, model = "within")
+phtest(m_fe_plm, m_re)
+
+# c) Null hypothesis of Hausman test: RE is consistent (unobserved instructor
+# heterogeneity is uncorrelated with the regressors).
+# If p < 0.05: reject null => FE is preferred.
+# Substantively, instructor unobservables (quality, charisma) plausibly
+# correlate with Apct and Eval, violating the RE assumption. Even without
+# a significant test result, FE is the more defensible estimator here because
+# it controls for all time-invariant instructor characteristics and directly
+# addresses the endogeneity concern.

@@ -1,6 +1,6 @@
 ---
-title: "Assignment 5 - Part 1: Project Organization (In-Class)"
-subtitle: "AQM2 - UC3M"
+title: "Assignment 5: Panel Data I -- Part 1 (Presidential Approval)"
+subtitle: "Applied Quantitative Methods for the Social Sciences II"
 date: "Spring 2026"
 output:
   pdf_document:
@@ -16,172 +16,115 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 options(stringsAsFactors = FALSE)
 ```
 
-# 1. Folder structure
-
-**a)** Create the folder structure from the terminal:
-
-```{bash, eval=FALSE}
-mkdir -p assignment5/data assignment5/analysis/output assignment5/plots/output
-touch assignment5/Makefile assignment5/README.md
-touch assignment5/analysis/models.R assignment5/plots/figures.R
-```
-
-**b)** Download `corruption.dta` and place it in `assignment5/data/`.
-
-**c)** Example `README.md`:
-
-```{markdown, eval=FALSE}
-# Assignment 5: Corruption and Wealth Analysis
-
-This mini-project explores the relationship between GDP per capita
-and perceived corruption using cross-country data.
-
-- `data/` contains the corruption dataset (`corruption.dta`)
-- `analysis/` contains the regression script and outputs a LaTeX table
-- `plots/` contains the scatter plot script and outputs a PDF figure
-
-Run `make` from the project root to reproduce all outputs.
-```
-
-# 2. Analysis script
-
-The complete `analysis/models.R`:
-
-```{r, eval=FALSE}
-# setwd("~/path/to/assignment5")
-options(stringsAsFactors = FALSE)
-
-# ============================================================
-# Load packages
-# ============================================================
-
+```{r packages}
 library(readstata13)
+library(dplyr)
+library(ggplot2)
+library(fixest)
 library(modelsummary)
 
-# ============================================================
-# Load data
-# ============================================================
-
-df = read.dta13("data/corruption.dta")
-
-# ============================================================
-# Define constants
-# ============================================================
-
-dep_var = "ti_cpi"
-indep_var = "undp_gdp"
-
-# ============================================================
-# Clean data
-# ============================================================
-
-df = df[!is.na(df[[dep_var]]) & !is.na(df[[indep_var]]), ]
-cat("Observations:", nrow(df), "\n")
-
-# Assertion: check minimum sample size
-if(nrow(df) < 10) stop("Too few observations")
-
-# ============================================================
-# Estimate models
-# ============================================================
-
-m1 = lm(ti_cpi ~ undp_gdp, data = df)
-m2 = lm(ti_cpi ~ log(undp_gdp), data = df)
-
-# ============================================================
-# Save output
-# ============================================================
-
-modelsummary(
-  list("Level" = m1, "Log" = m2),
-  output = "analysis/output/table_models.tex",
-  stars = TRUE,
-  gof_map = c("r.squared", "nobs"))
-
-cat("Analysis complete. Table saved.\n")
+df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/presidential_approval/presidential_approval.dta")
 ```
 
-**Verification that the code works** (loading data from URL and running models inline):
+# 1. Setup and data exploration
+
+**a)** The panel contains the following unique states and years:
 
 ```{r}
-library(readstata13)
-library(modelsummary)
+length(unique(df$State))
+length(unique(df$Year))
+table(table(df$State))
+```
 
-df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/other/corruption.dta")
+The panel is unbalanced: while most states appear 73 times, a handful appear fewer times, so the number of time periods is not identical across all states.
 
-dep_var = "ti_cpi"
-indep_var = "undp_gdp"
+**b)** Summary statistics for the key variables:
 
-df = df[!is.na(df[[dep_var]]) & !is.na(df[[indep_var]]), ]
-cat("Observations:", nrow(df), "\n")
+```{r}
+summary(df$PresApprov)
+summary(df$UnemPct)
+```
 
-if(nrow(df) < 10) stop("Too few observations")
+```{r, fig.height=3.5}
+df_sub = df %>%
+  filter(State %in% c("California", "Texas", "NewYork"))
 
-m1 = lm(ti_cpi ~ undp_gdp, data = df)
-m2 = lm(ti_cpi ~ log(undp_gdp), data = df)
+ggplot(df_sub, aes(x = Year, y = PresApprov, color = State)) +
+  geom_line() +
+  theme_minimal() +
+  labs(x = "Year", y = "Presidential approval (%)", color = "State")
+```
+
+The three states move closely together over time, tracking the same large swings in approval. This parallel movement suggests that common national factors (e.g., the incumbent president's party, economic cycles, foreign policy events) are the dominant driver of approval, while state-level differences are relatively stable.
+
+**c)** Cross-sectional scatter of approval against unemployment:
+
+```{r, fig.height=3.5}
+ggplot(df, aes(x = UnemPct, y = PresApprov)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm") +
+  theme_minimal() +
+  labs(x = "Unemployment rate (%)", y = "Presidential approval (%)")
+```
+
+Across state-year observations, higher unemployment is associated with lower presidential approval. However, this cross-sectional pattern pools observations across states and years, so it reflects both within-state variation over time and permanent between-state differences in unemployment levels and approval --- making it difficult to draw causal conclusions.
+
+# 2. Pooled OLS
+
+**a)** Pooled OLS regressing approval on unemployment:
+
+```{r}
+m_pooled = lm(PresApprov ~ UnemPct, data = df)
+summary(m_pooled)
+```
+
+The coefficient on `UnemPct` is negative: a one-percentage-point increase in the unemployment rate is associated with a decrease of that magnitude in the presidential approval rating. This relationship is statistically significant, but it conflates variation across states with variation within states over time.
+
+**b)** Adding `South` as a control:
+
+```{r}
+m_pooled2 = lm(PresApprov ~ UnemPct + South, data = df)
+summary(m_pooled2)
+```
+
+Controlling for southern state status changes the coefficient on `UnemPct` only modestly. This suggests that the bivariate OLS estimate was not strongly confounded by the North--South distinction: southern states differ systematically from the rest in their approval levels, but this difference is not strongly correlated with the unemployment-approval association in this pooled specification.
+
+**c)** Pooled OLS is problematic for panel data because it ignores unobserved, time-invariant differences across states that may be correlated with unemployment. For example: (1) states with historically weaker economies may have structurally higher unemployment and different political cultures that shape baseline approval; (2) states in particular regions may have persistent partisan leanings that affect how residents evaluate the president independently of economic conditions; (3) states with large unionized labor forces may have both higher unemployment sensitivity and different approval baselines. All of these would produce omitted variable bias in the pooled OLS estimate.
+
+# 3. Entity fixed effects
+
+**a)** State fixed effects model:
+
+```{r}
+m_fe = feols(PresApprov ~ UnemPct | State, data = df)
 
 modelsummary(
-  list("Level" = m1, "Log" = m2),
+  list("Pooled OLS" = m_pooled, "State FE" = m_fe),
+  vcov = ~State,
   stars = TRUE,
   gof_map = c("r.squared", "nobs"),
   output = "markdown")
 ```
 
-# 3. Plots script
+The coefficient on `UnemPct` changes relative to pooled OLS. The state fixed effects model compares approval within the same state across different years, removing the influence of any time-invariant state characteristics.
 
-The complete `plots/figures.R`:
+**b)** State fixed effects absorb all time-invariant differences across states --- including geography, political culture, long-run economic structure, and regional identity. This is precisely why `South` drops from the model: it does not vary within a state over time, so its effect is indistinguishable from the state-specific intercept (fixed effect). Any time-invariant variable is collinear with the set of state dummies and cannot be estimated separately.
 
-```{r, eval=FALSE}
-# setwd("~/path/to/assignment5")
-options(stringsAsFactors = FALSE)
+**c)** The coefficient on `UnemPct` in the state FE model identifies a within-state effect: it measures how approval changes in a given state when its unemployment rate rises or falls, compared to that state's own average. This is fundamentally different from pooled OLS, which compares states with different unemployment levels to each other. The FE estimator controls for all stable state-level confounders (observed or not) but cannot account for time-varying omitted variables.
 
-# ============================================================
-# Load packages
-# ============================================================
+# 4. Two-way fixed effects
 
-library(readstata13)
-library(ggplot2)
+**a--b)** Adding year fixed effects to control for common time shocks:
 
-# ============================================================
-# Load and clean data
-# ============================================================
+```{r}
+m_twfe = feols(PresApprov ~ UnemPct | State + Year, data = df)
 
-df = read.dta13("data/corruption.dta")
-df = df[!is.na(df$ti_cpi) & !is.na(df$undp_gdp), ]
-
-# ============================================================
-# Scatter plot: corruption vs log GDP
-# ============================================================
-
-p = ggplot(df, aes(x = log(undp_gdp), y = ti_cpi)) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  labs(
-    x = "Log GDP per capita (PPP)",
-    y = "Corruption Perceptions Index",
-    title = "Corruption and Wealth") +
-  theme_minimal()
-
-ggsave("plots/output/scatter_corruption.pdf", p, width = 7, height = 5)
-
-cat("Scatter plot saved.\n")
+modelsummary(
+  list("Pooled OLS" = m_pooled, "State FE" = m_fe, "Two-Way FE" = m_twfe),
+  vcov = ~State,
+  stars = TRUE,
+  gof_map = c("r.squared", "nobs"),
+  output = "markdown")
 ```
 
-# 4. Makefile
-
-The complete `Makefile` (note: recipe lines must use literal tab characters):
-
-```{makefile, eval=FALSE}
-all: analysis/output/table_models.tex \
-     plots/output/scatter_corruption.pdf
-
-analysis/output/table_models.tex: analysis/models.R \
-                                  data/corruption.dta
-	Rscript --no-save analysis/models.R
-
-plots/output/scatter_corruption.pdf: plots/figures.R \
-                                     data/corruption.dta
-	Rscript --no-save plots/figures.R
-```
-
-**Testing:** Running `make` from the `assignment5/` directory should execute both scripts and produce `analysis/output/table_models.tex` and `plots/output/scatter_corruption.pdf`. If a file already exists and its dependencies have not changed, `make` will skip it (this is the benefit of a Makefile over running scripts manually).
+**c)** Year fixed effects absorb common time shocks: national economic cycles, presidential scandals, wars, or any other event that affects approval in all states simultaneously in a given year. If national unemployment rises during a recession, both the unemployment rate and presidential approval will move together in all states at once --- not because of a state-level effect but because of the shared macro environment. Adding year dummies removes this source of confounding and identifies the effect of a state's unemployment relative to the national average in each year. If the coefficient on `UnemPct` changes noticeably after adding year FEs, it suggests that common time trends were partly driving the relationship estimated with state FEs alone.

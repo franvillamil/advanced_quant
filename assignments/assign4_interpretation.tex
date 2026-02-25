@@ -74,7 +74,7 @@ predictions(m1, newdata = datagrid(undp_gdp = c(q25, q75)))
 
 \begin{enumerate}[label=\alph*)]
   \item Estimate a model using the log of GDP per capita: \\\code{m2 = lm(ti\_cpi \textasciitilde{} log(undp\_gdp), data = df)}.
-  \item Interpret the coefficient on \code{log(undp\_gdp)}. Recall from the lecture that this is a level-log model: a 1\% increase in GDP is associated with a change of $\beta_1 / 100$ in the corruption index. In a comment, compute the predicted change in corruption for a \textbf{doubling} of GDP per capita (hint: $\log(2) \approx 0.693$, so the change is approximately $\beta_1 \times 0.693$).
+  \item Interpret the coefficient on \code{log(undp\_gdp)}. You can infer this from the mathematical properties of level-log models, but the most efficient way is to create a prediction plot.
   \item Estimate a model with a quadratic GDP term: \\\code{m3 = lm(ti\_cpi \textasciitilde{} undp\_gdp + I(undp\_gdp\^{}2), data = df)}.
   \item Compare the $R^2$ of all three models. Which specification fits the data best? In a comment, explain why a non-linear specification might be appropriate for this relationship.
 \end{enumerate}
