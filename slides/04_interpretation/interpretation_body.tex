@@ -45,18 +45,18 @@
   \draw[asher, very thick, dashed] (0.5,4.8) -- (9,2.0);
   \node[asher, font=\footnotesize] at (8.2,1.5) {Overall};
   % Group A fitted line (positive slope)
-  \draw[accent, very thick] (0.7,2.9) -- (4.3,5.4);
-  \node[accent, font=\footnotesize, above] at (3.8,5.5) {$Z = 0$};
+  \uncover<2->{\draw[accent, very thick] (0.7,2.9) -- (4.3,5.4);}
+  \uncover<2->{\node[accent, font=\footnotesize, above] at (3.8,5.5) {$Z = 0$};}
   % Group B fitted line (positive slope)
-  \draw[accent2, very thick] (5.2,1.2) -- (8.8,3.9);
-  \node[accent2, font=\footnotesize, above] at (8.3,4.0) {$Z = 1$};
+  \uncover<2->{\draw[accent2, very thick] (5.2,1.2) -- (8.8,3.9);}
+  \uncover<2->{\node[accent2, font=\footnotesize, above] at (8.3,4.0) {$Z = 1$};}
 \end{tikzpicture}
 
 \vspace{8pt}
 
 \begin{itemize}
 \item Overall trend is \textbf{negative}, but within each group it's \textbf{positive}
-\item Ignoring $Z$ gives the \textbf{wrong answer} --- we need to account for it
+\item<2-> Ignoring $Z$ gives the \textbf{wrong answer} --- we need to account for it
 \end{itemize}
 
 \end{frame}
@@ -809,43 +809,41 @@ Log-log & $\log(Y) = \beta_0 + \beta_1 \log(X)$ & $\%\Delta X = 1 \Rightarrow \%
 \vspace{15pt}
 
 \begin{itemize}[<+->]
-\item Log-log: $\beta_1$ is the \textbf{elasticity}
-\item Log-level: $\beta_1$ is a semi-elasticity
-\item Most common in practice: log-level and log-log
+\item \textbf{Just use plots} of predicted values
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
 \note{This table is the key reference for interpreting logged variables. Walk through each row. Level-level: the standard OLS interpretation. Log-level: a one-unit change in $X$ is associated with a $100\beta_1$\% change in $Y$. For example, if $\beta_1 = 0.05$, a one-unit increase in $X$ is associated with a 5\% increase in $Y$. Level-log: a 1\% change in $X$ is associated with a $\beta_1/100$ change in $Y$. Log-log: the elasticity --- a 1\% change in $X$ is associated with a $\beta_1$\% change in $Y$. The approximation $\log(1 + r) \approx r$ for small $r$ is what makes these interpretations work. For large changes (say $\beta_1 > 0.2$), the exact formula $e^{\beta_1} - 1$ gives the percent change more accurately.}
 
-% ----------------------------------------------------
-\begin{frame}
-\frametitle{Interpreting logs: a worked example}
-\centering
+% % ----------------------------------------------------
+% \begin{frame}
+% \frametitle{Interpreting logs: a worked example}
+% \centering
 
-\vspace{10pt}
+% \vspace{10pt}
 
-{\small $\log(\text{Income}) = 8.2 + 0.05 \cdot \text{Education}$}
+% {\small $\log(\text{Income}) = 8.2 + 0.05 \cdot \text{Education}$}
 
-\vspace{15pt}
+% \vspace{15pt}
 
-\begin{itemize}[<+->]
-\item This is a \textbf{log-level} model
-\item One additional year of education $\Rightarrow$ $\approx 5\%$ higher income
-\vspace{4pt}
-\item What about 10 extra years?
-  \begin{itemize}
-  \item Approximation: $10 \times 5\% = 50\%$
-  \item Exact: $e^{0.05 \times 10} - 1 = e^{0.5} - 1 \approx 65\%$
-  \end{itemize}
-\vspace{4pt}
-\item The approximation breaks down for large $\beta_1 \cdot \Delta X$
-\item Rule of thumb: use approximation when $\beta_1 \cdot \Delta X < 0.1$
-\end{itemize}
+% \begin{itemize}[<+->]
+% \item This is a \textbf{log-level} model
+% \item One additional year of education $\Rightarrow$ $\approx 5\%$ higher income
+% \vspace{4pt}
+% \item What about 10 extra years?
+%   \begin{itemize}
+%   \item Approximation: $10 \times 5\% = 50\%$
+%   \item Exact: $e^{0.05 \times 10} - 1 = e^{0.5} - 1 \approx 65\%$
+%   \end{itemize}
+% \vspace{4pt}
+% \item The approximation breaks down for large $\beta_1 \cdot \Delta X$
+% \item Rule of thumb: use approximation when $\beta_1 \cdot \Delta X < 0.1$
+% \end{itemize}
 
-\end{frame}
-% ----------------------------------------------------
-\note{This example grounds the log interpretation table in a concrete calculation. The key point: the approximation $100 \cdot \beta_1$ for the percent change works well for small $\beta_1$ (say under 0.1), but becomes increasingly inaccurate for larger values. For a 10-year change with $\beta_1 = 0.05$, the product $0.5$ is too large for the linear approximation. The exact formula $e^{\beta_1 \cdot \Delta X} - 1$ always works. In practice, most coefficients in log-level models are small enough that the approximation is fine, but students should know when to switch to the exact formula.}
+% \end{frame}
+% % ----------------------------------------------------
+% \note{This example grounds the log interpretation table in a concrete calculation. The key point: the approximation $100 \cdot \beta_1$ for the percent change works well for small $\beta_1$ (say under 0.1), but becomes increasingly inaccurate for larger values. For a 10-year change with $\beta_1 = 0.05$, the product $0.5$ is too large for the linear approximation. The exact formula $e^{\beta_1 \cdot \Delta X} - 1$ always works. In practice, most coefficients in log-level models are small enough that the approximation is fine, but students should know when to switch to the exact formula.}
 
 % ----------------------------------------------------
 \begin{frame}
@@ -904,6 +902,7 @@ Log-log & $\log(Y) = \beta_0 + \beta_1 \log(X)$ & $\%\Delta X = 1 \Rightarrow \%
   \item In R: \texttt{plot(model, which = 4)}
   \item Observations with Cook's $D > 4/n$: investigate further
   \end{itemize}
+\item \textbf{Alternatively:} just loop through models dropping one observation (or group of) each time (\textit{leave-one-out})
 \vspace{4pt}
 \item What to do with influential observations?
   \begin{itemize}
