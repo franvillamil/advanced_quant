@@ -1,0 +1,273 @@
+\input{preamble.tex}
+\textbf{\large Assignment 8: Spatial Data II}\\\vspace{10pt}
+\end{center}
+
+\vspace{10pt}
+\noindent
+\textbf{\large Instructions:}
+
+\vspace{10pt}
+\begin{itemize}
+\setlength\itemsep{0pt}
+  \item {\color{red}{\textbf{Deadline}}}: \textbf{[DEADLINE - TBD], before class}
+  \item Submit your work in a separate folder in your GitHub repository
+  \begin{itemize}
+    \item You can include only the R file or additional ones (e.g. pdf with results)
+  \end{itemize}
+  \item \textbf{Always use comments} in your R code -- and use them to answer questions
+  \item You are encouraged to work together, but each person must submit their own code
+  \item Plan is to start Part 1 in class and complete Part 2 at home
+  \item I'll upload a solution file to the website after next class
+\end{itemize}
+
+\vspace{20pt}
+\tableofcontents
+\newpage
+
+% ==========================================================================
+\section{Part 1: In-Class (Detecting Spatial Autocorrelation)}
+% ==========================================================================
+
+In this lab we continue working with the \code{world} dataset from the \code{spData} package, which you already used in Assignment 7. This time we ask a regression question: does GDP per capita predict life expectancy across countries? And if so, are the OLS residuals spatially clustered? We will use Moran's I and Lagrange Multiplier tests to detect spatial dependence, and then fit a Spatial Error Model (SEM) to address it.
+
+Load the required packages and data with:
+\begin{lstlisting}
+library(sf)
+library(spData)
+library(spdep)
+library(spatialreg)
+data(world)
+\end{lstlisting}
+
+Key variables in \code{world} used in this assignment:
+\begin{itemize}
+  \item \code{name\_long} --- country name (long form)
+  \item \code{continent} --- continent
+  \item \code{gdpPercap} --- GDP per capita (USD)
+  \item \code{lifeExp} --- life expectancy (years)
+  \item \code{pop} --- population estimate
+  \item \code{geom} --- geometry column (sf)
+\end{itemize}
+
+% --------------------------------------------------------------------------
+\subsection{Setup and OLS baseline}
+% --------------------------------------------------------------------------
+
+\begin{enumerate}[label=\alph*)]
+
+  \item Load the \code{world} dataset. Remove rows with missing \code{gdpPercap} or \code{lifeExp}, and remove Antarctica. How many observations remain? Log-transform \code{gdpPercap} and store it as a new column \code{log\_gdp}:
+  \begin{lstlisting}
+world = world[!is.na(world$gdpPercap) & !is.na(world$lifeExp), ]
+world = world[world$continent != "Antarctica", ]
+world$log_gdp = log(world$gdpPercap)
+  \end{lstlisting}
+  In a comment, report the number of remaining observations and explain why we log-transform GDP per capita. Recall the discussion of skewed distributions and log transformations from earlier in the course.
+
+  \item Fit an OLS regression of life expectancy (\code{lifeExp}) on log GDP per capita (\code{log\_gdp}):
+  \begin{lstlisting}
+ols_fit = lm(lifeExp ~ log_gdp, data = world)
+summary(ols_fit)
+  \end{lstlisting}
+  In a comment, report the estimated coefficient on \code{log\_gdp}. What does it mean substantively? Is it statistically significant? What is the $R^2$?
+
+  \item Save the OLS residuals and map them:
+  \begin{lstlisting}
+world$ols_resid = residuals(ols_fit)
+
+library(ggplot2)
+ggplot(world) +
+  geom_sf(aes(fill = ols_resid), color = "white", linewidth = 0.2) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#d6604d",
+                       midpoint = 0, name = "OLS residual") +
+  theme_void() +
+  labs(title = "OLS residuals: life expectancy ~ log GDP per capita")
+ggsave("ols_residuals_map.pdf", width = 10, height = 5)
+  \end{lstlisting}
+  In a comment, describe the geographic pattern. Do you see clusters of positive or negative residuals? Which regions appear to have higher life expectancy than the model predicts, and which appear lower?
+
+\end{enumerate}
+
+% --------------------------------------------------------------------------
+\subsection{Spatial weights matrix}
+% --------------------------------------------------------------------------
+
+\begin{enumerate}[label=\alph*)]
+
+  \item Create a queen contiguity neighborhood and row-standardized spatial weights. Recall from class (and Assignment 7) that queen contiguity defines neighbors as any polygon sharing at least one point:
+  \begin{lstlisting}
+nb = poly2nb(world, queen = TRUE)
+listw = nb2listw(nb, style = "W", zero.policy = TRUE)
+summary(nb)
+  \end{lstlisting}
+  In a comment, report how many countries have zero neighbors. Explain why some countries have no neighbors in a contiguity-based weights matrix (think about island nations).
+
+  \item Test Moran's I on the OLS residuals:
+  \begin{lstlisting}
+moran.test(world$ols_resid, listw = listw, zero.policy = TRUE)
+  \end{lstlisting}
+  In a comment, report the Moran's I statistic and p-value. Is there statistically significant spatial autocorrelation in the residuals? What does this imply for OLS -- specifically, what assumption of OLS is being violated?
+
+\end{enumerate}
+
+% --------------------------------------------------------------------------
+\subsection{Lagrange Multiplier tests}
+% --------------------------------------------------------------------------
+
+Recall from class that when Moran's I on residuals is significant, we face a choice: should we use the Spatial Error Model (SEM) or the Spatial Lag Model (SLM)? The Lagrange Multiplier (LM) tests help guide this decision. Run all four tests at once:
+
+\begin{lstlisting}
+lm_tests = lm.LMtests(ols_fit, listw = listw,
+                       test = c("LMerr", "LMlag", "RLMerr", "RLMlag"),
+                       zero.policy = TRUE)
+summary(lm_tests)
+\end{lstlisting}
+
+\begin{enumerate}[label=\alph*)]
+
+  \item Report the test statistics and p-values for \code{LMerr} and \code{LMlag}. Are both significant? In a comment, recall from class what each of these tests is checking: LMerr tests for spatial dependence in the \textit{error term} ($\lambda \neq 0$), while LMlag tests for a spatially lagged \textit{dependent variable} ($\rho \neq 0$).
+
+  \item Report the robust versions \code{RLMerr} and \code{RLMlag}. The robust tests control for the presence of the other type of dependence. Which is more significant? Based on the LM decision rule from class (if both LM tests are significant, compare the robust versions), which model would you choose: SEM or SLM? Write your reasoning in a comment.
+
+\end{enumerate}
+
+% --------------------------------------------------------------------------
+\subsection{Spatial Error Model (SEM)}
+% --------------------------------------------------------------------------
+
+Based on the diagnostics above, fit the Spatial Error Model using \code{errorsarlm()} from \code{spdep}:
+
+\begin{lstlisting}
+sem_fit = errorsarlm(lifeExp ~ log_gdp, data = world,
+                     listw = listw, zero.policy = TRUE)
+summary(sem_fit)
+\end{lstlisting}
+
+\begin{enumerate}[label=\alph*)]
+
+  \item Report the estimated coefficient on \code{log\_gdp} from the SEM and compare it to the OLS estimate. Has the coefficient changed? Report the $\hat{\lambda}$ (lambda) parameter and its p-value. Is it statistically significant?
+
+  \item In a comment (2--3 sentences), explain what $\lambda$ represents in the SEM. Recall from class: the SEM says $\mathbf{u} = \lambda \mathbf{W}\mathbf{u} + \boldsymbol{\varepsilon}$, meaning the error at each unit is partly a function of neighbors' errors. If $\lambda > 0$ and significant, what does this tell us about the structure of the unmeasured factors driving life expectancy?
+
+  \item Check whether the SEM has removed the spatial autocorrelation from the residuals. Save the SEM residuals and run Moran's test again:
+  \begin{lstlisting}
+world$sem_resid = residuals(sem_fit)
+moran.test(world$sem_resid, listw = listw, zero.policy = TRUE)
+  \end{lstlisting}
+  In a comment, compare this result to the Moran's I on the OLS residuals from question 1.2b. Has the spatial autocorrelation been removed or substantially reduced?
+
+\end{enumerate}
+
+\newpage
+
+% ==========================================================================
+\section{Part 2: Take-Home (Spatial Lag Model and Model Comparison)}
+% ==========================================================================
+
+% --------------------------------------------------------------------------
+\subsection{Spatial Lag Model (SLM)}
+% --------------------------------------------------------------------------
+
+The Spatial Lag Model (also called the Spatial Autoregressive model, or SAR) posits that the outcome itself diffuses across space: $\mathbf{y} = \rho \mathbf{W}\mathbf{y} + \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon}$. Fit it using \code{lagsarlm()}:
+
+\begin{lstlisting}
+slm_fit = lagsarlm(lifeExp ~ log_gdp, data = world,
+                   listw = listw, zero.policy = TRUE)
+summary(slm_fit)
+\end{lstlisting}
+
+\begin{enumerate}[label=\alph*)]
+
+  \item Report the estimated $\hat{\rho}$ (rho) parameter and its p-value, and report the coefficient on \code{log\_gdp}. Is $\rho$ statistically significant?
+
+  \item In a comment (2--3 sentences), interpret $\hat{\rho}$. Recall from class that the SLM captures genuine spatial diffusion: the outcome of unit $i$ is partly determined by its neighbors' outcomes. If $\hat{\rho} > 0$, what does this mean about the relationship between a country's life expectancy and its neighbors' life expectancy?
+
+  \item In a comment, explain why the coefficient on \code{log\_gdp} in the SLM output is \textbf{not} the marginal effect of GDP on life expectancy. Recall from class: solving $\mathbf{y} = \rho\mathbf{W}\mathbf{y} + \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon}$ for $\mathbf{y}$ gives $\mathbf{y} = (\mathbf{I} - \rho\mathbf{W})^{-1}(\mathbf{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon})$. What does this equilibrium matrix $(\mathbf{I} - \rho\mathbf{W})^{-1}$ imply for how a change in $x_i$ propagates through the network?
+
+\end{enumerate}
+
+% --------------------------------------------------------------------------
+\subsection{Direct and Indirect Effects}
+% --------------------------------------------------------------------------
+
+\begin{enumerate}[label=\alph*)]
+
+  \item Compute the equilibrium direct and indirect effects using \code{impacts()}. The \code{R = 500} argument draws 500 simulation samples to compute standard errors:
+  \begin{lstlisting}
+set.seed(42)
+impacts_slm = impacts(slm_fit, listw = listw, R = 500)
+summary(impacts_slm, zstats = TRUE)
+  \end{lstlisting}
+  In a comment, report the direct effect, the indirect effect, and the total effect of \code{log\_gdp}. How does the direct effect compare to the raw \code{log\_gdp} coefficient from the SLM output and to the OLS coefficient?
+
+  \item In a comment (2--3 sentences), explain the substantive meaning of the indirect effect. Recall from class: the indirect effect captures the spillover from unit $i$'s $x$ to all other units' $y$, after the spatial feedback loop reaches equilibrium. If log GDP per capita in Country A increases by 1 unit, what does the indirect effect say about life expectancy in neighboring countries?
+
+  \item The total effect is larger than the direct effect. In a comment, explain whether this is an expected feature of the SLM. Under what conditions would the indirect effect be larger or smaller? (Hint: think about what happens to the spillover term as $\rho$ approaches 0 versus as $\rho$ grows larger.)
+
+\end{enumerate}
+
+% --------------------------------------------------------------------------
+\subsection{Model Comparison}
+% --------------------------------------------------------------------------
+
+\begin{enumerate}[label=\alph*)]
+
+  \item Compare OLS, SEM, and SLM using AIC. Lower AIC indicates better fit, penalized for model complexity:
+  \begin{lstlisting}
+AIC(ols_fit)
+AIC(sem_fit)
+AIC(slm_fit)
+  \end{lstlisting}
+  In a comment, report the three AIC values. Which model has the lowest AIC? Does this agree with your LM-test-based model choice in question 1.3b?
+
+  \item Write a short summary paragraph as a comment in your R script (5--8 sentences). Include all of the following: (1) whether spatial autocorrelation was present in the OLS residuals and how strong it was; (2) which spatial model you selected based on the LM tests and why; (3) how the key coefficient estimate on \code{log\_gdp} differs across OLS, SEM, and SLM; (4) what the SLM implies about life expectancy spillovers across borders; (5) one limitation of using queen contiguity weights for country-level data (think about what the matrix misses).
+
+\end{enumerate}
+
+% --------------------------------------------------------------------------
+\subsection{Extension: Spatial Durbin Model (optional/bonus)}
+% --------------------------------------------------------------------------
+
+The Spatial Durbin Model (SDM) nests both SEM and SLM by including a spatially lagged dependent variable \textit{and} spatially lagged covariates. It is estimated with \code{lagsarlm()} using \code{Durbin = TRUE}:
+
+\begin{lstlisting}
+sdm_fit = lagsarlm(lifeExp ~ log_gdp, data = world,
+                   listw = listw, Durbin = TRUE, zero.policy = TRUE)
+summary(sdm_fit)
+\end{lstlisting}
+
+\begin{enumerate}[label=\alph*)]
+
+  \item Fit the SDM. Inspect the output: you will see a coefficient for \code{log\_gdp} and a separate coefficient for \code{lag.log\_gdp} (the spatially lagged version, $\mathbf{W} \times \text{log\_gdp}$). Is \code{lag.log\_gdp} statistically significant? In a comment, explain what a significant \code{lag.log\_gdp} coefficient would mean substantively: does it suggest that a \textit{neighbor's} GDP predicts a country's life expectancy, beyond what the country's own GDP already explains?
+
+  \item Compare the AIC of the SDM to those of the SEM and SLM from question 2.3a. In a comment, is the added complexity of the SDM (one extra parameter) justified by the improvement in fit? Use the AIC values to support your answer.
+
+\end{enumerate}
+
+\vspace{15pt}
+
+% ==========================================================================
+\section{Data Sources}
+% ==========================================================================
+
+\begin{itemize}
+  \item World polygons and socioeconomic data: \code{world} dataset in the \code{spData} R package (\code{library(spData); data(world)})
+\end{itemize}
+
+\vspace{15pt}
+
+% ==========================================================================
+\section{Submission}
+% ==========================================================================
+
+Commit your file to your GitHub repository before the deadline. Put it in a separate folder, e.g.\ \texttt{assignment8}. Make sure your repository is public so I can access it.
+
+Your R script should:
+\begin{itemize}
+  \item Be well-organized with clear section headers (using comments)
+  \item Include all code needed to reproduce your analysis
+  \item Include your answers and interpretations as comments
+  \item Save any plots to files (using \code{pdf()}/\code{dev.off()} or \code{ggsave()})
+  \item Run without errors from top to bottom
+\end{itemize}
+
+\end{document}

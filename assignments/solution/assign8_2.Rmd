@@ -1,0 +1,111 @@
+---
+title: "Assignment 8 Solutions: Spatial Data II"
+subtitle: "Part 2: Spatial Lag Model and Model Comparison"
+author: "Applied Quantitative Methods II, UC3M"
+date: "Spring 2026"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+geometry: margin=2cm
+header-includes:
+  - \renewcommand*\rmdefault{ppl}
+  - \usepackage{setspace}\setstretch{1.2}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+options(stringsAsFactors = FALSE)
+```
+
+```{r packages}
+library(sf)
+library(spData)
+library(spdep)
+library(spatialreg)
+library(ggplot2)
+
+data(world)
+```
+
+```{r rebuild-objects, include=FALSE}
+# Reproduce all objects from Part 1 so this document is self-contained
+world = world[!is.na(world$gdpPercap) & !is.na(world$lifeExp), ]
+world = world[world$continent != "Antarctica", ]
+world$log_gdp = log(world$gdpPercap)
+
+ols_fit = lm(lifeExp ~ log_gdp, data = world)
+world$ols_resid = residuals(ols_fit)
+
+nb = poly2nb(world, queen = TRUE)
+listw = nb2listw(nb, style = "W", zero.policy = TRUE)
+
+sem_fit = errorsarlm(lifeExp ~ log_gdp, data = world,
+                     listw = listw, zero.policy = TRUE)
+```
+
+# 1. Spatial Lag Model (SLM)
+
+Fit the Spatial Lag Model (SAR) using `lagsarlm()`:
+
+```{r 1-slm}
+slm_fit = lagsarlm(lifeExp ~ log_gdp, data = world,
+                   listw = listw, zero.policy = TRUE)
+summary(slm_fit)
+```
+
+**a)** The $\hat{\rho}$ (rho) parameter and its p-value are shown in the summary above, along with the coefficient on `log_gdp`. If $\hat{\rho}$ is positive and statistically significant (p < 0.05), it confirms that a country's life expectancy is partly a function of its neighbors' life expectancy.
+
+**b)** $\hat{\rho}$ captures the degree of spatial diffusion in the outcome itself. A positive and significant $\hat{\rho}$ means that countries surrounded by neighbors with high life expectancy tend to have higher life expectancy themselves, and vice versa — over and above what their own GDP level predicts. This is consistent with cross-border spillovers: regional health systems, shared disease environments, migration patterns, and common institutions create geographic clusters of similar life expectancy that a purely domestic predictor like GDP cannot capture alone.
+
+**c)** In the SLM, solving for $\mathbf{y}$ yields $\mathbf{y} = (\mathbf{I} - \rho\mathbf{W})^{-1}(\mathbf{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon})$. Because of the inverse matrix $(\mathbf{I} - \rho\mathbf{W})^{-1}$, a change in $x_i$ does not affect only $y_i$: it ripples through the network to all other units via the spatial feedback loop. The raw `log_gdp` coefficient in the SLM output captures only the **direct, first-order** effect before this feedback is accounted for; the true marginal effect is found by computing the equilibrium impacts using `impacts()`.
+
+# 2. Direct and Indirect Effects
+
+**a)** Compute equilibrium direct, indirect, and total effects via simulation:
+
+```{r 2a}
+set.seed(42)
+impacts_slm = impacts(slm_fit, listw = listw, R = 500)
+summary(impacts_slm, zstats = TRUE)
+```
+
+The `impacts()` output reports three quantities for `log_gdp`: the **direct effect** (average effect of a country's own log GDP on its own life expectancy, accounting for feedback), the **indirect effect** (average spillover to all other countries' life expectancy), and the **total effect** (their sum). The direct effect is slightly larger than the raw SLM coefficient because it includes own-feedback from the equilibrium matrix. Compared to the OLS coefficient, the total effect is larger because it compounds the direct effect with the network-propagated spillovers that OLS ignores entirely.
+
+**b)** The indirect effect measures the average change in life expectancy across all other countries that results from a 1-unit increase in log GDP per capita in one focal country — after the spatial feedback loop has reached equilibrium. If Country A's log GDP per capita rises by 1 unit, the indirect effect tells us by how much neighboring (and more distant, discounted by network distance) countries' life expectancy changes on average. The magnitude reflects both the strength of $\hat{\rho}$ and the density of the neighborhood graph.
+
+**c)** The total effect exceeding the direct effect is an expected feature of the SLM whenever $\hat{\rho} > 0$. As $\rho \to 0$ the equilibrium matrix approaches the identity matrix, the feedback loop vanishes, and the indirect effect approaches zero — leaving total = direct = the raw coefficient. As $\rho$ grows larger, the feedback multiplier $(\mathbf{I} - \rho\mathbf{W})^{-1}$ amplifies shocks further through the network, producing larger indirect effects and a bigger wedge between total and direct. The indirect effect is therefore larger when both $\rho$ is large and countries are densely connected in the weights graph.
+
+# 3. Model Comparison
+
+**a)** Compare OLS, SEM, and SLM by AIC:
+
+```{r 3a}
+AIC(ols_fit)
+AIC(sem_fit)
+AIC(slm_fit)
+```
+
+The three AIC values are shown above. A lower AIC indicates better fit penalized for model complexity. The spatial models (SEM and SLM) both improve on OLS, confirming that accounting for spatial dependence is warranted. Whichever spatial model achieves the lower AIC is consistent with the LM-test-based decision from Part 1 (question 1.3b): the robust LM tests and the AIC should point to the same preferred model, providing a useful cross-check between specification tests and information criteria.
+
+**b)** Summary: The Moran's I test on OLS residuals revealed strong and statistically significant positive spatial autocorrelation (I > 0, p < 0.001), meaning the OLS independence-of-errors assumption is violated. The LM tests showed that both SEM and SLM are candidates; the robust versions indicated which model fits better after controlling for the other form of dependence. The key `log_gdp` coefficient is broadly similar across OLS, SEM, and SLM, but the SEM coefficient is corrected for spatial confounding in the error term while the SLM direct effect accounts for network feedback. The SLM further reveals that life expectancy spillovers across borders are real and non-trivial in magnitude, as reflected in the positive and significant $\hat{\rho}$ and the indirect effect from `impacts()`. One limitation of queen contiguity weights for country-level data is that island nations have no neighbors and are excluded from the spatial structure; moreover, contiguity ignores the strength of actual cross-border linkages (trade, migration, shared institutions), treating all shared-border pairs as equally connected regardless of geographic or economic distance.
+
+# 4. Extension: Spatial Durbin Model (optional/bonus)
+
+```{r 4-sdm}
+sdm_fit = lagsarlm(lifeExp ~ log_gdp, data = world,
+                   listw = listw, Durbin = TRUE, zero.policy = TRUE)
+summary(sdm_fit)
+```
+
+**a)** The SDM adds `lag.log_gdp` (the spatially lagged version of log GDP per capita, $\mathbf{W} \times \text{log\_gdp}$) alongside the own-country `log_gdp` and the spatially lagged dependent variable. If the `lag.log_gdp` coefficient is statistically significant, it means that a neighbor's GDP per capita predicts a country's life expectancy beyond what the country's own GDP already explains — a direct spillover from neighbors' economic conditions to own health outcomes, separate from the outcome-diffusion channel captured by $\hat{\rho}$.
+
+**b)** Compare AIC of SDM to SEM and SLM:
+
+```{r 4b}
+AIC(sdm_fit)
+AIC(sem_fit)
+AIC(slm_fit)
+```
+
+The SDM has one additional parameter (`lag.log_gdp`) compared to the SLM. If the SDM's AIC is not meaningfully lower than the best of SEM/SLM (typically a difference of at least 2 AIC units is considered meaningful), the added complexity is not justified and the more parsimonious model is preferred. Conversely, a clearly lower AIC for the SDM would suggest that neighbors' GDP directly matters for own life expectancy, beyond outcome diffusion alone.
