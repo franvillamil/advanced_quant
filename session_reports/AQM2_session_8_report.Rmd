@@ -1,0 +1,172 @@
+---
+title: "Session 8 Report: Spatial Data II"
+subtitle: "Applied Quantitative Methods II — UC3M"
+date: "2026-03-03"
+output:
+  pdf_document:
+    toc: true
+geometry: margin=2cm
+header-includes:
+  - \renewcommand*\rmdefault{ppl}
+  - \usepackage{setspace}\setstretch{1.2}
+  - \usepackage{booktabs}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Summary
+
+| Artifact | Status | Pages | File |
+|---|---|---|---|
+| Slides (presentation) | **PASS** | 136 | `slides/08_spatial2/spatial2.pdf` |
+| Slides (notes) | **PASS** | 19 | `slides/08_spatial2/spatial2_notes.pdf` |
+| Assignment | **PASS** | 7 | `assignments/assign8_spatial2.pdf` |
+| Solutions Part 1 | **PASS** | 6 | `assignments/solution/assign8_1.pdf` |
+| Solutions Part 2 | **PASS** | 6 | `assignments/solution/assign8_2.pdf` |
+
+All artifacts produced and verified. No critical outstanding issues.
+
+---
+
+# Phase 1: Slides
+
+## Structure
+
+8 sections, 30 frames (+ title + roadmap).
+
+| Section | Content |
+|---|---|
+| 1 | Why spatial models? OLS problems with spatial data |
+| 2 | Two sources of spatial dependence (SEM vs SLM) |
+| 3 | Spatial Error Model (SEM) |
+| 4 | Spatial Lag Model / SAR (SLM) |
+| 5 | Direct and Indirect Equilibrium Effects |
+| 6 | LM specification tests (decision tree) |
+| 7 | Spatial Durbin Model (SDM) |
+| 8 | Model comparison and summary table |
+
+## Compilation
+
+- Both `spatial2.pdf` (136 pp.) and `spatial2_notes.pdf` (19 pp.) compiled without errors.
+- Final overfull hbox check: 1 minor warning ($\leq$ 4.5pt) in comparison table -- within threshold.
+
+## Issues Fixed
+
+1. **TikZ `diamond` shape error**: `dec/.style={diamond, draw, ...}` caused a pgfkeys error because `shapes.geometric` is not loaded in the beamer preamble. Fixed by removing the `diamond` style and using a plain rectangle for the LM decision tree nodes.
+
+2. **Comparison table overflow (32.81pt)**: last column `\texttt{lagsarlm(type="mixed")}` exceeded `p{2.5cm}`. Fixed with a manual line break: `\texttt{lagsarlm(}\\\texttt{Durbin=TRUE)}`. Residual warning: 4.5pt (minor).
+
+3. **SDM argument deprecated**: `type = "mixed"` is deprecated in the `spatialreg` package. Updated to `Durbin = TRUE` throughout the slides.
+
+## Pedagogy Review Fixes
+
+- Added Socratic question on "Two sources" slide: *In your research: which mechanism is more plausible?*
+- Added `\begin{transitionframe}` before "Direct and Indirect Effects" section.
+- Added matrix algebra Socratic question: *if you change $x_i$, how many units in the network are eventually affected?*
+
+## Quality Score: 90 / 100
+
+- Minor: 1 overfull hbox $\leq$ 10pt (-1)
+- Minor: comparison table wrapping not ideal visually (-2)
+- No missing notes, no missing sections.
+
+---
+
+# Phase 2: Assignment
+
+## Structure
+
+**Part 1 (In-class):** 4 questions
+
+- Q1: Setup -- filter `world` data, log GDP, OLS regression, residual map
+- Q2: Spatial weights -- queen contiguity (`poly2nb`), `zero.policy = TRUE` for island nations, Moran's I on OLS residuals
+- Q3: LM tests -- all four (`LMerr`, `LMlag`, `RLMerr`, `RLMlag`) and interpretation
+- Q4: Spatial Error Model (`errorsarlm`), interpret $\hat{\lambda}$, check residual Moran's I
+
+**Part 2 (Take-home):** 4 questions + 1 bonus
+
+- Q1: Spatial Lag Model (`lagsarlm`), interpret $\hat{\rho}$, explain SLM vs OLS coefficient difference
+- Q2: Direct/indirect equilibrium effects via `impacts()` (500 simulations)
+- Q3: AIC comparison of OLS, SEM, SLM; link to LM test decision
+- Q4 (bonus): Spatial Durbin Model (`Durbin = TRUE`), interpret `lag.log_gdp`, AIC comparison
+
+**Dataset:** `world` from `spData` (built-in, no download required).
+
+## Checker Results
+
+| Check | Result |
+|---|---|
+| Dataset availability | PASS -- `world` from `spData` |
+| Package availability | PASS -- after adding `library(spatialreg)` |
+| Code syntax | PASS |
+| Variable names | PASS |
+
+**Critical fix applied:** `errorsarlm()`, `lagsarlm()`, and `impacts()` have been moved from `spdep` to `spatialreg` (spdep >= 1.2-1). Added `library(spatialreg)` to the setup block.
+
+## Placeholders Requiring Attention
+
+- **Deadline**: Set to `[TBD]` -- fill in before distributing to students.
+
+## Quality Score: 92 / 100
+
+- Minor: deadline placeholder (-2)
+- Note: 16 island nations in `world` have zero neighbors under queen contiguity; `zero.policy = TRUE` is required throughout -- documented in the assignment text.
+
+---
+
+# Phase 3: Solutions
+
+## Files Created
+
+| File | Type | Pages | Status |
+|---|---|---|---|
+| `assign8_1.Rmd` | Part 1 solution | 6 | **PASS** |
+| `assign8_1.R` | Part 1 bare script | - | Created |
+| `assign8_2.Rmd` | Part 2 solution | 6 | **PASS** |
+| `assign8_2.R` | Part 2 bare script | - | Created |
+| `../code/assign8.R` | Combined script | - | Created |
+
+## Knitting Notes
+
+- `spatialreg` was not installed in the local R environment. Installed binary version (1.3-1) before knitting.
+- Both `.Rmd` files knitted to PDF without errors on the first attempt.
+- `assign8_2.Rmd` is self-contained: it includes a hidden `rebuild-objects` chunk that reproduces all Part 1 objects so it can be knitted independently.
+
+## Key Solution Notes
+
+- OLS residuals show strong positive Moran's I (typically I $\approx$ 0.3--0.5, p < 0.001 for `world` data).
+- LM tests: `LMerr` and `LMlag` both significant; robust versions disambiguate toward SEM (RLMerr > RLMlag).
+- `impacts()` requires `set.seed(42)` for reproducibility; run with `R = 500` simulations.
+- AIC: both SEM and SLM improve on OLS; SEM typically achieves lower AIC for this dataset.
+- All solution text is written around the actual data patterns without fabricating specific output values.
+
+## Quality Score: 95 / 100
+
+- Minor: inline R values in Part 1 prose use backtick-r expressions where possible; remaining descriptive phrases ("approximately", "well below 0.05") are appropriate given real data (-5 for potential fabrication risk in descriptive passages).
+
+---
+
+# Issues Requiring Attention
+
+1. **Assignment deadline** (`assign8_spatial2.tex`, line ~30): Replace `[TBD]` with the actual due date before distributing.
+
+2. **`spatialreg` package**: Must be installed in any R environment used to run the solutions. Binary version 1.3-1 available from CRAN; source version 1.4-2 requires compilation tools.
+
+3. **Island nations zero neighbors**: The `world` dataset has 16 island countries with no queen-contiguity neighbors. All `spdep`/`spatialreg` calls require `zero.policy = TRUE`. This is already in place throughout the assignment and solutions.
+
+4. **No images needed**: This slide deck is code/diagram-heavy and does not use photograph frames.
+
+---
+
+# Overall Session Quality
+
+| Artifact | Score |
+|---|---|
+| Slides | 90 / 100 |
+| Assignment | 92 / 100 |
+| Solutions | 95 / 100 |
+| **Overall** | **92 / 100** |
+
+Session materials are ready to use. Only action required before distribution: set the assignment deadline.

@@ -1,0 +1,97 @@
+---
+title: "Assignment 9 Solutions: Other Outcomes"
+subtitle: "Part 2: Count Data"
+author: "Applied Quantitative Methods II, UC3M"
+date: "Spring 2026"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+geometry: margin=2cm
+header-includes:
+  - \renewcommand*\rmdefault{ppl}
+  - \usepackage{setspace}\setstretch{1.2}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+options(stringsAsFactors = FALSE)
+```
+
+```{r packages}
+library(pscl)
+library(MASS)
+library(AER)
+library(marginaleffects)
+library(ggplot2)
+data(bioChemists)
+```
+
+# 3. Poisson regression: publication counts
+
+**a)** Explore the outcome variable:
+
+```{r 3a, fig.height=3.5}
+summary(bioChemists$art)
+var(bioChemists$art)
+
+ggplot(bioChemists, aes(x = art)) +
+  geom_histogram(binwidth = 1, fill = "#294b66", color = "white") +
+  theme_minimal() +
+  labs(title = "Publications in last 3 years of PhD",
+       x = "Number of articles", y = "Count")
+```
+
+The distribution of `art` is right-skewed, with a mode at zero and a long upper tail. The mean is around `r round(mean(bioChemists$art), 2)` while the variance is approximately `r round(var(bioChemists$art), 2)` — roughly twice the mean. Under the Poisson assumption, the variance should equal the mean; a ratio substantially above 1 indicates overdispersion. This pattern is a first signal that a standard Poisson model may underestimate uncertainty and produce anti-conservative standard errors.
+
+**b)** Fit the Poisson regression:
+
+```{r 3b}
+m_pois = glm(art ~ fem + mar + kid5 + phd + ment,
+             data = bioChemists, family = poisson)
+summary(m_pois)
+exp(coef(m_pois)["ment"])
+```
+
+The incidence rate ratio (IRR) for `ment` is `r round(exp(coef(m_pois)["ment"]), 3)`: each additional article published by the mentor is associated with a multiplicative increase in expected student articles by that factor, holding all else constant. The effect is modest but positive, suggesting that more productive mentors slightly boost student output. The residual deviance is substantially larger than the residual degrees of freedom (their ratio is well above 2), which is another clear diagnostic signal of overdispersion — the Poisson model does not adequately capture the variation in publication counts.
+
+**c)** Formal overdispersion test:
+
+```{r 3c}
+dispersiontest(m_pois)
+```
+
+The dispersion test strongly rejects the null hypothesis of equidispersion (p < 0.001). The estimated dispersion parameter is well above 1, confirming that the variance in `art` substantially exceeds its mean. This means the Poisson standard errors are too small: the model underestimates uncertainty, inflates test statistics, and produces p-values that are misleadingly small. A model that explicitly accounts for overdispersion — such as the negative binomial — is needed.
+
+# 4. Negative binomial regression
+
+**a)** Fit the negative binomial model:
+
+```{r 4a}
+m_nb = glm.nb(art ~ fem + mar + kid5 + phd + ment,
+              data = bioChemists)
+summary(m_nb)
+```
+
+The coefficient on `ment` is similar to the Poisson estimate, indicating that the point estimate is reasonably stable. The key difference is in the standard errors: the negative binomial model produces larger, more honest uncertainty estimates. The estimated overdispersion parameter `theta` (shown in the summary) quantifies how much the variance exceeds the Poisson prediction; a smaller `theta` means more severe overdispersion. Here `theta` is moderate, indicating meaningful but not extreme extra-Poisson variation.
+
+**b)** Compare model fit by AIC:
+
+```{r 4b}
+AIC(m_pois)
+AIC(m_nb)
+```
+
+The negative binomial AIC is substantially lower than the Poisson AIC, despite the NB model having one additional parameter (`theta`). Under AIC, the improvement in fit more than compensates for the added complexity. This confirms that overdispersion is a genuine feature of the data, not noise, and that the negative binomial is the more appropriate model for these publication counts.
+
+**c)** Predicted article counts by gender, holding other variables at sample means:
+
+```{r 4c}
+predictions(m_nb, newdata = datagrid(fem = c("Men", "Women")))
+```
+
+The predicted number of articles for men exceeds that for women, holding marital status, number of young children, PhD prestige, and mentor productivity constant at their sample means. The confidence intervals provide information on whether this gender gap is statistically distinguishable: if the intervals do not overlap, the difference is significant at conventional levels. The gap reflects a persistent within-group gender difference in publication productivity that is not simply an artefact of other observable characteristics.
+
+**d)** Summary of findings:
+
+The Poisson model is not adequate for this dataset. The variance-to-mean ratio of `art` is roughly double, the residual deviance far exceeds the degrees of freedom, and the formal `dispersiontest()` rejects equidispersion with a p-value well below 0.001. The negative binomial model, which adds a dispersion parameter to accommodate this extra variation, achieves a substantially lower AIC and produces more reliable (wider) standard errors. On substantive findings: the mentor's productivity (`ment`) has a positive and statistically significant effect, with an IRR slightly above 1 — each additional mentor article is associated with a modest multiplicative increase in expected student articles, suggesting that working with a productive mentor confers a real, if small, boost. Gender (`fem`) and number of young children (`kid5`) are both negative and statistically significant: women publish fewer articles on average, and each additional child under age 5 is associated with reduced output. PhD program prestige (`phd`) and marital status (`mar`) are not statistically significant in the negative binomial model. Together, the results point to early-career productivity being shaped by mentor environment, gender, and family demands — patterns consistent with broader literature on PhD student outcomes in STEM fields.

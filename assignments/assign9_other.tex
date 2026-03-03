@@ -1,0 +1,244 @@
+\input{preamble.tex}
+\textbf{\large Assignment 9: Other Outcomes (Ordinal, Multinomial, Count)}\\\vspace{10pt}
+\end{center}
+
+\vspace{10pt}
+\noindent
+\textbf{\large Instructions:}
+
+\vspace{10pt}
+\begin{itemize}
+\setlength\itemsep{0pt}
+  \item {\color{red}{\textbf{Deadline}}}: \textbf{[DEADLINE - TBD], before class}
+  \item Submit your work in a separate folder in your GitHub repository
+  \begin{itemize}
+    \item You can include only the R file or additional ones (e.g. pdf with results)
+  \end{itemize}
+  \item \textbf{Always use comments} in your R code -- and use them to answer questions
+  \item You are encouraged to work together, but each person must submit their own code
+  \item Plan is to start Part 1 in class and complete Part 2 at home
+  \item I'll upload a solution file to the website after next class
+\end{itemize}
+
+\vspace{20pt}
+\tableofcontents
+\newpage
+
+% ==========================================================================
+\section{Part 1: In-Class (Ordinal and Multinomial Outcomes)}
+% ==========================================================================
+
+In this lab we use the British Electoral Panel Study (BEPS), a survey of British voters conducted around the 1997 general election. We model two outcomes: (1) voters' perceptions of national economic conditions (an ordinal 1--5 scale), and (2) their vote choice (a nominal three-category outcome). Both require models that go beyond binary logistic regression. Recall from class that the key question before choosing a model is: \textit{what is the data-generating process for your outcome?} Ordinal outcomes have a natural ordering but not equal spacing; nominal outcomes have unordered categories.
+
+Load the required packages and data with:
+\begin{lstlisting}
+library(carData)
+library(MASS)
+library(nnet)
+library(marginaleffects)
+data(BEPS)
+\end{lstlisting}
+
+Key variables in \code{BEPS} used in this assignment:
+\begin{itemize}
+  \item \code{vote} --- vote choice (factor: ``Conservative'', ``Labour'', ``Liberal Democrat'')
+  \item \code{economic.cond.national} --- national economic conditions (integer 1--5: 1 = got much worse, 5 = got much better)
+  \item \code{economic.cond.household} --- household economic conditions (integer 1--5)
+  \item \code{Blair} --- feelings about Tony Blair (integer 1--5, higher = more positive)
+  \item \code{Hague} --- feelings about William Hague (integer 1--5)
+  \item \code{Kennedy} --- feelings about Charles Kennedy (integer 1--5)
+  \item \code{Europe} --- attitude toward European integration (integer 1--11: 1 = strongly opposed, 11 = strongly in favor)
+  \item \code{political.knowledge} --- political knowledge (integer 0--3)
+  \item \code{gender} --- gender (factor: ``female'', ``male'')
+  \item \code{age} --- age in years
+\end{itemize}
+
+% --------------------------------------------------------------------------
+\subsection{Ordered logit: perceptions of the national economy}
+% --------------------------------------------------------------------------
+
+We first model respondents' perceptions of national economic conditions as an ordinal outcome. Recall from class: OLS treats categories as equally spaced on the underlying scale, which is almost certainly wrong for survey Likert items. Ordered logit instead estimates both regression coefficients and threshold parameters ($\tau_1, \tau_2, \ldots$) that cut the latent continuous propensity $Y^*$ into the observed ordered categories.
+
+\begin{enumerate}[label=\alph*)]
+
+  \item Explore the \code{economic.cond.national} variable and convert it to an ordered factor:
+  \begin{lstlisting}
+table(BEPS$economic.cond.national)
+BEPS$econ_ord = factor(BEPS$economic.cond.national, ordered = TRUE)
+  \end{lstlisting}
+  In a comment, report the distribution across the five categories. Which category is most common? In a second comment, explain why using OLS on this variable would be problematic: think about the equal-spacing assumption and what it implies about the difference between ``got much worse'' (1) and ``got a little worse'' (2) versus the difference between ``stayed the same'' (3) and ``got a little better'' (4).
+
+  \item Fit an ordered logit model predicting \code{econ\_ord} from \code{age}, \code{gender}, \code{Europe}, and \code{political.knowledge}:
+  \begin{lstlisting}
+m_ologit = polr(econ_ord ~ age + gender + Europe + political.knowledge,
+                data = BEPS, Hess = TRUE)
+summary(m_ologit)
+  \end{lstlisting}
+  Note: \code{polr()} uses a \textbf{reversed sign convention} --- the raw coefficients in the output are negated relative to the standard parameterization. A positive raw coefficient corresponds to a \textit{negative} association with higher categories. Always interpret via marginal effects (see below). In a comment, report the raw coefficient on \code{Europe} and its sign. Based on the sign convention, does higher support for European integration predict more optimistic views of the national economy?
+
+  \item Compute average marginal effects (AMEs) using \code{marginaleffects}:
+  \begin{lstlisting}
+avg_slopes(m_ologit)
+  \end{lstlisting}
+  This returns one AME per predictor per response category. In a comment, interpret the AME for \code{Europe} on the probability of each category. Does a one-unit increase in pro-Europe attitude increase or decrease the probability of perceiving the economy as improved (category 4 or 5)? By approximately how much on average across respondents? Note that the AMEs across all five categories for any given predictor must sum to zero --- use this as a sanity check.
+
+  \item Compute predicted probabilities for the five response categories at the mean of all covariates, separately for male and female respondents:
+  \begin{lstlisting}
+predictions(m_ologit, newdata = datagrid(gender = c("female", "male")))
+  \end{lstlisting}
+  In a comment, compare the predicted probabilities for the most pessimistic category (1 = got much worse) and the most optimistic category (5 = got much better) for each gender. Are there notable differences by gender? What does this suggest about gender gaps in economic perceptions?
+
+\end{enumerate}
+
+% --------------------------------------------------------------------------
+\subsection{Multinomial logit: vote choice}
+% --------------------------------------------------------------------------
+
+We now turn to vote choice (Conservative, Labour, Liberal Democrat) --- a nominal three-category outcome with no natural ordering. Recall from class that the multinomial logit estimates $J - 1$ sets of coefficients, each comparing one category to a reference category. All predicted probabilities sum to 1, and the model does \textit{not} impose any ordering on the alternatives.
+
+\begin{enumerate}[label=\alph*)]
+
+  \item Set Conservative as the reference category and fit a multinomial logit predicting \code{vote} from economic assessments and leader evaluations:
+  \begin{lstlisting}
+BEPS$vote = relevel(BEPS$vote, ref = "Conservative")
+m_mlogit = multinom(vote ~ economic.cond.national + Blair + Hague +
+                           Kennedy + Europe, data = BEPS, trace = FALSE)
+summary(m_mlogit)
+  \end{lstlisting}
+  The model produces two sets of coefficients: Labour vs.\ Conservative and Liberal Democrat vs.\ Conservative. In a comment, describe the direction of the \code{Blair} coefficient in the Labour vs.\ Conservative equation. What does a positive coefficient on \code{Blair} (feelings toward Tony Blair) in the Labour equation imply about the relationship between Blair approval and the likelihood of voting Labour relative to Conservative?
+
+  \item Compute AMEs across all predictors and all outcome categories:
+  \begin{lstlisting}
+avg_slopes(m_mlogit)
+  \end{lstlisting}
+  In a comment, report the AME of \code{Blair} on the probability of voting Labour. Interpret it in plain language: holding other variables constant, how does a one-unit increase in Blair approval change the probability of voting Labour on average across respondents?
+
+  \item The multinomial logit assumes \textbf{Independence of Irrelevant Alternatives (IIA)}: the odds ratio between any two alternatives is unaffected by the presence or absence of other alternatives. Recall from class the red bus / blue bus example, where IIA fails because two alternatives (red bus and blue bus) are close substitutes. In a comment of 2--3 sentences, explain what IIA means for this application with Conservative, Labour, and Liberal Democrat as alternatives. Do you think IIA is likely to hold here --- or are any two of these parties close substitutes in the minds of British voters? Explain your reasoning.
+
+\end{enumerate}
+
+\newpage
+
+% ==========================================================================
+\section{Part 2: Take-Home (Count Outcomes)}
+% ==========================================================================
+
+We now analyze the number of articles published by biochemistry PhD students in the last three years of their doctorate, using the \code{bioChemists} dataset from the \code{pscl} package. The outcome (\code{art}) is a non-negative integer count. Recall from class that count outcomes have a natural lower bound of zero and cannot take negative values, which makes OLS inappropriate. The natural starting model is Poisson regression; we then diagnose and address overdispersion using the negative binomial.
+
+Load the required packages and data with:
+\begin{lstlisting}
+library(pscl)
+library(AER)
+library(MASS)
+library(marginaleffects)
+data(bioChemists)
+\end{lstlisting}
+
+Key variables in \code{bioChemists}:
+\begin{itemize}
+  \item \code{art} --- articles published in last 3 years of PhD (integer, count outcome)
+  \item \code{fem} --- gender (factor: ``Men'', ``Women'')
+  \item \code{mar} --- marital status (factor: ``Single'', ``Married'')
+  \item \code{kid5} --- number of children under age 5 (integer 0--3)
+  \item \code{phd} --- prestige of PhD program (numeric)
+  \item \code{ment} --- articles by mentor in last 3 years (integer, count)
+\end{itemize}
+
+% --------------------------------------------------------------------------
+\subsection{Poisson regression: publication counts}
+% --------------------------------------------------------------------------
+
+\begin{enumerate}[label=\alph*)]
+
+  \item Explore the outcome variable:
+  \begin{lstlisting}
+summary(bioChemists$art)
+pdf("hist_art.pdf")
+hist(bioChemists$art, breaks = 20, main = "Publications in last 3 years",
+     xlab = "Number of articles")
+dev.off()
+  \end{lstlisting}
+  In a comment, report the mean and variance of \code{art}. A key diagnostic for count data is whether the variance substantially exceeds the mean --- this is called \textbf{overdispersion} and violates the Poisson assumption that mean equals variance. Note whether you observe this pattern here.
+
+  \item Fit a Poisson regression with all predictors:
+  \begin{lstlisting}
+m_pois = glm(art ~ fem + mar + kid5 + phd + ment,
+             data = bioChemists, family = poisson)
+summary(m_pois)
+  \end{lstlisting}
+  In a comment, answer the following two questions: (1) Report the coefficient on \code{ment} and exponentiate it:
+  \begin{lstlisting}
+exp(coef(m_pois)["ment"])
+  \end{lstlisting}
+  This is the \textbf{incidence rate ratio} (IRR) for mentor articles. Interpret it: a one-unit increase in mentor articles multiplies expected student articles by approximately how much? (2) Report the residual deviance and degrees of freedom from the \code{summary()} output and compute their ratio. Recall from class that under a correctly specified Poisson model this ratio should be close to 1; a ratio substantially above 1 (say, $>2$) suggests overdispersion.
+
+  \item Test for overdispersion formally using the \code{AER} package:
+  \begin{lstlisting}
+dispersiontest(m_pois)
+  \end{lstlisting}
+  In a comment, report the estimated dispersion parameter and the p-value. Is there statistically significant evidence of overdispersion? What does this imply for the validity of the Poisson standard errors you computed above?
+
+\end{enumerate}
+
+% --------------------------------------------------------------------------
+\subsection{Negative binomial regression}
+% --------------------------------------------------------------------------
+
+The negative binomial (NB) model generalizes Poisson by adding a dispersion parameter $\theta$ that allows the variance to exceed the mean: $\text{Var}(Y_i) = \mu_i + \mu_i^2 / \theta$. When $\theta \to \infty$, the NB reduces to Poisson. A small estimated $\theta$ indicates severe overdispersion; a large $\theta$ indicates the extra dispersion is modest.
+
+\begin{enumerate}[label=\alph*)]
+
+  \item Fit the negative binomial model using \code{MASS}:
+  \begin{lstlisting}
+m_nb = glm.nb(art ~ fem + mar + kid5 + phd + ment,
+              data = bioChemists)
+summary(m_nb)
+  \end{lstlisting}
+  In a comment, compare the coefficient on \code{ment} to the Poisson estimate from question 3b. Has it changed substantially? Report the estimated overdispersion parameter \code{theta} from the NB output. Is the overdispersion modest or severe?
+
+  \item Compare model fit using AIC:
+  \begin{lstlisting}
+AIC(m_pois)
+AIC(m_nb)
+  \end{lstlisting}
+  In a comment, report both AIC values. Which model has the lower AIC? Recall from earlier in the course that AIC penalizes model complexity, so a lower AIC for the NB model (which has one additional parameter) means the improvement in fit outweighs the added complexity. What does this comparison imply: is overdispersion a problem worth addressing for this dataset?
+
+  \item Compute predicted article counts for male vs.\ female researchers, holding all other variables at their sample means:
+  \begin{lstlisting}
+predictions(m_nb, newdata = datagrid(fem = c("Men", "Women")))
+  \end{lstlisting}
+  In a comment, report the predicted number of articles for men and women (with confidence intervals). How large is the gender gap in predicted publications? Is this difference statistically distinguishable given the uncertainty intervals?
+
+  \item Write a short summary paragraph as a comment in your R script (4--6 sentences). Cover all of the following: (1) whether Poisson regression is adequate for this dataset or whether the negative binomial is needed, and why; (2) the interpretation of the \code{ment} incidence rate ratio --- what does mentor productivity tell us about student productivity?; (3) which predictors are statistically significant in the negative binomial model; (4) one substantive conclusion about the factors driving publication productivity among PhD students in biochemistry.
+
+\end{enumerate}
+
+\vspace{15pt}
+
+% ==========================================================================
+\section{Data Sources}
+% ==========================================================================
+
+\begin{itemize}
+  \item British Electoral Panel Study: \code{BEPS} dataset in the \code{carData} R package (\code{library(carData); data(BEPS)})
+  \item PhD biochemist publications: \code{bioChemists} dataset in the \code{pscl} R package (\code{library(pscl); data(bioChemists)})
+\end{itemize}
+
+\vspace{15pt}
+
+% ==========================================================================
+\section{Submission}
+% ==========================================================================
+
+Commit your file to your GitHub repository before the deadline. Put it in a separate folder, e.g.\ \texttt{assignment9}. Make sure your repository is public so I can access it.
+
+Your R script should:
+\begin{itemize}
+  \item Be well-organized with clear section headers (using comments)
+  \item Include all code needed to reproduce your analysis
+  \item Include your answers and interpretations as comments
+  \item Save any plots to files (using \code{pdf()}/\code{dev.off()} or \code{ggsave()})
+  \item Run without errors from top to bottom
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,188 @@
+---
+title: "Session 9 Report: Other Outcomes"
+subtitle: "Applied Quantitative Methods II -- UC3M"
+date: "2026-03-03"
+output:
+  pdf_document:
+    toc: true
+geometry: margin=2cm
+header-includes:
+  - \renewcommand*\rmdefault{ppl}
+  - \usepackage{setspace}\setstretch{1.2}
+  - \usepackage{booktabs}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Summary
+
+| Artifact | Status | Pages | File |
+|---|---|---|---|
+| Slides (presentation) | **PASS** | 143 | `slides/09_other/other.pdf` |
+| Slides (notes) | **PASS** | 23 | `slides/09_other/other_notes.pdf` |
+| Assignment | **PASS** | 7 | `assignments/assign9_other.pdf` |
+| Solutions Part 1 | **PASS** | 6 | `assignments/solution/assign9_1.pdf` |
+| Solutions Part 2 | **PASS** | 5 | `assignments/solution/assign9_2.pdf` |
+
+All artifacts produced and verified. No critical outstanding issues.
+
+---
+
+# Phase 1: Slides
+
+## Structure
+
+6 sections, 35 content frames (+ title + roadmap + transition frames).
+
+| Section | Content |
+|---|---|
+| 1 | The GLM Framework (unified model table, link functions) |
+| 2 | Ordinal Outcomes (latent variable model, polr(), AMEs, proportional odds) |
+| 3 | Nominal/Multinomial (softmax, multinom(), IIA assumption, discussion) |
+| 4 | Count Data (Poisson/NB, overdispersion, zero-inflation, count summary table) |
+| 5 | Duration Analysis (censoring, KM estimator, Cox PH, proportional hazards) |
+| 6 | Model Selection (decision tree, practical checklist, course map, exam prep) |
+
+## Compilation
+
+- `other.pdf` (143 pp.) and `other_notes.pdf` (23 pp.) both compiled without errors.
+- Overfull hbox: only 2.12pt warnings from Beamer progress bar -- within threshold.
+
+## Issues Fixed (compilation)
+
+1. **Overfull hbox 42.66pt** (stacked bar tikz in 0.42\\textwidth column): scale 0.75 -- 0.65, removed axis labels.
+2. **Overfull hbox 33.65pt** (latent variable tikz): scale 0.95 -- 0.75, axis range reduced.
+3. **Overfull hbox 14.02pt** (GLM table): added `\\setlength{\\tabcolsep}{4pt}`, adjusted column widths.
+4. **Overfull vbox 59.59pt** (Cox PH frame): removed display equation, simplified to prose.
+5. **Overfull vbox 40.53pt** (ordered logit R frame): trimmed code block.
+6. **Overfull vbox 24.26pt** (ordered logit model frame): simplified third bullet.
+7. **Overfull vbox 22.09pt** (multinomial R frame): replaced blank items with `\\vspace{}`.
+8. **Overfull hbox 23.69pt** (count summary table): added `\\footnotesize` wrapper and reduced column widths.
+9. **Overfull hbox 21.62pt** (overdispersion tikz): scale 0.8 -- 0.68.
+10. **Overfull vbox 20.52pt** (ordered logit R frame after sign warning added): further trimmed code.
+
+## Pedagogy Review Fixes
+
+- Added discussion prompt: overdispersion diagnostic (residual deviance/df $\approx$ 6 for bioChemists Poisson model).
+- Added discussion prompt: censoring bias (dropping ongoing democratic spells).
+- Added `polr()` sign convention `\\alert{}` warning on ordered logit R slide.
+- Converted "Count outcomes" frame to two-column with Poisson distribution tikz (lambda = 1 and 4).
+- Added "Proportional hazards idea" frame with hazard curve tikz before Cox model slide.
+
+## Visual Audit Fixes
+
+- Removed `[<+->]` animation from "Today's goals" overview slide.
+- Replaced blank `\\item[]` spacers with `\\vspace{4pt}` throughout animated lists.
+- Reduced `\\vspace{12pt}` to `\\vspace{6pt}` in Poisson R slide.
+- Condensed Practical checklist Steps 5-6 into single item.
+- Increased tikz node colors in "What you have learned" from `accent!10` / `accent2!10` to `accent!25` / `accent2!30`.
+- Moved IIA prose sentence out of `block` environment; reserved block for equation only.
+- Reduced censoring diagram scale 0.85 -- 0.78.
+- Reduced KM diagram scale 0.82 -- 0.76.
+
+## Quality Score: 91 / 100
+
+- Minor: 2.12pt overfull hbox (beamer progress bar artifact) (-1)
+- No missing notes, no missing sections.
+
+---
+
+# Phase 2: Assignment
+
+## Structure
+
+**Part 1 (In-class):** 2 question groups, 7 sub-questions total
+
+- Section 1 (Ordered logit): Explore `econ_ord`, fit `polr()`, AMEs via `avg_slopes()`, predicted probabilities by gender
+- Section 2 (Multinomial logit): Fit `multinom()` for vote choice, AMEs for `Blair` effect, IIA discussion
+
+**Part 2 (Take-home):** 2 question groups, 7 sub-questions total
+
+- Section 3 (Poisson): Load `bioChemists`, explore `art`, fit Poisson, check overdispersion with deviance ratio and `dispersiontest()`
+- Section 4 (Negative binomial): Fit `glm.nb()`, compare AIC, predicted counts by gender, summary paragraph
+
+**Datasets:**
+
+- `carData::BEPS` (1525 rows, 10 columns) -- British Electoral Panel Study
+- `pscl::bioChemists` (915 rows, 6 columns) -- PhD biochemist publication counts
+
+## Checker Results
+
+| Check | Result |
+|---|---|
+| Dataset availability (`BEPS`) | PASS |
+| Dataset availability (`bioChemists`) | PASS (after `pscl` install) |
+| Package availability | PASS -- all 6 packages available |
+| Variable names | PASS -- all match exactly |
+| Code syntax (15 blocks) | PASS -- all 15 blocks run without errors |
+
+## Placeholders Requiring Attention
+
+- **Deadline**: Set to `[DEADLINE - TBD]` -- fill in before distributing to students.
+
+## Quality Score: 92 / 100
+
+- Minor: deadline placeholder (-2)
+- Note: `pscl` package not pre-installed in local R environment; students may need `install.packages("pscl")`. Verified that binary version is available on CRAN.
+
+---
+
+# Phase 3: Solutions
+
+## Files Created
+
+| File | Type | Pages | Status |
+|---|---|---|---|
+| `assign9_1.Rmd` | Part 1 solution | 6 | **PASS** |
+| `assign9_1.R` | Part 1 bare script | - | Created |
+| `assign9_2.Rmd` | Part 2 solution | 5 | **PASS** |
+| `assign9_2.R` | Part 2 bare script | - | Created |
+| `../code/assign9.R` | Combined script | - | Created |
+
+## Knitting Notes
+
+- Both `.Rmd` files knitted to PDF without errors on the first attempt.
+- `assign9_2.Rmd` is self-contained: it loads `pscl` and `bioChemists` directly without depending on Part 1 objects.
+
+## Key Solution Notes
+
+- `polr()` sign reversal: raw coefficients are negated; `Europe` raw coef is negative, meaning pro-EU attitude is positively associated with higher (more optimistic) economic perception.
+- `avg_slopes(m_ologit)` returns 20 rows (4 predictors x 5 ordinal categories); AMEs sum to zero across categories by construction.
+- `multinom()` `Blair` coefficient in Labour vs. Conservative equation is strongly positive; AME on P(Labour) is the most substantively important finding.
+- IIA concern for BEPS: Labour and Lib Dem are both center-left, but Conservative is distinct. Concern is moderate; assignment asks for substantive reasoning.
+- `bioChemists`: mean `art` $\approx$ 1.69, variance $\approx$ 3.71 (ratio $\approx$ 2.2); `dispersiontest()` z $\approx$ 5.78, p < 0.001.
+- Poisson AIC $\approx$ 3314, NB AIC $\approx$ 3136 (NB clearly preferred).
+- NB predicted counts: men $\approx$ 1.87 articles, women $\approx$ 1.51 articles.
+- Significant predictors: `fem` (negative), `kid5` (negative), `ment` (positive).
+
+## Quality Score: 94 / 100
+
+- Minor: inline R values in Part 1 prose use backtick-r expressions where possible; some descriptive phrases are appropriate given real data (-2).
+- Minor: `polr()` sign discussion requires careful reading by students (-4 for potential confusion risk despite correct explanation).
+
+---
+
+# Issues Requiring Attention
+
+1. **Assignment deadline** (`assign9_other.tex`): Replace `[DEADLINE - TBD]` with the actual due date before distributing.
+
+2. **`pscl` package**: Must be installed in any R environment used to run Part 2 solutions. Available as binary from CRAN.
+
+3. **`polr()` sign convention**: The reversed sign convention is flagged in both the slides (alert box) and the assignment text, and explained in the solutions. Students should be reminded during class that raw `polr()` coefficients need negation.
+
+4. **No images needed**: This slide deck uses tikz diagrams throughout (latent variable, stacked bars, Poisson distributions, overdispersion, censoring timeline, KM curves, hazard curves, course map) and does not require external photographs.
+
+---
+
+# Overall Session Quality
+
+| Artifact | Score |
+|---|---|
+| Slides | 91 / 100 |
+| Assignment | 92 / 100 |
+| Solutions | 94 / 100 |
+| **Overall** | **92 / 100** |
+
+Session materials are ready to use. Only action required before distribution: set the assignment deadline.

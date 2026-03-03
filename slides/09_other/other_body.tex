@@ -1,0 +1,1098 @@
+% ----------------------------------------------------
+\begin{frame}
+  \titlepage
+\end{frame}
+% ----------------------------------------------------
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Today's goals}
+\centering
+
+\begin{itemize}
+\item Understand the GLM framework as a unifying structure
+\item Model ordinal outcomes with ordered logit
+\item Model nominal (multi-category) outcomes with multinomial logit
+\item Model count data with Poisson and negative binomial regression
+\item Model time-to-event data with survival analysis and the Cox model
+\item Know which model to reach for and why
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This is the last substantive lecture before the exam. The goal is not to make students into experts in each of these models, but to give them enough conceptual grounding and practical R syntax to apply the right tool when they encounter these outcome types in their own research. All these models share a common logic: they are generalizations of the regression framework students already know. Stress continuity with prior sessions throughout. The GLM framework is the conceptual anchor.}
+
+% ====================================================
+\section{The GLM Framework}
+% ====================================================
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{One framework, many models}
+\centering
+
+\vspace{8pt}
+
+\textbf{Generalized Linear Models} (GLMs) share three components:
+
+\vspace{12pt}
+
+\begin{columns}[T]
+\begin{column}{0.32\textwidth}
+  \centering
+  {\color{accent}\textbf{Linear predictor}}\\[6pt]
+  $\eta_i = \mathbf{x}_i \boldsymbol{\beta}$\\[6pt]
+  {\small A weighted sum of covariates}
+\end{column}
+\begin{column}{0.32\textwidth}
+  \centering
+  {\color{accent}\textbf{Link function}}\\[6pt]
+  $g(\mu_i) = \eta_i$\\[6pt]
+  {\small Connects mean to predictor}
+\end{column}
+\begin{column}{0.32\textwidth}
+  \centering
+  {\color{accent}\textbf{Distribution}}\\[6pt]
+  $Y_i \sim F(\mu_i)$\\[6pt]
+  {\small Data-generating process}
+\end{column}
+\end{columns}
+
+\vspace{16pt}
+
+\begin{itemize}[<+->]
+\item OLS is a GLM: identity link + normal distribution
+\item Logit is a GLM: logit link + Bernoulli distribution
+\item Choosing a model = choosing a link + distribution
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Start by grounding today's models in the framework students already know. Every model they have learned --- OLS, logit, probit --- is a GLM. The only thing that changes across models is the link function (what transformation connects the linear predictor to the mean of the outcome) and the distributional assumption (what distribution describes the outcome). This unified perspective means that the R syntax is very similar across models (\texttt{glm()} with different \texttt{family} arguments), and the interpretation logic is analogous. Once students see this, the variety of models becomes less intimidating.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Matching outcome type to model}
+\centering
+
+\vspace{6pt}
+
+{\footnotesize\setlength{\tabcolsep}{4pt}
+\begin{tabular}{p{2.4cm}p{2.0cm}p{1.9cm}p{3.0cm}}
+\hline
+\textbf{Outcome type} & \textbf{Distribution} & \textbf{Link} & \textbf{Model / Function} \\
+\hline
+Continuous & Normal & Identity & OLS (\texttt{lm()}) \\[2pt]
+Binary (0/1) & Bernoulli & Logit & Logit (\texttt{glm(...,binomial)}) \\[2pt]
+Ordinal & Prop.\ odds & Cumul.\ logit & Ordered logit (\texttt{polr()}) \\[2pt]
+Nominal ($>$2 cat.) & Multinomial & Log-odds & Multinom.\ logit (\texttt{multinom()}) \\[2pt]
+Count ($\geq 0$) & Poisson & Log & Poisson (\texttt{glm(...,poisson)}) \\[2pt]
+Count (overdispersed) & Neg.\ Binomial & Log & NegBin (\texttt{glm.nb()}) \\[2pt]
+Duration (time) & --- & --- & Cox PH (\texttt{coxph()}) \\
+\hline
+\end{tabular}
+}
+
+\vspace{10pt}
+
+{\small \color{asher} First question: what is the data-generating process for your outcome?}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This table is the map for the entire lecture. Return to it at the start of each section. The key practical advice: before running any model, ask yourself what kind of thing your outcome is. Is it bounded? Can it be negative? Is it a count? Does it represent time until an event? The answers to these questions determine the appropriate model. The table is also useful for exam preparation: students should be able to map from outcome description to model family. Note that survival models (Cox) are semiparametric --- they do not fit neatly into the GLM family in the standard sense, but they follow the same spirit of matching distribution to outcome type.}
+
+% ====================================================
+\section{Ordinal Outcomes}
+% ====================================================
+
+\begin{transitionframe}
+Ordinal outcomes:\\[6pt]
+{\large When categories have an order but not equal spacing}
+\end{transitionframe}
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Ordinal outcomes are ordered categories}
+\centering
+
+\begin{itemize}[<+->]
+\item Categories have a natural \textbf{ordering}, but not equal intervals
+\vspace{8pt}
+\item Examples:
+  \begin{itemize}
+  \item Survey: ``How satisfied are you?'' (1 = not at all, 5 = very)
+  \item Party ID: Strong Dem $\to$ Weak Dem $\to$ Ind $\to$ Weak Rep $\to$ Strong Rep
+  \item Democracy rating: Autocracy $\to$ Hybrid $\to$ Democracy
+  \item Conflict intensity: No conflict $\to$ Low $\to$ Medium $\to$ High
+  \end{itemize}
+\vspace{8pt}
+\item The distance between ``1'' and ``2'' need not equal the distance between ``2'' and ``3''
+\item OLS treats them as equally spaced --- often wrong
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Start with the intuition. Ordinal outcomes are very common in social science, especially in survey research (Likert scales are everywhere). The core problem with OLS is that it assumes the categories are equally spaced on the underlying scale of interest. But is the difference between ``not at all satisfied'' and ``slightly satisfied'' the same as between ``satisfied'' and ``very satisfied''? Almost certainly not. OLS will also produce predictions that fall between categories or outside the range, which is substantively nonsensical. These problems motivate the ordered logit model.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The latent variable idea}
+\centering
+
+\vspace{8pt}
+
+\begin{tikzpicture}[scale=0.75]
+  % Continuous axis
+  \draw[->, thick] (-5.0,0) -- (5.0,0) node[right, font=\small] {$Y^*$};
+  % Threshold markers
+  \foreach \x/\lbl in {-2.8/$\tau_1$, -0.4/$\tau_2$, 1.9/$\tau_3$} {
+    \draw[thick, accent] (\x,-0.3) -- (\x,0.3);
+    \node[accent, above] at (\x,0.35) {\small\lbl};
+  }
+  % Region labels below
+  \node[below, font=\small] at (-4.1,-0.6) {Cat.\ 1};
+  \node[below, font=\small] at (-1.6,-0.6) {Cat.\ 2};
+  \node[below, font=\small] at (0.7,-0.6) {Cat.\ 3};
+  \node[below, font=\small] at (3.4,-0.6) {Cat.\ 4};
+  % Normal curve above
+  \draw[accent2, thick, domain=-4.8:4.8, samples=100]
+    plot (\x, {1.5*exp(-0.5*(\x-0.3)*(\x-0.3))});
+\end{tikzpicture}
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item $Y^*$: unobserved continuous variable (e.g., ``true'' satisfaction)
+\item We observe category $j$ when $\tau_{j-1} < Y^* \leq \tau_j$
+\item Thresholds $\tau_j$ are \textbf{estimated} from the data
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The latent variable interpretation is the cleanest way to understand ordered logit. Imagine there is a true, continuous underlying attitude or propensity (e.g., genuine policy satisfaction). This variable is unobserved. What we do observe is which category the person falls into, determined by whether their latent score crosses a series of thresholds. The ordered logit model simultaneously estimates the regression coefficients (how covariates shift the latent distribution) and the threshold parameters (where the cut points are). The threshold parameters are not of primary substantive interest, but they are needed to compute predicted probabilities for each category. Connect this to the binary logit from Session 3: binary logit has a single threshold (at 0, by convention), and ordered logit generalizes this to $K-1$ thresholds for $K$ categories.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Ordered logit: the model}
+\centering
+
+\vspace{8pt}
+
+\begin{block}{Cumulative link model (proportional odds)}
+$$\Pr(Y_i \leq j \mid \mathbf{x}_i) = \frac{1}{1 + \exp(-(\tau_j - \mathbf{x}_i\boldsymbol{\beta}))}$$
+\end{block}
+
+\vspace{12pt}
+
+\begin{itemize}[<+->]
+\item One set of $\boldsymbol{\beta}$ for all thresholds (\textbf{proportional odds assumption})
+\vspace{4pt}
+\item $\beta_k > 0$ shifts $Y^*$ upward $\to$ \textbf{higher} categories become more likely
+\vspace{4pt}
+\item $\Pr(Y_i = j) = \Pr(Y_i \leq j) - \Pr(Y_i \leq j-1)$: probability for each category by differencing cumulative probabilities
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The key structural assumption of ordered logit is proportional odds: a unit change in $X$ shifts the log-odds of being at or below any category by the same amount $\beta$. This is strong. In practice, it should be tested (Brant test in R). If violated, alternatives include the partial proportional odds model or multinomial logit (treating categories as nominal). The formula at the top models cumulative probabilities --- the probability of being in category $j$ or lower. The probability for exactly category $j$ is obtained by differencing adjacent cumulative probabilities. This is how you produce predicted probabilities for each category, which is what students should report rather than the raw coefficients.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Ordered logit in R}
+\centering
+
+\vspace{6pt}
+
+\begin{itemize}
+\item[] \texttt{library(MASS); library(marginaleffects)}
+\item[] \texttt{m\_ord = polr(factor(satisfaction) \textasciitilde{} age + educ,}
+\item[] \texttt{\hspace{28pt}data = mydata, Hess = TRUE)}
+\item[] \texttt{avg\_slopes(m\_ord) \# AMEs per predictor per category}
+\end{itemize}
+
+\vspace{8pt}
+
+\begin{itemize}[<+->]
+\item \texttt{Hess = TRUE}: stores the Hessian --- required for SEs
+\item \alert{Sign warning}: raw \texttt{polr()} coefficients use a reversed sign convention --- always interpret via \texttt{avg\_slopes()}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Walk through the syntax. \texttt{polr()} is the workhorse for ordered logit in R. The outcome must be a factor with ordered levels --- verify this before fitting. \texttt{Hess = TRUE} stores the Hessian (second-derivative matrix), which is required to compute standard errors. The raw coefficients from \texttt{polr()} are on the log-odds scale and not directly interpretable. The thresholds (``Intercepts'') are also in the output. As with binary logit, the right tool for interpretation is the \texttt{marginaleffects} package: \texttt{avg\_slopes()} gives AMEs for each predictor on the probability scale, separately for each response category. \texttt{predictions(m\_ord)} gives the predicted probability of each category for each observation.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Interpreting ordered logit}
+\centering
+
+\vspace{6pt}
+
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+  \begin{itemize}[<+->]
+  \item Raw coefficients: log-odds --- not intuitive
+  \vspace{6pt}
+  \item \textbf{Better}: average marginal effects
+    \begin{itemize}
+    \item One AME per predictor \textit{per category}
+    \item ``A one-unit increase in education changes the probability of category $j$ by $\Delta P_j$''
+    \end{itemize}
+  \vspace{6pt}
+  \item \textbf{Best}: predicted probability plots
+    \begin{itemize}
+    \item How does $\Pr(Y = j)$ change across $X$?
+    \item Use \texttt{plot\_predictions(m\_ord, condition = "educ")}
+    \end{itemize}
+  \end{itemize}
+\end{column}
+\begin{column}{0.42\textwidth}
+  \vspace{4pt}
+  % Schematic stacked bar
+  \begin{tikzpicture}[scale=0.65]
+    % x-axis labels
+    \node[below, font=\scriptsize] at (1.5,-0.2) {Low educ};
+    \node[below, font=\scriptsize] at (4.5,-0.2) {High educ};
+    % bars at low education
+    \fill[accent2!80]   (0,0) rectangle (3,1.2);
+    \fill[accent2!40]   (0,1.2) rectangle (3,2.4);
+    \fill[accent!40]    (0,2.4) rectangle (3,3.4);
+    \fill[accent!80]    (0,3.4) rectangle (3,4.0);
+    % bars at high education
+    \fill[accent2!80]   (3,0) rectangle (6,0.5);
+    \fill[accent2!40]   (3,0.5) rectangle (6,1.3);
+    \fill[accent!40]    (3,1.3) rectangle (6,2.8);
+    \fill[accent!80]    (3,2.8) rectangle (6,4.0);
+    % labels
+    \node[font=\scriptsize, white] at (1.5,0.6)  {1};
+    \node[font=\scriptsize, white] at (1.5,1.8)  {2};
+    \node[font=\scriptsize, white] at (1.5,2.9)  {3};
+    \node[font=\scriptsize, white] at (1.5,3.7)  {4};
+    \node[font=\scriptsize, white] at (4.5,0.25) {1};
+    \node[font=\scriptsize, white] at (4.5,0.9)  {2};
+    \node[font=\scriptsize, white] at (4.5,2.0)  {3};
+    \node[font=\scriptsize, white] at (4.5,3.4)  {4};
+    \draw[->] (0,-0.5) -- (6.2,-0.5);
+    \draw[->] (0,-0.5) -- (0,4.4) node[above, font=\scriptsize] {Pr};
+  \end{tikzpicture}
+\end{column}
+\end{columns}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The stacked bar schematic shows the key communication tool for ordered logit: as education increases, the distribution over categories shifts toward higher categories. Each bar represents the full probability distribution over the response categories. The AMEs tell you the average slope for each category probability across the sample. Note that the AMEs across all categories must sum to zero for any given predictor --- if one category's probability goes up, others must go down. This is a useful sanity check. Always plot predicted probabilities when reporting ordered logit results. A table of log-odds coefficients alone is not informative.}
+
+% ====================================================
+\section{Nominal / Multinomial Outcomes}
+% ====================================================
+
+\begin{transitionframe}
+Nominal outcomes:\\[6pt]
+{\large Multiple unordered categories --- vote choice, transport mode, conflict type}
+\end{transitionframe}
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{When categories have no natural order}
+\centering
+
+\begin{itemize}[<+->]
+\item \textbf{Nominal outcomes}: categories, but no ranking
+\vspace{8pt}
+\item Examples:
+  \begin{itemize}
+  \item Vote choice in a multi-party election (PSOE, PP, Vox, Sumar, \ldots)
+  \item Mode of transport (car, bus, train, bike, walk)
+  \item Type of conflict (interstate, civil war, non-state)
+  \item Occupation category (manager, professional, manual, service)
+  \end{itemize}
+\vspace{8pt}
+\item Ordered logit is wrong here --- it would impose an ordering
+\item We need a model that treats all categories symmetrically
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The distinction between ordinal and nominal is important and often overlooked. If you use ordered logit on a nominally scaled outcome, you are imposing an arbitrary ordering on the categories, which will bias your results. The multinomial logit treats all categories as equally valid alternatives and estimates separate coefficients for each (relative to a reference category). Common examples in political science: vote choice models, where the alternatives are parties or candidates with no natural order. In economics: occupational choice, mode of transport. In conflict studies: type of conflict event.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Multinomial logit: the model}
+\centering
+
+\vspace{6pt}
+
+\begin{block}{Softmax probabilities}
+$$\Pr(Y_i = j \mid \mathbf{x}_i) = \frac{\exp(\boldsymbol{\beta}_j' \mathbf{x}_i)}{\displaystyle\sum_{k=1}^{J} \exp(\boldsymbol{\beta}_k' \mathbf{x}_i)}$$
+\end{block}
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item $J$ categories $\to$ $J-1$ sets of coefficients (one category is the \textbf{reference})
+\item Reference category: $\boldsymbol{\beta}_1 = \mathbf{0}$ by convention
+\item Each $\beta_{jk}$: effect of $x_k$ on log-odds of category $j$ \textbf{vs.\ reference}
+\vspace{6pt}
+\item All predicted probabilities sum to 1: $\sum_{j=1}^J \Pr(Y_i = j) = 1$
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The softmax formula ensures all predicted probabilities are non-negative and sum to 1. This is the multinomial generalization of the logistic function. The model estimates $J-1$ separate log-odds equations, each comparing one category to the reference. If there are 5 parties, there are 4 sets of coefficients. The choice of reference category changes the coefficient values but not the predicted probabilities or the model fit. Choosing a substantively meaningful reference (e.g., the largest party, or the ``status quo'' option) makes interpretation easier. The coefficients tell you how covariates shift the probability of choosing category $j$ relative to the reference.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Multinomial logit in R}
+\centering
+
+\vspace{6pt}
+
+\begin{itemize}
+\item[] \texttt{library(nnet)}
+\vspace{4pt}
+\item[] \texttt{m\_mnom = multinom(vote \textasciitilde{} age + ideology + income,}
+\item[] \texttt{\hspace{36pt}data = beps)}
+\vspace{4pt}
+\item[] \texttt{\# AMEs (one per predictor per category)}
+\item[] \texttt{avg\_slopes(m\_mnom)}
+\end{itemize}
+
+\vspace{6pt}
+
+\begin{itemize}[<+->]
+\item First category = reference; coefficients = log-odds vs.\ reference
+\item Change reference: \texttt{relevel(factor(vote), ref = "Labour")}
+\item Interpret via \texttt{avg\_slopes()} or \texttt{plot\_predictions()}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The \texttt{nnet} package is the standard workhorse for multinomial logit in R. The \texttt{multinom()} function uses neural-network optimization under the hood, but the model is identical to standard multinomial logit. A common workflow: fit the model, then use \texttt{marginaleffects} for interpretation. The \texttt{avg\_slopes()} function will return AMEs for each predictor for each category --- this can be a large table, so prioritize plotting. The BEPS (British Election Panel Study) dataset in the \texttt{nnet} package is a classic teaching example for multinomial models of vote choice. Note: larger datasets require more iterations; increase with \texttt{MaxNWts} or \texttt{maxit} arguments.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The IIA assumption}
+\centering
+
+\vspace{6pt}
+
+\textbf{Independence of Irrelevant Alternatives (IIA):} the odds ratio between any two alternatives is \textbf{unaffected} by the presence or absence of other alternatives.
+
+\vspace{8pt}
+
+\begin{block}{}
+$$\frac{\Pr(Y = j)}{\Pr(Y = k)} = \exp\bigl((\boldsymbol{\beta}_j - \boldsymbol{\beta}_k)'\mathbf{x}\bigr)$$
+\end{block}
+
+\vspace{12pt}
+
+\begin{itemize}[<+->]
+\item The famous \textbf{red bus / blue bus} problem:
+  \begin{itemize}
+  \item 50\% car, 50\% red bus --- now introduce a blue bus
+  \item IIA implies: 33\% car, 33\% red bus, 33\% blue bus
+  \item Reality: 50\% car, 25\% red bus, 25\% blue bus
+  \end{itemize}
+\vspace{6pt}
+\item IIA holds when alternatives are \textbf{genuinely distinct}
+\item Violations: similar alternatives that substitute for each other
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The IIA assumption is the key limitation of multinomial logit. It works well when alternatives are substantively distinct and do not substitute closely for each other. It breaks down when alternatives are similar: adding a blue bus (identical to the red bus) to a car/red-bus choice set should not pull equally from both alternatives. In political science, IIA is often violated when there are ideologically similar parties (e.g., two center-left parties). If IIA is violated, alternatives include nested logit (which groups similar alternatives) or mixed logit models. The Hausman-McFadden test can be used to test IIA formally, though it has well-known power problems. The practical advice: think carefully about whether your alternatives are genuinely distinct before using multinomial logit.}
+
+% ----------------------------------------------------
+\begin{frame}
+\centering
+\vspace{30pt}
+{\large You are modeling vote choice in a Spanish election with five parties.\\\vspace{15pt}
+Two parties are both center-left. Should you worry about the IIA assumption?\\\vspace{15pt}
+What would you do?}
+\end{frame}
+% ----------------------------------------------------
+\note{Discussion prompt. Key points to draw out: (1) Yes, two center-left parties are likely close substitutes, which means IIA is probably violated: adding or removing one would disproportionately affect the other's predicted probability. (2) Possible responses: test IIA formally with the Hausman-McFadden test, though results are often inconclusive. (3) Substantive alternative: merge the two parties into one category, or use a model that does not impose IIA. (4) In practice, multinomial logit is widely used despite IIA because alternatives with truly substitutable categories are less common than critics suggest. The key is to be transparent about the assumption and its plausibility.}
+
+% ====================================================
+\section{Count Data}
+% ====================================================
+
+\begin{transitionframe}
+Count data:\\[6pt]
+{\large Non-negative integers --- conflicts, protests, bills, articles}
+\end{transitionframe}
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Count outcomes}
+\centering
+
+\begin{columns}[T]
+\begin{column}{0.55\textwidth}
+\begin{itemize}[<+->]
+\item Outcomes that are non-negative integers: 0, 1, 2, 3, \ldots
+\vspace{6pt}
+\item Examples: conflict events, bills, protests, publications, attacks
+\vspace{6pt}
+\item \textbf{Why not OLS?}
+  \begin{itemize}
+  \item Counts $\geq 0$: OLS can predict negative values
+  \item Variance increases with the mean
+  \item Strongly right-skewed; often many zeros
+  \end{itemize}
+\end{itemize}
+\end{column}
+\begin{column}{0.42\textwidth}
+\vspace{4pt}
+% Schematic: Poisson(1) and Poisson(4) bar charts
+\begin{tikzpicture}[scale=0.62]
+  \foreach \k/\p in {0/0.368, 1/0.368, 2/0.184, 3/0.061, 4/0.015} {
+    \fill[accent!70] (\k*1.1, 0) rectangle (\k*1.1+0.8, \p*10);
+  }
+  \node[below, font=\scriptsize] at (2.2,-0.2) {$\lambda=1$};
+  \begin{scope}[yshift=-3.2cm]
+    \foreach \k/\p in {0/0.018, 1/0.073, 2/0.147, 3/0.195, 4/0.195, 5/0.156, 6/0.104, 7/0.060} {
+      \fill[accent2!70] (\k*0.7, 0) rectangle (\k*0.7+0.55, \p*10);
+    }
+    \node[below, font=\scriptsize] at (2.8,-0.2) {$\lambda=4$};
+  \end{scope}
+\end{tikzpicture}
+\end{column}
+\end{columns}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Count data are ubiquitous in political science, sociology, and economics. The problem with OLS is exactly the same kind of mismatch we saw with binary outcomes: OLS is designed for continuous, symmetric, unbounded outcomes. Count data are bounded below at zero, typically right-skewed, and discrete. The heteroskedasticity problem is especially acute: for low expected counts the variance is small, but for high expected counts the variance is large. OLS assumes constant variance. The natural distribution for counts is the Poisson, which has the elegant property that its mean equals its variance.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The Poisson model}
+\centering
+
+\vspace{8pt}
+
+\begin{block}{Poisson regression}
+$$Y_i \sim \text{Poisson}(\mu_i), \quad \mu_i = \exp(\mathbf{x}_i \boldsymbol{\beta})$$
+$$\Leftrightarrow \quad \log(\mu_i) = \mathbf{x}_i \boldsymbol{\beta}$$
+\end{block}
+
+\vspace{12pt}
+
+\begin{itemize}[<+->]
+\item $\mu_i = E[Y_i \mid \mathbf{x}_i]$: expected count (always $> 0$)
+\item The \textbf{log link} ensures predictions are always non-negative
+\vspace{6pt}
+\item Coefficient interpretation: $\exp(\beta_k) =$ \textbf{multiplicative} change in expected count
+  \begin{itemize}
+  \item $\beta_k = 0.3 \Rightarrow \exp(0.3) \approx 1.35$: 35\% increase in expected count
+  \end{itemize}
+\vspace{6pt}
+\item Poisson assumption: $\text{Var}(Y_i) = E[Y_i]$ (mean $=$ variance)
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Walk through the Poisson model carefully. The log link is what ensures non-negative predictions: exponentiating a linear predictor always gives a positive number. The interpretation of coefficients as multiplicative effects is a key difference from OLS. In OLS, $\beta$ is additive: a one-unit increase in $X$ adds $\beta$ to the outcome. In Poisson, $\exp(\beta)$ is multiplicative: a one-unit increase in $X$ multiplies the expected count by $\exp(\beta)$. The Poisson distribution has a single parameter $\mu$ that equals both the mean and the variance. This is the ``equidispersion'' assumption. It is often violated in practice --- real count data are almost always overdispersed (variance exceeds mean). This leads to the negative binomial model.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Poisson in R and interpretation}
+\centering
+
+\vspace{6pt}
+
+\begin{itemize}
+\item[] \texttt{\# Fit Poisson model}
+\item[] \texttt{m\_pois = glm(n\_conflicts \textasciitilde{} gdp\_pc + pop\_l,}
+\item[] \texttt{\hspace{28pt}family = "poisson", data = mydata)}
+\item[]
+\item[] \texttt{summary(m\_pois)}
+\item[] \texttt{exp(coef(m\_pois))  \# incidence rate ratios}
+\end{itemize}
+
+\vspace{6pt}
+
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+  \textbf{Raw coefficient}\\
+  $\hat{\beta}_{\texttt{gdp\_pc}} = -0.24$\\[4pt]
+  {\small Hard to interpret directly}
+\end{column}
+\begin{column}{0.48\textwidth}
+  \textbf{Exponentiated}\\
+  $\exp(-0.24) \approx 0.79$\\[4pt]
+  {\small $\to$ 21\% fewer conflicts per unit GDP}
+\end{column}
+\end{columns}
+
+\vspace{10pt}
+
+{\small Also: \texttt{avg\_slopes(m\_pois)} gives AMEs on count scale}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The two-column layout illustrates the standard reporting practice: always exponentiate Poisson coefficients. The exponentiated coefficient is called an ``incidence rate ratio'' (IRR): it is the ratio of expected counts for a one-unit change in $X$. An IRR of 0.79 means 21\% fewer expected events; an IRR of 1.35 means 35\% more. Note that \texttt{avg\_slopes()} from \texttt{marginaleffects} gives marginal effects on the count scale (additive), not on the log scale. Both are useful: IRRs for proportional comparisons, AMEs for absolute changes. For models with offsets (e.g., controlling for population exposure), add \texttt{offset(log(population))} to the formula.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The overdispersion problem}
+\centering
+
+\vspace{8pt}
+
+\begin{columns}[T]
+\begin{column}{0.52\textwidth}
+  \begin{itemize}[<+->]
+  \item Poisson requires: $\text{Var}(Y) = E[Y]$
+  \vspace{6pt}
+  \item Real data almost always: $\text{Var}(Y) \gg E[Y]$
+  \vspace{6pt}
+  \item Consequences of ignoring overdispersion:
+    \begin{itemize}
+    \item Standard errors too \textbf{small}
+    \item $p$-values too \textbf{small}
+    \item False positives
+    \end{itemize}
+  \vspace{6pt}
+  \item Quick check:\\
+    {\small Residual deviance $\gg$ df}
+  \end{itemize}
+\end{column}
+\begin{column}{0.45\textwidth}
+  \vspace{4pt}
+  \begin{tikzpicture}[scale=0.68]
+    % Axes
+    \draw[->, thick] (0,0) -- (5.0,0) node[right, font=\scriptsize] {$E[Y]$};
+    \draw[->, thick] (0,0) -- (0,5.2) node[above, font=\scriptsize] {$\text{Var}(Y)$};
+    % Poisson line (Var = Mean)
+    \draw[accent, thick] (0,0) -- (4.8,4.8);
+    \node[accent, font=\scriptsize, right] at (4.8,4.8) {Poisson};
+    % Overdispersed cloud
+    \foreach \x/\y in {0.5/1.2, 1/2.8, 1.5/3.5, 2/4.2, 2.5/4.8, 3/5.0, 0.8/2.0, 1.8/4.0} {
+      \fill[accent2, opacity=0.7] (\x,\y) circle (2.5pt);
+    }
+    \node[accent2, font=\scriptsize] at (2.8,3.5) {Real data};
+  \end{tikzpicture}
+\end{column}
+\end{columns}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Overdispersion is the single most common problem with Poisson regression in practice. Almost all real count data have variance greater than the mean, because counts reflect heterogeneous processes (some observations have intrinsically high rates, others low, regardless of the covariates). When you ignore overdispersion, the model is overconfident: it reports standard errors that are too small, leading to inflated $t$-statistics and misleadingly small $p$-values. The quick diagnostic: look at the ratio of residual deviance to residual degrees of freedom in the \texttt{summary()} output. If this ratio is much greater than 1 (e.g., $> 1.5$ or $2$), overdispersion is a concern. The formal test is \texttt{AER::dispersiontest(m\_pois)}.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Negative binomial regression}
+\centering
+
+\vspace{8pt}
+
+\begin{block}{Negative Binomial model}
+$$Y_i \sim \text{NegBin}(\mu_i,\, \theta), \quad \log(\mu_i) = \mathbf{x}_i \boldsymbol{\beta}$$
+$$\text{Var}(Y_i) = \mu_i + \frac{\mu_i^2}{\theta}$$
+\end{block}
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item $\theta > 0$: dispersion parameter estimated from the data
+  \begin{itemize}
+  \item $\theta \to \infty$: approaches Poisson (no overdispersion)
+  \item Small $\theta$: high overdispersion
+  \end{itemize}
+\vspace{6pt}
+\item Same interpretation as Poisson: $\exp(\beta_k)$ = incidence rate ratio
+\vspace{6pt}
+\item In R: \texttt{MASS::glm.nb(y \textasciitilde{} x1 + x2)}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The negative binomial distribution adds a dispersion parameter $\theta$ (sometimes written as $\alpha = 1/\theta$) that allows the variance to exceed the mean. Conceptually, the negative binomial mixes Poisson distributions: each unit $i$ has its own Poisson rate $\mu_i$, but these rates themselves follow a gamma distribution across the population. The result is a distribution with heavier tails than Poisson and a variance that scales with $\mu^2/\theta$ in addition to $\mu$. In practice, the negative binomial is almost always preferable to Poisson for social science count data, because overdispersion is the norm rather than the exception. The syntax is nearly identical to Poisson, which makes switching easy. The coefficient interpretation (via $\exp(\beta)$) is the same.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Count models: a summary}
+\centering
+
+\vspace{6pt}
+
+{\footnotesize\setlength{\tabcolsep}{4pt}
+\begin{tabular}{p{2.8cm}p{2.6cm}p{3.6cm}}
+\hline
+\textbf{Model} & \textbf{R function} & \textbf{When to use} \\
+\hline
+Poisson & \texttt{glm(...,poisson)} & Equidispersed counts \\[3pt]
+Negative binomial & \texttt{MASS::glm.nb()} & Overdispersed counts \\[3pt]
+Zero-inflated Poisson & \texttt{pscl::zeroinfl()} & Excess zeros, equidisp. \\[3pt]
+Zero-inflated NegBin & \texttt{pscl::zeroinfl()} & Excess zeros, overdisp. \\
+\hline
+\end{tabular}
+}
+
+\vspace{8pt}
+
+\begin{itemize}[<+->]
+\item \textbf{Default}: start Poisson, test overdispersion, switch to NegBin if needed
+\item Zero-inflation: two-process model (structural vs.\ count zeros)
+\item All share the log link: $\exp(\hat\beta) =$ incidence rate ratio (IRR)
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This summary slide gives students a practical decision tree for count models. The default recommendation: always start with Poisson, inspect the residual deviance/df ratio and run \texttt{AER::dispersiontest()}, and switch to negative binomial if overdispersion is present. Zero-inflated models (\texttt{pscl::zeroinfl()}) are for situations where there are more zeros than any count distribution can explain --- e.g., a peace researcher studying conflict events, where many country-years have zero events structurally (the country is at peace) and a separate process generates events for those at risk. The zero-inflated model has two parts: a logistic regression for structural zeros and a count model for the rest. Mention this but do not go deep --- it is a more advanced topic.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Discussion}
+\centering
+\vspace{20pt}
+
+\large\textit{You model the number of conflict events per country-year.\\[10pt]
+After fitting a Poisson model, you check the output:
+\texttt{Residual deviance: 847 on 142 df}.\\[10pt]
+What does this tell you? What would you do next?}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This is a standard overdispersion diagnostic situation. The residual deviance / df ratio is 847/142 ≈ 6. Under a correctly specified Poisson model, this ratio should be approximately 1. A ratio of 6 is a strong signal of overdispersion: the data have far more variance than the Poisson distribution can accommodate. The correct next step is to either (a) run \texttt{AER::dispersiontest()} to formally test, and/or (b) refit with \texttt{MASS::glm.nb()} for a negative binomial model. The coefficient estimates will be very similar, but the standard errors will be larger (and correct), typically changing the significance of some predictors. This is a common and important real-data scenario.}
+
+% ====================================================
+\section{Duration Analysis}
+% ====================================================
+
+\begin{transitionframe}
+Duration analysis:\\[6pt]
+{\large Time until an event --- war onset, cabinet survival, regime collapse}
+\end{transitionframe}
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Time-to-event outcomes}
+\centering
+
+\begin{itemize}[<+->]
+\item Outcomes that record \textbf{how long until something happens}
+\vspace{8pt}
+\item Examples:
+  \begin{itemize}
+  \item Time until a war begins (from peace)
+  \item Duration of a coalition government in office
+  \item Time to re-arrest after prison release
+  \item How long an authoritarian regime survives
+  \item Time until a bill is passed (from introduction)
+  \end{itemize}
+\vspace{8pt}
+\item Why not OLS on duration?
+  \begin{itemize}
+  \item Durations are $\geq 0$ and right-skewed
+  \item \textbf{Censoring}: many observations end without the event occurring
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Duration analysis (also called survival analysis, event history analysis, or failure time analysis) is the appropriate framework when the outcome is a time until an event. It is very widely used in political science (regime duration, conflict duration, cabinet survival), epidemiology (time until death, disease relapse), sociology (unemployment duration, marriage dissolution), and engineering (time until equipment failure). The two concepts students need to understand are censoring and the hazard function. Censoring is the key practical challenge: many spells end not because the event occurred, but because the observation window closed. Ignoring censoring and running OLS on the observed durations would give biased estimates.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The censoring problem}
+\centering
+
+\vspace{8pt}
+
+\begin{tikzpicture}[scale=0.78]
+  % Time axis
+  \draw[->, thick] (0,0) -- (9.5,0) node[right] {\small Time};
+  \node[below, font=\scriptsize] at (8.0,0) {Study ends};
+  \draw[dashed, gray!60] (8.0,-0.2) -- (8.0,5.5);
+  % Spells
+  % Unit 1: event observed
+  \draw[accent, very thick] (0.5,4.8) -- (4.5,4.8);
+  \fill[accent] (4.5,4.8) circle (4pt) node[right, font=\scriptsize, accent] {Event};
+  \node[left, font=\scriptsize] at (0.5,4.8) {Unit 1};
+  % Unit 2: right-censored
+  \draw[asher, very thick] (1.0,3.8) -- (8.0,3.8);
+  \node[right, font=\scriptsize, asher] at (8.1,3.8) {Censored};
+  \node[left, font=\scriptsize] at (0.5,3.8) {Unit 2};
+  % Unit 3: event observed
+  \draw[accent, very thick] (2.0,2.8) -- (6.5,2.8);
+  \fill[accent] (6.5,2.8) circle (4pt) node[right, font=\scriptsize, accent] {Event};
+  \node[left, font=\scriptsize] at (0.5,2.8) {Unit 3};
+  % Unit 4: right-censored
+  \draw[asher, very thick] (3.0,1.8) -- (8.0,1.8);
+  \node[right, font=\scriptsize, asher] at (8.1,1.8) {Censored};
+  \node[left, font=\scriptsize] at (0.5,1.8) {Unit 4};
+  % Unit 5: event observed early
+  \draw[accent, very thick] (0.5,0.8) -- (2.5,0.8);
+  \fill[accent] (2.5,0.8) circle (4pt) node[right, font=\scriptsize, accent] {Event};
+  \node[left, font=\scriptsize] at (0.5,0.8) {Unit 5};
+\end{tikzpicture}
+
+\vspace{6pt}
+{\small \color{asher} Censored units: event did not occur during observation window}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This diagram shows the classic representation of survival data. Each horizontal line is a spell (the time a unit is under observation). Spells ending with a filled circle experienced the event; spells reaching the study's end without the event are right-censored. The key point: we must not throw away the censored observations. They contain information --- we know the event did not occur at least until the censoring time. Dropping censored units would oversample short spells (the ones that ended with events), biasing duration estimates downward. Survival models handle censoring properly by including censored observations in the risk set until they are censored, but not expecting an event from them. In R, censoring is encoded in the \texttt{Surv(time, event)} object.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Discussion}
+\centering
+\vspace{20pt}
+
+\large\textit{A researcher studies how long democracies survive.\\[10pt]
+She drops all country-spells that are still ongoing at the end of the dataset,
+keeping only countries where a democratic breakdown was observed.\\[10pt]
+What is wrong with this decision?}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This is the classic censoring bias problem. If the researcher drops right-censored observations (countries still democratic at the end of the observation window), she is systematically removing long-surviving democracies from the sample. The remaining data will only contain breakdowns, which will make the estimated hazard much higher than it actually is. In other words, she will overestimate the risk of democratic breakdown. Survival models handle this correctly: censored observations stay in the risk set until they are censored, contributing information that the event had not yet occurred. Dropping censored observations is one of the most common mistakes in applied survival analysis.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Key concepts: survival and hazard}
+\centering
+
+\vspace{8pt}
+
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+  \textbf{Survival function} $S(t)$\\[6pt]
+  $S(t) = \Pr(T > t)$\\[6pt]
+  {\small Probability of surviving past time $t$}\\[6pt]
+  {\small $S(0) = 1$, $S(\infty) = 0$}\\[6pt]
+  {\small Monotonically non-increasing}
+\end{column}
+\begin{column}{0.48\textwidth}
+  \textbf{Hazard function} $h(t)$\\[6pt]
+  $h(t) = \dfrac{f(t)}{S(t)}$\\[6pt]
+  {\small Instantaneous rate of event at $t$,}\\
+  {\small conditional on survival to $t$}\\[6pt]
+  {\small ``Danger per unit time at time $t$''}
+\end{column}
+\end{columns}
+
+\vspace{14pt}
+
+\begin{itemize}[<+->]
+\item High $h(t)$: event is likely soon
+\item $S(t)$ and $h(t)$ are two views of the same object
+\item Covariates shift $h(t)$ --- that is what regression models
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The survival function and hazard function are the two fundamental objects in duration analysis. The survival function $S(t)$ gives the probability that the event has not yet occurred by time $t$. It starts at 1 (everyone is at risk) and decreases toward 0. The hazard function $h(t)$ is the instantaneous rate at which events occur among those still ``at risk'' at time $t$. The relationship $h(t) = f(t)/S(t)$ connects the hazard to the density $f(t)$ and survival $S(t)$ of the event time distribution. The hazard is what survival regression models: covariates are hypothesized to multiplicatively shift the hazard. Intuitively: a regime with a high hazard at time $t$ is likely to fall soon; one with a low hazard is stable.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Kaplan-Meier: visualizing survival}
+\centering
+
+\vspace{8pt}
+
+\begin{tikzpicture}[scale=0.76]
+  % Axes
+  \draw[->, thick] (0,0) -- (9,0) node[right] {\small Time};
+  \draw[->, thick] (0,0) -- (0,5) node[above] {\small $S(t)$};
+  \node[left, font=\scriptsize] at (0,4) {1.0};
+  \node[left, font=\scriptsize] at (0,2) {0.5};
+  \node[left, font=\scriptsize] at (0,0) {0.0};
+  \draw[dashed, gray!50] (0,2) -- (9,2);
+  % KM curve group 1 (accent, higher survival)
+  \draw[accent, very thick]
+    (0,4) -- (1.5,4) -- (1.5,3.5) -- (3.0,3.5) -- (3.0,3.0)
+    -- (4.5,3.0) -- (4.5,2.5) -- (7.0,2.5) -- (7.0,2.0) -- (8.5,2.0);
+  \node[accent, right, font=\scriptsize] at (8.5,2.1) {Group A};
+  % KM curve group 2 (accent2, lower survival)
+  \draw[accent2, very thick]
+    (0,4) -- (0.8,4) -- (0.8,3.2) -- (2.0,3.2) -- (2.0,2.4)
+    -- (3.5,2.4) -- (3.5,1.6) -- (5.5,1.6) -- (5.5,0.8) -- (8.5,0.8);
+  \node[accent2, right, font=\scriptsize] at (8.5,0.9) {Group B};
+  % Censoring ticks on group A
+  \foreach \x/\y in {2.5/3.5, 6.2/2.5} {
+    \draw[accent, thick] (\x,\y-0.12) -- (\x,\y+0.12);
+  }
+\end{tikzpicture}
+
+\vspace{6pt}
+
+{\small Kaplan-Meier estimator: non-parametric, no covariates, visual comparison of groups}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The Kaplan-Meier (KM) estimator is the standard first step in survival analysis. It is non-parametric: it makes no distributional assumptions and does not include covariates. It simply estimates the survival probability at each event time by updating the fraction of the risk set that experiences the event. The KM curve is always a step function, dropping at each observed event time. Censored observations are marked with tick marks on the curve. The KM curve is a powerful visual tool: you can immediately see whether Group A has higher survival than Group B, whether survival differences emerge early or late, and how many observations remain in the risk set over time. In R: \texttt{survfit(Surv(time, event) \textasciitilde{} group, data = mydata)} and then \texttt{survminer::ggsurvplot()}.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{The proportional hazards idea}
+\centering
+
+\vspace{6pt}
+
+\begin{columns}[T]
+\begin{column}{0.44\textwidth}
+\vspace{4pt}
+\begin{tikzpicture}[scale=0.7]
+  % Baseline hazard h0(t): gently increasing
+  \draw[thick, asher, domain=0.3:5, samples=60]
+    plot (\x, {0.4 + 0.12*\x}) node[right, font=\scriptsize, asher] {$h_0(t)$};
+  % Unit A: higher hazard (beta > 0)
+  \draw[thick, accent2, domain=0.3:5, samples=60]
+    plot (\x, {1.8*(0.4 + 0.12*\x)}) node[right, font=\scriptsize, accent2] {Unit A};
+  % Unit B: lower hazard (beta < 0)
+  \draw[thick, accent, domain=0.3:5, samples=60]
+    plot (\x, {0.45*(0.4 + 0.12*\x)}) node[right, font=\scriptsize, accent] {Unit B};
+  % Axes
+  \draw[->, thick] (0,0) -- (5.5,0) node[right, font=\scriptsize] {$t$};
+  \draw[->, thick] (0,0) -- (0,3.5) node[above, font=\scriptsize] {$h(t)$};
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.53\textwidth}
+\vspace{6pt}
+\begin{itemize}[<+->]
+\item \textbf{Key idea}: each unit has its own hazard, but all are proportional shifts of the same baseline $h_0(t)$
+\vspace{6pt}
+\item The ratio $h_i(t)/h_j(t)$ is \textbf{constant over time} --- curves never cross
+\vspace{6pt}
+\item Violation: if the gap between lines closes or reverses over time $\Rightarrow$ PH assumption fails
+\end{itemize}
+\end{column}
+\end{columns}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This diagram makes the proportional hazards (PH) assumption visually intuitive before the algebra. All hazard curves are multiples of the same baseline function h_0(t) --- they have the same shape but different levels. This means the hazard ratio between any two units is fixed over time (the curves are parallel on a log scale). The PH assumption is testable: plot log(-log(S(t))) for two groups --- under PH these should be parallel lines. Violations occur when the effect of a covariate changes over time (e.g., treatment effectiveness wanes). A practical fix is to include a time-interaction term or stratify by the offending covariate.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Cox proportional hazards model}
+\centering
+
+\vspace{8pt}
+
+\begin{block}{Cox PH model}
+$$h_i(t) = h_0(t) \cdot \exp(\mathbf{x}_i \boldsymbol{\beta})$$
+\end{block}
+
+\vspace{10pt}
+
+\begin{itemize}[<+->]
+\item $h_0(t)$: \textbf{baseline hazard} --- left completely unspecified (semiparametric)
+\item $\exp(\mathbf{x}_i \boldsymbol{\beta})$: multiplicative shift of the baseline
+\vspace{6pt}
+\item \textbf{Proportional hazards assumption}: the hazard ratio between any two units is \emph{constant over time}
+\vspace{4pt}
+\item $\exp(\beta_k)$: \textbf{hazard ratio} for a one-unit increase in $x_k$
+  \begin{itemize}
+  \item $\exp(\beta_k) > 1$: higher hazard (event happens sooner)
+  \item $\exp(\beta_k) < 1$: lower hazard (event happens later)
+  \end{itemize}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{The Cox model is the workhorse of survival regression in social science. Its key advantage is semiparametric: it does not require specifying the baseline hazard $h_0(t)$, which is often unknown and of no substantive interest. The model only specifies how covariates shift the hazard multiplicatively. The proportional hazards (PH) assumption means that the ratio of hazards between any two units remains constant over time --- only the level changes. This is testable: a plot of $\log(-\log S(t))$ for two groups should show parallel curves under PH. Violations of PH suggest that the effect of a covariate changes over time, which requires either stratification or time-varying coefficients. The hazard ratio interpretation is analogous to the incidence rate ratio in Poisson regression: multiplicative effect on the event rate.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Cox model in R}
+\centering
+
+\vspace{6pt}
+
+\begin{itemize}
+\item[] \texttt{library(survival); library(survminer)}
+\vspace{4pt}
+\item[] \texttt{\# Kaplan-Meier estimator}
+\item[] \texttt{km\_fit = survfit(Surv(time, event) \textasciitilde{} group, data = d)}
+\item[] \texttt{ggsurvplot(km\_fit, conf.int = TRUE)}
+\vspace{4pt}
+\item[] \texttt{\# Cox PH model}
+\item[] \texttt{cox\_fit = coxph(Surv(time, event) \textasciitilde{} x1 + x2, data = d)}
+\item[] \texttt{summary(cox\_fit)  \# shows hazard ratios}
+\item[] \texttt{exp(coef(cox\_fit))}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Walk through the syntax. The \texttt{Surv(time, event)} object is the key data structure: \texttt{time} is the duration variable, \texttt{event} is a binary indicator for whether the event occurred (1) or the observation was censored (0). This object is always the left-hand side of the formula. \texttt{survfit()} fits the Kaplan-Meier estimator; \texttt{ggsurvplot()} from the \texttt{survminer} package creates publication-quality KM plots with confidence bands and risk tables. \texttt{coxph()} fits the Cox proportional hazards model. The output includes coefficients on the log-hazard scale and, when you run \texttt{summary()}, the exponentiated hazard ratios. Always test the PH assumption with \texttt{cox.zph(cox\_fit)}: a significant test indicates time-varying effects that violate the PH assumption.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Interpreting the Cox model}
+\centering
+
+\vspace{6pt}
+
+{\footnotesize
+\begin{tabular}{lcccc}
+\hline
+ & \textbf{Coef} & \textbf{Exp(coef)} & \textbf{SE} & \textbf{$p$-value} \\
+\hline
+\texttt{gdp\_pc}     & $-0.31$ & $0.73$ & $0.08$ & $< 0.001$ \\
+\texttt{military}    & $\phantom{-}0.64$ & $1.90$ & $0.15$ & $0.001$ \\
+\texttt{log\_pop}    & $\phantom{-}0.18$ & $1.20$ & $0.10$ & $0.07$ \\
+\hline
+\end{tabular}
+}
+
+\vspace{14pt}
+
+\begin{itemize}[<+->]
+\item $\exp(\hat\beta_{\texttt{gdp\_pc}}) = 0.73$: richer countries have 27\% \textbf{lower} hazard of event
+\item $\exp(\hat\beta_{\texttt{military}}) = 1.90$: military regimes face 90\% \textbf{higher} hazard
+\vspace{6pt}
+\item Hazard ratio $<1$: covariate \textit{reduces} event rate $\to$ \textit{increases} survival
+\item Hazard ratio $>1$: covariate \textit{increases} event rate $\to$ \textit{decreases} survival
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Walk through the output table carefully. The ``Coef'' column gives log-hazard coefficients, which are hard to interpret. The ``Exp(coef)'' column gives hazard ratios, which are the quantities to report. The direction of the hazard ratio can be counterintuitive: a hazard ratio less than 1 means lower hazard, which means longer survival. GDP per capita coefficient: richer countries have lower hazard of regime collapse (or war, or whatever the event is), i.e., they are more stable. Military regime coefficient: military regimes face nearly twice the hazard compared to non-military regimes. These are interpreted as effects conditional on survival to time $t$ (the risk set at each moment). Note: the PH assumption must be checked --- \texttt{cox.zph(cox\_fit)} tests whether the coefficients are constant over time.}
+
+% ====================================================
+\section{Model Selection in Practice}
+% ====================================================
+
+\begin{transitionframe}
+Pulling it together:\\[6pt]
+{\large Which model for which data?}
+\end{transitionframe}
+\note{}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Choosing the right model}
+\centering
+
+\vspace{6pt}
+
+{\footnotesize
+\begin{tabular}{p{2.8cm}p{2.2cm}p{4.2cm}}
+\hline
+\textbf{If your outcome is\ldots} & \textbf{Use} & \textbf{Key check} \\
+\hline
+Continuous & OLS & Linearity, homoskedasticity \\[3pt]
+Binary (0/1) & Logit / LPM & Rare events $\to$ prefer logit \\[3pt]
+Ordered categories & Ordered logit & Test PO assumption (Brant) \\[3pt]
+Unordered categories & Multinomial logit & IIA plausible? \\[3pt]
+Non-negative integer & Poisson & Test overdispersion \\[3pt]
+Overdispersed count & Neg.\ Binomial & Often the safe default \\[3pt]
+Many zeros & Zero-inflated & Two-process data? \\[3pt]
+Time until event & Cox PH & Test PH assumption \\
+\hline
+\end{tabular}
+}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This table is a condensed version of the map from the opening section, now with diagnostic checks added. Encourage students to memorize the first two columns and think of the third column as a reminder to always validate the model's assumptions. The key message: the choice of model is driven by the data-generating process, not by habit or convention. Ask: what kind of thing is my outcome? That is the primary question. Then ask: does the model I chose make sense given the structure of my data? The diagnostic checks are not optional extras --- they are part of good applied practice. For the exam, students should be able to identify the appropriate model from an outcome description and justify their choice.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{Practical checklist}
+\centering
+
+\begin{itemize}[<+->]
+\item \textbf{Step 1}: What is the DGP? Identify the outcome type
+\vspace{4pt}
+\item \textbf{Step 2}: Choose model family accordingly (see table)
+\vspace{4pt}
+\item \textbf{Step 3}: Estimate the model in R
+\vspace{4pt}
+\item \textbf{Step 4}: Check assumptions
+  \begin{itemize}
+  \item Counts: overdispersion test $\to$ switch to NegBin if needed
+  \item Ordinal: Brant test for proportional odds
+  \item Nominal: IIA plausibility (substantive reasoning)
+  \item Duration: Schoenfeld residuals for PH assumption
+  \end{itemize}
+\vspace{4pt}
+\item \textbf{Steps 5--6}: Interpret via AMEs / predicted probabilities (\textbf{never raw coefficients alone}); visualize results
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{This is the practical workflow students should internalize. Stress Step 5 especially: raw coefficients in all the models we have covered today (ordinal, multinomial, count, survival) are on transformed scales (log-odds, log-count, log-hazard) that are not directly interpretable. Students must always convert to a meaningful scale before reporting. The \texttt{marginaleffects} package (\texttt{avg\_slopes()}, \texttt{predictions()}, \texttt{plot\_predictions()}) does this for all model types. Also stress Step 6: a plot communicates more effectively than any table of numbers, especially for models with multiple response categories (ordinal, multinomial) or continuous predictors.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{What you have learned this semester}
+\centering
+
+\vspace{6pt}
+
+\begin{tikzpicture}[
+  box/.style={draw, rounded corners, minimum width=3.2cm, minimum height=0.75cm, align=center, font=\small, fill=accent!25},
+  box2/.style={draw, rounded corners, minimum width=3.2cm, minimum height=0.75cm, align=center, font=\small, fill=accent2!30},
+  arrow/.style={->, thick, asher}
+]
+  \node[box]  (ols)    at (0, 4.2)   {OLS \& regression};
+  \node[box]  (bin)    at (0, 3.1)   {Binary outcomes};
+  \node[box]  (panel)  at (-3.0,1.9) {Panel data (FE/DiD)};
+  \node[box]  (spatial)at ( 3.0,1.9) {Spatial models};
+  \node[box2] (other)  at (0, 0.7)   {Other outcomes};
+  \draw[arrow] (ols) -- (bin);
+  \draw[arrow] (bin) -- (panel);
+  \draw[arrow] (bin) -- (spatial);
+  \draw[arrow] (panel) -- (other);
+  \draw[arrow] (spatial) -- (other);
+  \node[font=\scriptsize, asher] at (0, -0.1)
+    {Today: ordinal, nominal, count, duration};
+\end{tikzpicture}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Close with a map of the course. Students started with OLS (Sessions 1--2), moved to binary outcomes and interpretation (Sessions 3--4), then panel data with fixed effects and DiD (Sessions 5--6), then spatial models (Sessions 7--8), and now today cover other outcome types. This gives students a sense of the breadth of the toolkit they have acquired. Each extension follows the same logic: identify a feature of the data that OLS mishandles, choose a model that accommodates that feature. The unifying thread is the GLM framework introduced at the start of today's session. Emphasize that the skills they have developed --- thinking about DGPs, checking assumptions, interpreting via marginal effects, visualizing results --- apply across all these model families.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{For the exam}
+\centering
+
+\begin{itemize}[<+->]
+\item Be able to \textbf{identify} the right model given an outcome description
+\vspace{6pt}
+\item Know the key \textbf{assumptions} and how to check them:
+  \begin{itemize}
+  \item Proportional odds (ordered logit)
+  \item IIA (multinomial logit)
+  \item Equidispersion (Poisson)
+  \item Proportional hazards (Cox)
+  \end{itemize}
+\vspace{6pt}
+\item Interpret coefficients correctly:
+  \begin{itemize}
+  \item Ordered/multinomial logit: AMEs or predicted probabilities
+  \item Poisson/NegBin: $\exp(\hat\beta)$ = incidence rate ratio
+  \item Cox PH: $\exp(\hat\beta)$ = hazard ratio
+  \end{itemize}
+\vspace{6pt}
+\item Know the relevant \textbf{R functions}
+\end{itemize}
+
+\end{frame}
+% ----------------------------------------------------
+\note{Practical exam preparation slide. Encourage students to make a reference card with the model family, R function, link function, coefficient interpretation, and key assumption for each model type. The interpretive machinery is always the same: find the transformed scale (log-odds, log-count, log-hazard), exponentiate to get the multiplicative effect, or use \texttt{marginaleffects} to get additive AMEs. The R functions are: \texttt{polr()} for ordered logit, \texttt{multinom()} for multinomial logit, \texttt{glm(..., poisson)} or \texttt{MASS::glm.nb()} for counts, \texttt{coxph()} for survival. These are the building blocks students need for their own research.}
+
+% ----------------------------------------------------
+\begin{frame}
+\frametitle{}
+\centering
+
+\vspace{20pt}
+
+Questions?
+
+\end{frame}
+% ----------------------------------------------------
+\note{}
