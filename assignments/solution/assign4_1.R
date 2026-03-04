@@ -12,13 +12,13 @@ library(broom)
 library(ggplot2)
 library(modelsummary)
 library(marginaleffects)
-library(readstata13)
+library(haven)
 
 # --------
 ## 1. Setup and data exploration
 
 # a) Load data
-df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/other/corruption.dta")
+df = read_dta("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/other/corruption.dta")
 
 # b) Drop missing values
 df = df %>% filter(!is.na(ti_cpi) & !is.na(undp_gdp))

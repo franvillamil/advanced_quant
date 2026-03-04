@@ -64,10 +64,10 @@ Create the file \code{analysis/models.R} with the following structure. The scrip
 # setwd("~/path/to/assignment10")
 options(stringsAsFactors = FALSE)
 
-library(readstata13)
+library(haven)
 library(modelsummary)
 
-df = read.dta13("data/corruption.dta")
+df = read_dta("data/corruption.dta")
   \end{lstlisting}
   \item Define constants at the top of the script for the key variables:
   \begin{lstlisting}
@@ -104,7 +104,7 @@ modelsummary(
 Create the file \code{plots/figures.R}. This script reads the same data and produces a scatter plot.
 
 \begin{enumerate}[label=\alph*)]
-  \item Load packages (\code{readstata13}, \code{ggplot2}), read the data, and drop missing values.
+  \item Load packages (\code{haven}, \code{ggplot2}), read the data, and drop missing values.
   \item Create a scatter plot of corruption (y-axis) vs.\ log GDP (x-axis) using \code{geom\_point()}. Add a linear fit with \code{geom\_smooth()}.
   \item Use \code{theme\_minimal()}, add informative axis labels and a title.
   \item Save to \code{plots/output/scatter\_corruption.pdf} using \code{ggsave()}, specifying width and height explicitly.

@@ -12,13 +12,13 @@ library(broom)
 library(ggplot2)
 library(modelsummary)
 library(marginaleffects)
-library(readstata13)
+library(haven)
 
 # --------
 ## 1. Data exploration
 
 # a) Load data and summary statistics
-df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/other/infantmortality.dta")
+df = read_dta("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/other/infantmortality.dta")
 summary(df)
 nrow(df)
 

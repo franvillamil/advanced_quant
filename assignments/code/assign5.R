@@ -7,7 +7,7 @@ options(stringsAsFactors = FALSE)
 # ============================================================
 
 # List of packages
-library(readstata13)
+library(haven)
 library(dplyr)
 library(ggplot2)
 library(fixest)
@@ -22,7 +22,7 @@ library(modelsummary)
 ## 1. Setup and data exploration
 
 # a)
-df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/presidential_approval/presidential_approval.dta")
+df = read.csv("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/presidential_approval/presidential_approval.csv")
 length(unique(df$State))
 length(unique(df$Year))
 table(table(df$State))
@@ -90,7 +90,7 @@ modelsummary(
 ## 1. Data exploration
 
 # a)
-df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/teaching_evals/teaching_evals.dta")
+df = read_dta("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/teaching_evals/teaching_evals.dta")
 length(unique(df$InstrID))
 length(unique(df$CourseID))
 nrow(df) / length(unique(df$InstrID))

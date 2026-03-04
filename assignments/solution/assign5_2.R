@@ -7,14 +7,14 @@ options(stringsAsFactors = FALSE)
 # ============================================================
 
 # List of packages
-library(readstata13)
+library(haven)
 library(ggplot2)
 library(fixest)
 library(plm)
 library(modelsummary)
 
 # Load data
-df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/teaching_evals/teaching_evals.dta")
+df = read_dta("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/teaching_evals/teaching_evals.dta")
 
 # --------
 ## 1. Data exploration

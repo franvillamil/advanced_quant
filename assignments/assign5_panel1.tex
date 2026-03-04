@@ -35,7 +35,7 @@ Download the data here:
   \item \href{https://github.com/franvillamil/AQM2/tree/master/datasets/presidential_approval}{github.com/franvillamil/AQM2/tree/master/datasets/presidential\_approval}
 \end{itemize}
 
-Load it with \code{readstata13::read.dta13("presidential\_approval.dta")}. Key variables:
+Load it with \code{read.csv("presidential\_approval.csv")}. Key variables:
 \begin{itemize}
   \item \code{State} --- state name
   \item \code{StCode} --- state numeric ID
@@ -118,7 +118,7 @@ Download the data here:
   \item \href{https://github.com/franvillamil/AQM2/tree/master/datasets/teaching_evals}{github.com/franvillamil/AQM2/tree/master/datasets/teaching\_evals}
 \end{itemize}
 
-Load it with \code{readstata13::read.dta13("teaching\_evals.dta")}. Key variables:
+Load it with \code{haven::read\_dta("teaching\_evals.dta")}. Key variables:
 \begin{itemize}
   \item \code{Eval} --- average course evaluation (5-point scale)
   \item \code{Apct} --- percent of students receiving an A or A- in the course

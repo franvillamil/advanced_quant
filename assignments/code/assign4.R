@@ -12,7 +12,7 @@ library(broom)
 library(ggplot2)
 library(modelsummary)
 library(marginaleffects)
-library(readstata13)
+library(haven)
 
 # ==========================================================================
 # Part 1: Corruption and Wealth
@@ -22,7 +22,7 @@ library(readstata13)
 ## 1. Setup and data exploration
 
 # a)
-df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/other/corruption.dta")
+df = read_dta("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/other/corruption.dta")
 
 # b)
 df = df %>% filter(!is.na(ti_cpi) & !is.na(undp_gdp))
@@ -188,7 +188,7 @@ modelsummary(
 ## 1. Data exploration
 
 # a)
-df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/other/infantmortality.dta")
+df = read_dta("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/other/infantmortality.dta")
 summary(df)
 nrow(df)
 

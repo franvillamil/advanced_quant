@@ -17,13 +17,12 @@ options(stringsAsFactors = FALSE)
 ```
 
 ```{r packages}
-library(readstata13)
 library(dplyr)
 library(ggplot2)
 library(fixest)
 library(modelsummary)
 
-df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/presidential_approval/presidential_approval.dta")
+df = read.csv("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/presidential_approval/presidential_approval.csv")
 ```
 
 # 1. Setup and data exploration
@@ -36,7 +35,7 @@ length(unique(df$Year))
 table(table(df$State))
 ```
 
-The panel is unbalanced: while most states appear 73 times, a handful appear fewer times, so the number of time periods is not identical across all states.
+The panel is balanced: every state appears the same number of times (one observation per state-year).
 
 **b)** Summary statistics for the key variables:
 

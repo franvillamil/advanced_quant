@@ -7,14 +7,13 @@ options(stringsAsFactors = FALSE)
 # ============================================================
 
 # List of packages
-library(readstata13)
 library(dplyr)
 library(ggplot2)
 library(fixest)
 library(modelsummary)
 
 # Load data
-df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/presidential_approval/presidential_approval.dta")
+df = read.csv("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/presidential_approval/presidential_approval.csv")
 
 # --------
 ## 1. Setup and data exploration
@@ -23,7 +22,7 @@ df = read.dta13("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/
 length(unique(df$State))
 length(unique(df$Year))
 table(table(df$State))
-# Unbalanced panel: most states appear 73 times but a few appear fewer times.
+# Balanced panel: every state appears the same number of times.
 
 # b) Summary statistics and time-series plot
 summary(df$PresApprov)
