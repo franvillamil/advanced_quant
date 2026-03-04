@@ -13,9 +13,7 @@ layout: default
 | Feb 19  | 3. [Binary outcomes](./sessions.md) | [[Slides 3](./slides/03_binary_outcomes/binary_outcomes.pdf)] | [[Ex 3](./assignments/assign3_binary_outcomes.pdf)] | [[1](./assignments/solution/assign3_1.pdf)] [[2](./assignments/solution/assign3_2.pdf)]
 | Feb 26  | 4. [Interpretation & diagnostics](./sessions.md) | [[Slides 4](./slides/04_interpretation/interpretation.pdf)] | [[Ex 4](./assignments/assign4_interpretation.pdf)] | [[1](./assignments/solution/assign4_1.pdf)] <!-- [[2](./assignments/solution/assign4_2.pdf)] -->
 | Mar 5   | 5. [Panel data (I)](./sessions.md) | [[Slides 5](./slides/05_panel1/panel1.pdf)] | [[Ex 5](./assignments/assign5_panel1.pdf)] | [[1](./assignments/solution/assign5_1.pdf)] <!-- [[2](./assignments/solution/assign5_2.pdf)] -->
-| Mar 12  | 6. [Panel data (II)](./sessions.md) | <!-- [[Slides 6](./slides/06_panel1/panel2.pdf)] | 
-[[Ex 6](./assignments/assign6_panel2.pdf)] | 
-[[1](./assignments/solution/assign6_1.pdf)] -->
+| Mar 12  | 6. [Panel data (II)](./sessions.md) | | |
 | Mar 19  | 7. [Spatial data (I)](./sessions.md) | | |
 | Mar 26  | 8. [Spatial data (II)](./sessions.md) | | |
 || *Easter break* |||
@@ -23,6 +21,10 @@ layout: default
 | Apr 16  | 10. [Computing best practices](./sessions.md) | | |
 | Apr 23  | 11. [Project presentations](./logistics.md) | | |
 | Apr 30  | 12. [Exam](./logistics.md) / [Review & Advanced](./sessions.md) | | |
+
+<!-- [[Slides 6](./slides/06_panel1/panel2.pdf)] | 
+[[Ex 6](./assignments/assign6_panel2.pdf)] | 
+[[1](./assignments/solution/assign6_1.pdf)] -->
 
 <!-- [[Slides 7](./slides/07_spatial1/spatial1.pdf)] | 
 [[Ex 7](./assignments/assign7_spatial1.pdf)] | 
