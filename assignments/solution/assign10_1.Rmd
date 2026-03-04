@@ -1,0 +1,195 @@
+---
+title: "Assignment 10 -- Solutions: Part 1 (Project Organization)"
+subtitle: "Applied Quantitative Methods II, UC3M"
+output:
+  pdf_document:
+    toc: false
+geometry: margin=2cm
+header-includes:
+  - \renewcommand*\rmdefault{ppl}
+  - \usepackage{setspace}\setstretch{1.2}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+options(stringsAsFactors = FALSE)
+```
+
+This assignment is about project organization, not statistical analysis. The solutions below show the content of each file that students should create inside their `assignment10/` folder.
+
+# 1. Folder structure
+
+**a)** Create the folder structure from the terminal:
+
+```{bash, eval=FALSE}
+mkdir -p assignment10/data assignment10/analysis/output assignment10/plots/output
+touch assignment10/Makefile assignment10/README.md
+touch assignment10/analysis/models.R assignment10/plots/figures.R
+```
+
+**b)** Download the dataset and place it in `data/`. Students can download it manually from GitHub or use:
+
+```{bash, eval=FALSE}
+curl -L -o assignment10/data/corruption.dta \
+  "https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/other/corruption.dta"
+```
+
+**c)** Example `README.md`:
+
+```{markdown, eval=FALSE}
+# Assignment 10: Corruption and Wealth Pipeline
+
+This project builds a reproducible analysis pipeline examining the
+relationship between GDP per capita and corruption across countries.
+
+- `data/`: Contains the `corruption.dta` dataset (Transparency International
+  Corruption Perceptions Index and UNDP GDP per capita).
+- `analysis/`: R script that estimates regression models and saves a LaTeX table
+  to `analysis/output/`.
+- `plots/`: R script that produces a scatter plot saved to `plots/output/`.
+- `Makefile`: Automates the full pipeline with `make`.
+```
+
+# 2. Analysis script
+
+The file `analysis/models.R` should contain the following:
+
+```{r, eval=FALSE}
+# setwd("~/path/to/assignment10")
+options(stringsAsFactors = FALSE)
+
+library(haven)
+library(modelsummary)
+
+# ============================================================
+# Load data
+df = read_dta("data/corruption.dta")
+
+# ============================================================
+# Define constants
+dep_var = "ti_cpi"
+indep_var = "undp_gdp"
+
+# ============================================================
+# Clean data
+df = df[!is.na(df[[dep_var]]) & !is.na(df[[indep_var]]), ]
+cat("Observations:", nrow(df), "\n")
+
+# Assertion
+if(nrow(df) < 10) stop("Too few observations")
+
+# ============================================================
+# Estimate models
+m1 = lm(ti_cpi ~ undp_gdp, data = df)
+m2 = lm(ti_cpi ~ log(undp_gdp), data = df)
+
+# ============================================================
+# Save table
+modelsummary(
+  list("Level" = m1, "Log" = m2),
+  output = "analysis/output/table_models.tex",
+  stars = TRUE,
+  gof_map = c("r.squared", "nobs"))
+
+cat("Analysis complete. Table saved.\n")
+```
+
+We can verify that the script works by running it here (loading the data from the URL instead of a local path):
+
+```{r}
+library(haven)
+library(modelsummary)
+
+df = read_dta("https://raw.githubusercontent.com/franvillamil/AQM2/refs/heads/master/datasets/other/corruption.dta")
+
+dep_var = "ti_cpi"
+indep_var = "undp_gdp"
+
+df = df[!is.na(df[[dep_var]]) & !is.na(df[[indep_var]]), ]
+cat("Observations:", nrow(df), "\n")
+
+if(nrow(df) < 10) stop("Too few observations")
+
+m1 = lm(ti_cpi ~ undp_gdp, data = df)
+m2 = lm(ti_cpi ~ log(undp_gdp), data = df)
+
+modelsummary(
+  list("Level" = m1, "Log" = m2),
+  stars = TRUE,
+  gof_map = c("r.squared", "nobs"),
+  output = "markdown")
+```
+
+# 3. Plots script
+
+The file `plots/figures.R` should contain:
+
+```{r, eval=FALSE}
+# setwd("~/path/to/assignment10")
+options(stringsAsFactors = FALSE)
+
+library(haven)
+library(ggplot2)
+
+# ============================================================
+# Load and clean data
+df = read_dta("data/corruption.dta")
+df = df[!is.na(df$ti_cpi) & !is.na(df$undp_gdp), ]
+
+# ============================================================
+# Scatter plot: corruption vs log GDP
+ggplot(df, aes(x = log(undp_gdp), y = ti_cpi)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(
+    x = "log(GDP per capita)",
+    y = "Corruption Perceptions Index",
+    title = "Corruption vs. GDP per capita") +
+  theme_minimal()
+
+ggsave("plots/output/scatter_corruption.pdf", width = 7, height = 5)
+
+cat("Scatter plot saved.\n")
+```
+
+We can verify the plot here:
+
+```{r, fig.height=4}
+library(ggplot2)
+
+ggplot(df, aes(x = log(undp_gdp), y = ti_cpi)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(
+    x = "log(GDP per capita)",
+    y = "Corruption Perceptions Index",
+    title = "Corruption vs. GDP per capita") +
+  theme_minimal()
+```
+
+# 4. Makefile
+
+The `Makefile` should contain:
+
+```{makefile, eval=FALSE}
+all: analysis/output/table_models.tex \
+     plots/output/scatter_corruption.pdf
+
+analysis/output/table_models.tex: analysis/models.R \
+                                  data/corruption.dta
+	Rscript --no-save analysis/models.R
+
+plots/output/scatter_corruption.pdf: plots/figures.R \
+                                     data/corruption.dta
+	Rscript --no-save plots/figures.R
+```
+
+**a)** The `all:` rule lists both output files as targets. Running `make` without arguments builds everything.
+
+**b)** The analysis rule specifies that `table_models.tex` depends on both the R script and the dataset. If either changes, `make` re-runs the recipe.
+
+**c)** The plots rule follows the same pattern: the scatter plot depends on `figures.R` and the dataset.
+
+**d)** To test, run `make` from the `assignment10/` directory in the terminal. Both scripts should execute, producing `analysis/output/table_models.tex` and `plots/output/scatter_corruption.pdf`. Running `make` a second time (without changes) should print "nothing to be done" because the outputs are already up to date.
+
+**Important:** The recipe lines (the `Rscript` commands) must be indented with a **tab character**, not spaces. This is a Makefile requirement.
