@@ -1,6 +1,3 @@
-# setwd("~/Documents/AQM2")
-options(stringsAsFactors = FALSE)
-
 # ============================================================
 # Assignment 5: Panel Data I
 # Applied Quantitative Methods for the Social Sciences II
@@ -37,13 +34,15 @@ df_sub = df %>%
 ggplot(df_sub, aes(x = Year, y = PresApprov, color = State)) +
   geom_line() +
   theme_minimal() +
+  #theme(legend.position = "none") +
   labs(x = "Year", y = "Presidential approval (%)", color = "State")
 
 # c)
-ggplot(df, aes(x = UnemPct, y = PresApprov)) +
+ggplot(df, aes(x = UnemPct, y = PresApprov, color = State)) +
   geom_point(alpha = 0.4) +
-  geom_smooth(method = "lm") +
+#  geom_smooth(method = "lm") +
   theme_minimal() +
+  theme(legend.position = "none") +
   labs(x = "Unemployment rate (%)", y = "Presidential approval (%)")
 
 # ----------------------------------------------------------
@@ -57,14 +56,53 @@ summary(m_pooled)
 m_pooled2 = lm(PresApprov ~ UnemPct + South, data = df)
 summary(m_pooled2)
 
+modelsummary(list(m_pooled, m_pooled2), stars = TRUE)
+  
 # ----------------------------------------------------------
 ## 3. Entity fixed effects
+## --------------------------------------------------
 
 # a)
 m_fe = feols(PresApprov ~ UnemPct | State, data = df)
 
+ols0 = lm(PresApprov ~ UnemPct, data = df)
+ols = lm(PresApprov ~ UnemPct + factor(State), data = df)
+
+newdf = df %>%
+  group_by(State) %>%
+  mutate(PresApprov = PresApprov - mean(PresApprov,na.rm=T),
+         UnemPct = UnemPct - mean(UnemPct,na.rm=T)) %>% ungroup
+
+ols2 = lm(PresApprov ~ UnemPct, data = newdf)
+
+summary(ols)
+summary(ols2)
+modelsummary(list(ols0, ols, ols2))
+
+ols3 = lm(PresApprov ~ UnemPct + factor(State) + factor(Year), data=df)
+summary(ols3)
+
+newdf2 = df %>%
+  group_by(State) %>%
+  mutate(PresApprov = PresApprov - mean(PresApprov,na.rm=T),
+         UnemPct = UnemPct - mean(UnemPct,na.rm=T)) %>%
+  ungroup() %>% group_by(Year) %>%
+  mutate(PresApprov = PresApprov - mean(PresApprov,na.rm=T),
+         UnemPct = UnemPct - mean(UnemPct,na.rm=T)) %>%
+  ungroup()
+newdf2$PresApprov = newdf2$PresApprov +
+  mean(newdf2$PresApprov, na.rm=T)
+newdf2$UnemPct = newdf2$UnemPct +
+  mean(newdf2$UnemPct, na.rm=T)
+
+ols4 = lm(PresApprov ~ UnemPct, data=newdf2)
+summary(ols4)
+
+
+
+
 modelsummary(
-  list("Pooled OLS" = m_pooled, "State FE" = m_fe),
+  list("Pooled OLS" = m_pooled, "OLS + Control" = m_pooled2, "State FE" = m_fe),
   vcov = ~State,
   stars = TRUE,
   gof_map = c("r.squared", "nobs"))
@@ -73,7 +111,8 @@ modelsummary(
 ## 4. Two-way fixed effects
 
 # a)
-m_twfe = feols(PresApprov ~ UnemPct | State + Year, data = df)
+m_twfe = feols(PresApprov ~ UnemPct | State + Year,
+               data = df)
 
 # b)
 modelsummary(

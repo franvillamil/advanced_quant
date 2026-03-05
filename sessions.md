@@ -61,18 +61,7 @@ Interpreting model output: moving beyond coefficient tables. Magnitude of effect
 
 ---
 
-### Session 5: Best Practices in Computing (Mar 5)
-
-Working with plain text files. Organizing coding projects: folder structure, file naming, separating tasks. Writing better R code: functions, checks and warnings, automation. Integrating R output with papers (LaTeX, Quarto). Code editors and the command line. Version control with Git: deeper dive.
-
-| Source | Chapter |
-|:---|:---|
-| Healy | *The Plain Person's Guide to Plain Text Social Science* |
-| MIT | *The Missing Semester of Your CS Education* (online) |
-
----
-
-### Session 6: Panel Data I (Mar 12)
+### Session 5: Panel Data I (Mar 5)
 
 What is panel data: structure, notation, and formats. Describing panel datasets: overall, between, and within variation. Pooled OLS and the problem of unobserved heterogeneity. Introduction to fixed effects: logic and the within transformation.
 
@@ -84,7 +73,7 @@ What is panel data: structure, notation, and formats. Describing panel datasets:
 
 ---
 
-### Session 7: Panel Data II (Mar 19)
+### Session 6: Panel Data II (Mar 12)
 
 Fixed effects estimation in detail. Random effects and the Hausman test. Two-way fixed effects (unit + time). Clustered standard errors. Introduction to staggered difference-in-differences: problems with TWFE under staggered adoption, and modern estimators (Callaway & Sant'Anna, Sun & Abraham).
 
@@ -97,7 +86,7 @@ Fixed effects estimation in detail. Random effects and the Hausman test. Two-way
 
 ---
 
-### Session 8: Spatial Data I (Mar 26)
+### Session 7: Spatial Data I (Mar 19)
 
 Types of spatial data: points, lines, polygons. Coordinate reference systems. Working with the `sf` package: loading, transforming, and joining spatial data. Creating choropleth and point maps with `ggplot2` and `tmap`.
 
@@ -108,7 +97,7 @@ Types of spatial data: points, lines, polygons. Coordinate reference systems. Wo
 
 ---
 
-### Session 9: Spatial Data II (Apr 9)
+### Session 8: Spatial Data II (Mar 26)
 
 Spatial weights matrices: contiguity, distance, k-nearest neighbors. Spatial autocorrelation: global and local Moran's I. Spatial regression models: spatial lag and spatial error. Model selection with LM tests. Applications in political science.
 
@@ -119,7 +108,7 @@ Spatial weights matrices: contiguity, distance, k-nearest neighbors. Spatial aut
 
 ---
 
-### Session 10: Other Outcomes (Apr 16)
+### Session 9: Other outcomes (Apr 9)
 
 Count data: Poisson regression and overdispersion. Negative binomial regression. Ordinal outcomes: ordered logit/probit and the proportional odds assumption. Duration data: survival functions, hazard rates, Kaplan-Meier curves, and Cox proportional hazards.
 
@@ -130,9 +119,20 @@ Count data: Poisson regression and overdispersion. Negative binomial regression.
 
 ---
 
-### Session 11: Project Presentations (Apr 23)
+### Session 10: Project Presentations (Apr 16)
 
 Student presentations of final essay proposals (10–15 min each). Peer feedback and discussion. Guidance on data and analysis strategies.
+
+---
+
+### Session 11: Computing best practices (Apr 23)
+
+Working with plain text files. Organizing coding projects: folder structure, file naming, separating tasks. Writing better R code: functions, checks and warnings, automation. Integrating R output with papers (LaTeX, Quarto). Code editors and the command line. Version control with Git: deeper dive.
+
+| Source | Chapter |
+|:---|:---|
+| Healy | *The Plain Person's Guide to Plain Text Social Science* |
+| MIT | *The Missing Semester of Your CS Education* (online) |
 
 ---
 
