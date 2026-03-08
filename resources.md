@@ -18,6 +18,11 @@ layout: default
 - [GitHub's Official Guides](https://docs.github.com/en/get-started)
 - [Pro Git Book](https://git-scm.com/book/en/v2) (free online)
 
+### Computing
+
+- [Scientific Computation for Social Scientists](https://github.com/colaresi/ScientificComputationClass/) (Michael Colaresi)
+- [Using make](https://kbroman.org/minimal_make/)
+
 ### R Resources
 
 - Wickham, Cetinkaya-Rundel, and Grolemund, [*R for Data Science*](https://r4ds.hadley.nz/) (Online/O'Reilly, 2nd ed, 2023)
