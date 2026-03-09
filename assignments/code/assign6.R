@@ -315,8 +315,8 @@ aggte(cs, type = "simple")$overall.att
 ### DYNAMIC Aggregation
 
 dynamic <- cs_results %>%
-  mutate(e = time - group) %>%                       # relative time
-  filter(time >= group - 3) %>%                      # keep some pre-periods too
+  mutate(e = time - group) %>% # relative time
+  filter(time >= group - 3) %>% # keep some pre-periods too
   left_join(cohort_sizes, by = c("group" = "treat_year")) %>%
   group_by(e) %>%
   summarise(att = weighted.mean(att, w = cohort_n))
