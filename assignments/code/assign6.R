@@ -146,3 +146,64 @@ cs_dyn = aggte(cs_out, type = "dynamic")
 ggdid(cs_dyn)
 
 ggsave("mpdta_event_study.pdf", width = 7, height = 4)
+
+
+
+# ============================================================
+# ============================================================
+# ============================================================
+
+### trying this for DiD and TWFE
+
+library(modelsummary)
+library(fixest)
+library(tidyverse)
+
+set.seed(42)
+
+# Parameters
+n_states    <- 10
+counties_per_state <- 5
+true_effect <- 5
+treat_year  <- 2006
+
+# Build panel skeleton
+df <- expand.grid(
+  state  = 1:n_states,
+  county = 1:counties_per_state,
+  year   = 2001:2010
+) %>%
+  mutate(county_id = (state - 1) * counties_per_state + county)
+
+# Assign treatment: ~half of counties treated, all starting in 2006
+treatment_info <- df %>%
+  distinct(county_id, state) %>%
+  mutate(treated = rbinom(n(), 1, 0.5))
+
+df <- df %>%
+  left_join(treatment_info, by = c("county_id", "state")) %>%
+  mutate(post = as.integer(year >= treat_year),
+         treat_post = treated * post)
+
+# Simulate outcome with county FE and state-year shocks
+county_effects    <- rnorm(max(df$county_id))
+state_year_shocks <- matrix(rnorm(n_states * 10), nrow = n_states)
+
+df <- df %>%
+  mutate(
+    county_fe        = county_effects[county_id],
+    state_year_shock = state_year_shocks[cbind(state, year - 2000)],
+    epsilon          = rnorm(n()),
+    outcome          = 20 + true_effect * treat_post + county_fe + state_year_shock + epsilon
+  )
+
+
+# Estimate
+ml = list(
+  feols(outcome ~ treat_post | county_id + year, data = df),
+  feols(outcome ~ treat_post | county_id + state^year, data = df),
+  feols(outcome ~ treat_post | county_id + year + state, data = df),
+  lm(outcome ~ treated * post, data = df),
+  lm(outcome ~ treated * post + factor(state), data = df))
+
+modelsummary(ml,coef_map = c("treated:post"="treatment","treat_post"="treatment"))
