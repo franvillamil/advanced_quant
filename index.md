@@ -20,9 +20,9 @@ layout: default
 | Mar 26  | 8. [Spatial data (II)](./sessions.md) | | |
 || *Easter break* |||
 | Apr 9   | 9. [Other outcomes](./sessions.md) | | |
-| Apr 16  | 10. [**Project presentations**](./logistics.md) | | |
-| Apr 23  | 11. [Computing best practices](./sessions.md) | | |
-| Apr 30  | 12. [Exam](./logistics.md) / [Review & Advanced](./sessions.md) | | |
+| Apr 16  | [**Project presentations**](./logistics.md) | | |
+| Apr 23  | 10. [Computing best practices](./sessions.md) | | |
+| Apr 30  | [Exam](./logistics.md) / [Review & Advanced](./sessions.md) | | |
 
 <!-- [[Slides 7](./slides/07_spatial1/spatial1.pdf)] | 
 [[Ex 7](./assignments/assign7_spatial1.pdf)] | 
