@@ -108,7 +108,7 @@ modelsummary(
   output = "markdown")
 ```
 
-The DiD estimate changes only slightly when chain fixed effects are added. Chain FEs absorb baseline differences in staffing levels across fast-food chains (e.g., Wendy's may have structurally different employment levels than KFC), but since chain type is roughly balanced across states, controlling for it has little impact on the DiD coefficient.
+The DiD estimate does not change when chain fixed effects are added. Chain FEs absorb baseline differences in staffing levels across fast-food chains (e.g., Wendy's may have structurally different employment levels than KFC), but since chain type is roughly balanced across states, controlling for it has little impact on the DiD coefficient.
 
 **c)** The parallel trends assumption here requires that, absent the NJ minimum wage increase, employment trends in NJ and PA fast-food restaurants would have been the same from February to November 1992. This is plausible because both states share a similar economic environment and the two surveys were close together in time, limiting opportunities for diverging trends. A concrete violation would occur if NJ experienced an independent economic shock during this period --- for instance, if a major employer opened or closed plants in NJ between the two survey waves, this would change NJ employment for reasons unrelated to the minimum wage, biasing the DiD estimate.
 

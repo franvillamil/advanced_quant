@@ -69,10 +69,62 @@ m_did = feols(full_emp ~ post * NJ, data = df_long, cluster = ~id)
 modelsummary(m_did, stars = TRUE, gof_map = c("nobs", "r.squared"))
 
 # b)
-m_did_fe = feols(full_emp ~ post * NJ | chain, data = df_long, cluster = ~id)
+m_did_fe = feols(full_emp ~ post * NJ | chain,
+  data = df_long, cluster = ~id)
 modelsummary(
   list("DiD" = m_did, "DiD + Chain FE" = m_did_fe),
   stars = TRUE, gof_map = c("nobs", "r.squared"))
+
+m_did_feb = feols(full_emp ~ postNJ | id + post^chain,
+  data = df_long, cluster = ~id)
+modelsummary(
+  list("DiD" = m_did, "DiD + Time*Chain FE" = m_did_feb),
+  stars = TRUE, gof_map = c("nobs", "r.squared"))
+
+
+##### SAME WHEN USING TWFE
+df_long$postNJ = df_long$post * df_long$NJ
+twfe1 = lm(full_emp ~ postNJ + factor(id) + factor(post),
+  data = df_long)
+twfe2 = feols(full_emp ~ postNJ | id + post, data = df_long)
+modelsummary(
+  list("twfe (lm)" = twfe1, "twfe (feols)" = twfe2),
+  stars = TRUE, gof_map = c("nobs", "r.squared"))
+
+
+
+
+########################################################
+### --- THE PROBLEM WITH GROUP FE IN TWFE --- ###
+########################################################
+
+#### 
+prop.table(table(df_long$chain, df_long$NJ), 1)
+prop.table(table(df_long$chain, df_long$NJ), 2)
+
+#### WHAT HAPPENS IF THERE IS A SHOCK TO BK? PTA violation?
+#### 40% of stores in NJ are BK, and 80% of BK stores are in NJ
+
+#### let's say that burger king had diff treatment trends, only in NJ
+df_long2 = df_long %>%
+  mutate(full_emp = ifelse(
+    chain == "burgerking" & post == 1,
+    full_emp*0.75, full_emp)) %>%
+  rowwise() %>%
+  mutate(postNJ = post * NJ)
+
+m_did2 = feols(full_emp ~ postNJ | id + post, data = df_long2)
+m_did_fe2a = feols(full_emp ~ postNJ | id + post + chain,
+  data = df_long2)
+m_did_fe2b = feols(full_emp ~ postNJ | id + post^chain,
+  data = df_long2)
+modelsummary(
+  list(
+    "TWFE" = m_did2,
+    "TWFE + Chain FE" = m_did_fe2a,
+    "TWFE with time*chain FE" = m_did_fe2b),
+  stars = TRUE, gof_map = c("nobs", "r.squared"))
+
 
 # ----------------------------------------------------------
 ## 3. Wages as a validation check
