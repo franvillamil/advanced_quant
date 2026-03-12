@@ -149,27 +149,11 @@ Load it with \code{events = read.csv("conflict\_events.csv")}. Key variables:
 % --------------------------------------------------------------------------
 
 \begin{enumerate}[label=\alph*)]
-  \item Convert the \code{events} data frame to an \code{sf} object using:
-  \begin{lstlisting}
-events_sf = st_as_sf(events,
-                     coords = c("longitude", "latitude"),
-                     crs = 4326)
-  \end{lstlisting}
-  Run \code{class(events\_sf)} and \code{st\_crs(events\_sf)} to verify it worked. In a comment, explain what \code{st\_as\_sf()} does: what does the \code{coords} argument specify, and what does \code{crs = 4326} mean?
+  \item Convert the \code{events} data frame to an \code{sf} object. Hint: use \code{st\_as\_sf()}, specifying the coordinate columns with the \code{coords} argument and the CRS with \code{crs = 4326}. Run \code{class()} and \code{st\_crs()} on the result to verify it worked. In a comment, explain what \code{st\_as\_sf()} does: what does the \code{coords} argument specify, and what does \code{crs = 4326} mean?
 
   \item How many events are in the dataset? Use \code{nrow()} and \code{table(events\_sf\$event\_type)} to show the count by event type. In a comment, which event type is most common?
 
-  \item Make a map of conflict events overlaid on the world polygon:
-  \begin{lstlisting}
-ggplot() +
-  geom_sf(data = world, fill = "grey90", color = "white", linewidth = 0.2) +
-  geom_sf(data = events_sf, aes(color = event_type),
-          size = 0.5, alpha = 0.4) +
-  theme_void() +
-  labs(title = "Armed conflict events", color = "Event type")
-ggsave("conflict_events_map.pdf", width = 10, height = 5)
-  \end{lstlisting}
-  In a comment, describe the geographic pattern. In which regions are conflict events most concentrated?
+  \item Make a map of conflict events overlaid on the world polygon. Use \code{ggplot()} with two \code{geom\_sf()} layers: the first for the \code{world} polygons (as a grey background) and the second for \code{events\_sf} colored by \code{event\_type}. Save it with \code{ggsave()}. In a comment, describe the geographic pattern. In which regions are conflict events most concentrated?
 \end{enumerate}
 
 % --------------------------------------------------------------------------
@@ -177,31 +161,11 @@ ggsave("conflict_events_map.pdf", width = 10, height = 5)
 % --------------------------------------------------------------------------
 
 \begin{enumerate}[label=\alph*)]
-  \item Use \code{st\_join()} to assign country attributes to each conflict event:
-  \begin{lstlisting}
-# Verify both objects share the same CRS before joining
-st_crs(events_sf) == st_crs(world)
-
-events_joined = st_join(events_sf, world[, c("name_long", "continent", "gdpPercap")])
-  \end{lstlisting}
-  Run \code{nrow(events\_joined)} and verify it equals \code{nrow(events\_sf)}. In a comment, explain what \code{st\_join()} is doing: how does it determine which country polygon each event point falls within? Why is checking the CRS before joining important?
+  \item Use \code{st\_join()} to assign country attributes (e.g.\ \code{name\_long}, \code{continent}, \code{gdpPercap}) from the \code{world} polygon to each conflict event. Before joining, verify that both objects share the same CRS. Run \code{nrow()} on the result and verify it equals \code{nrow(events\_sf)}. In a comment, explain what \code{st\_join()} is doing: how does it determine which country polygon each event point falls within? Why is checking the CRS before joining important?
 
   \item Some events may not match any country polygon (e.g., events at sea, on islands, or exactly on a border). Check with \code{sum(is.na(events\_joined\$name\_long))}. What fraction of events has no matching country? In a comment, list two possible reasons why a point might not match any polygon.
 
-  \item Count the number of events per country:
-  \begin{lstlisting}
-library(dplyr)
-
-events_by_country = events_joined %>%
-  filter(!is.na(name_long)) %>%
-  group_by(name_long) %>%
-  summarise(n_events = n(),
-            total_fatalities = sum(fatalities, na.rm = TRUE)) %>%
-  arrange(desc(n_events))
-
-print(head(st_drop_geometry(events_by_country), 10))
-  \end{lstlisting}
-  Report the top 10 countries by number of events. In a comment, are the results consistent with your knowledge of contemporary armed conflicts?
+  \item Count the number of events and total fatalities per country. Hint: filter out events with no matching country, then use \code{group\_by()} and \code{summarise()} with \code{n()} and \code{sum()}. Arrange by descending event count and print the top 10 (use \code{st\_drop\_geometry()} to get a clean table). In a comment, are the results consistent with your knowledge of contemporary armed conflicts?
 \end{enumerate}
 
 % --------------------------------------------------------------------------
@@ -209,30 +173,9 @@ print(head(st_drop_geometry(events_by_country), 10))
 % --------------------------------------------------------------------------
 
 \begin{enumerate}[label=\alph*)]
-  \item Join the event counts back to the world polygon data. Note that \code{events\_by\_country} is still an \code{sf} object, so we first drop its geometry before joining:
-  \begin{lstlisting}
-library(tidyr)
+  \item Join the event counts back to the world polygon data. Hint: first use \code{st\_drop\_geometry()} on the event counts (since it is still an \code{sf} object), then use \code{left\_join()} to merge by country name. Replace \code{NA} values with 0 for countries with no events (see \code{replace\_na()} from \code{tidyr}). Verify that the row count matches \code{nrow(world)}.
 
-events_by_country_df = st_drop_geometry(events_by_country)
-
-world_conflict = world %>%
-  left_join(events_by_country_df, by = "name_long") %>%
-  mutate(n_events = replace_na(n_events, 0),
-         total_fatalities = replace_na(total_fatalities, 0))
-  \end{lstlisting}
-  Verify that \code{nrow(world\_conflict) == nrow(world)}.
-
-  \item Make a choropleth map of conflict event counts by country:
-  \begin{lstlisting}
-ggplot(world_conflict) +
-  geom_sf(aes(fill = n_events), color = "white", linewidth = 0.2) +
-  scale_fill_distiller(palette = "Reds", direction = 1,
-                       name = "N events", na.value = "grey80") +
-  theme_void() +
-  labs(title = "Armed conflict events by country")
-ggsave("conflict_by_country.pdf", width = 10, height = 5)
-  \end{lstlisting}
-  In a comment, describe the map. Does the geographic pattern match the event-level map from question 2.1c?
+  \item Make a choropleth map of conflict event counts by country using \code{geom\_sf()} with \code{n\_events} as the fill variable. Use \code{scale\_fill\_distiller()} with the \code{"Reds"} palette. Save with \code{ggsave()}. In a comment, describe the map. Does the geographic pattern match the event-level map from question 2.1c?
 
   \item Make a second map using log-transformed counts: use \code{log1p(n\_events)} as the fill variable (so countries with zero events are handled). Use \code{scale\_fill\_distiller()} with \code{palette = "YlOrRd"}, \code{direction = 1}, and \code{name = "Log(events+1)"}. Save as \code{conflict\_log\_map.pdf}. In a comment, explain why the log transformation is useful and what it reveals that the raw count map did not.
 \end{enumerate}
