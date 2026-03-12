@@ -38,3 +38,4 @@ layout: default
 ### Small resources
 
 - [Understanding robust SEs](https://datacolada.org/133)
+- [Different ways to estimate DiD](https://gist.github.com/franvillamil/39dd71dec23ced00253e395cd0cac05c)
