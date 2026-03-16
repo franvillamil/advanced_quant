@@ -167,13 +167,7 @@ moran.test(world$sem_resid, listw = listw, zero.policy = TRUE)
 \subsection{Spatial Lag Model (SLM)}
 % --------------------------------------------------------------------------
 
-The Spatial Lag Model (also called the Spatial Autoregressive model, or SAR) posits that the outcome itself diffuses across space: $\mathbf{y} = \rho \mathbf{W}\mathbf{y} + \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon}$. Fit it using \code{lagsarlm()}:
-
-\begin{lstlisting}
-slm_fit = lagsarlm(lifeExp ~ log_gdp, data = world,
-                   listw = listw, zero.policy = TRUE)
-summary(slm_fit)
-\end{lstlisting}
+The Spatial Lag Model (also called the Spatial Autoregressive model, or SAR) posits that the outcome itself diffuses across space: $\mathbf{y} = \rho \mathbf{W}\mathbf{y} + \mathbf{X}\boldsymbol{\beta} + \boldsymbol{\varepsilon}$. Fit it using \code{lagsarlm()} from \code{spatialreg}, with the same formula, data, and weights as the SEM.
 
 \begin{enumerate}[label=\alph*)]
 
@@ -191,13 +185,7 @@ summary(slm_fit)
 
 \begin{enumerate}[label=\alph*)]
 
-  \item Compute the equilibrium direct and indirect effects using \code{impacts()}. The \code{R = 500} argument draws 500 simulation samples to compute standard errors:
-  \begin{lstlisting}
-set.seed(42)
-impacts_slm = impacts(slm_fit, listw = listw, R = 500)
-summary(impacts_slm, zstats = TRUE)
-  \end{lstlisting}
-  In a comment, report the direct effect, the indirect effect, and the total effect of \code{log\_gdp}. How does the direct effect compare to the raw \code{log\_gdp} coefficient from the SLM output and to the OLS coefficient?
+  \item Compute the equilibrium direct and indirect effects using the \code{impacts()} function, passing the SLM fit and the spatial weights. Use \code{R = 500} for simulation-based standard errors (and set a seed for reproducibility). In a comment, report the direct effect, the indirect effect, and the total effect of \code{log\_gdp}. How does the direct effect compare to the raw \code{log\_gdp} coefficient from the SLM output and to the OLS coefficient?
 
   \item In a comment (2--3 sentences), explain the substantive meaning of the indirect effect. Recall from class: the indirect effect captures the spillover from unit $i$'s $x$ to all other units' $y$, after the spatial feedback loop reaches equilibrium. If log GDP per capita in Country A increases by 1 unit, what does the indirect effect say about life expectancy in neighboring countries?
 
@@ -211,13 +199,7 @@ summary(impacts_slm, zstats = TRUE)
 
 \begin{enumerate}[label=\alph*)]
 
-  \item Compare OLS, SEM, and SLM using AIC. Lower AIC indicates better fit, penalized for model complexity:
-  \begin{lstlisting}
-AIC(ols_fit)
-AIC(sem_fit)
-AIC(slm_fit)
-  \end{lstlisting}
-  In a comment, report the three AIC values. Which model has the lowest AIC? Does this agree with your LM-test-based model choice in question 1.3b?
+  \item Compare OLS, SEM, and SLM using \code{AIC()}. Lower AIC indicates better fit, penalized for model complexity. In a comment, report the three AIC values. Which model has the lowest AIC? Does this agree with your LM-test-based model choice in question 1.3b?
 
   \item Write a short summary paragraph as a comment in your R script (5--8 sentences). Include all of the following: (1) whether spatial autocorrelation was present in the OLS residuals and how strong it was; (2) which spatial model you selected based on the LM tests and why; (3) how the key coefficient estimate on \code{log\_gdp} differs across OLS, SEM, and SLM; (4) what the SLM implies about life expectancy spillovers across borders; (5) one limitation of using queen contiguity weights for country-level data (think about what the matrix misses).
 
@@ -227,13 +209,7 @@ AIC(slm_fit)
 \subsection{Extension: Spatial Durbin Model (optional/bonus)}
 % --------------------------------------------------------------------------
 
-The Spatial Durbin Model (SDM) nests both SEM and SLM by including a spatially lagged dependent variable \textit{and} spatially lagged covariates. It is estimated with \code{lagsarlm()} using \code{Durbin = TRUE}:
-
-\begin{lstlisting}
-sdm_fit = lagsarlm(lifeExp ~ log_gdp, data = world,
-                   listw = listw, Durbin = TRUE, zero.policy = TRUE)
-summary(sdm_fit)
-\end{lstlisting}
+The Spatial Durbin Model (SDM) nests both SEM and SLM by including a spatially lagged dependent variable \textit{and} spatially lagged covariates. It is estimated with \code{lagsarlm()} by adding the \code{Durbin = TRUE} argument.
 
 \begin{enumerate}[label=\alph*)]
 

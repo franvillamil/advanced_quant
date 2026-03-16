@@ -177,7 +177,11 @@ ggsave("mpdta_cohort_trends.pdf", width = 7, height = 4)
 ## 2. Naive TWFE vs. Callaway-Santa'Anna estimator
 
 # a)
-m_twfe = feols(lemp ~ treat | countyreal + year,
+
+mpdta = mpdta %>%
+  mutate(treated_post = as.integer(first.treat > 0 & year >= first.treat))
+
+m_twfe = feols(lemp ~ treated_post | countyreal + year,
                data = mpdta, cluster = ~countyreal)
 summary(m_twfe)
 
