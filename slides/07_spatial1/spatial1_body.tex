@@ -105,12 +105,12 @@ What data would you need --- points, lines, or polygons?}
 % Source: acleddata.com or create with R using ggplot2 + geom_sf
 % Uncomment frame below once image is in slides/img/
 %
-% \begin{frame}[plain]
-%   \begin{tikzpicture}[remember picture, overlay]
-%     \node[at = (current page.center), yshift = 0cm] (cover) {%
-%       \includegraphics[keepaspectratio, height=\paperheight]{../img/acled_africa_map}};
-%   \end{tikzpicture}
-% \end{frame}
+\begin{frame}[plain]
+  \begin{tikzpicture}[remember picture, overlay]
+    \node[at = (current page.center), yshift = 0cm] (cover) {%
+      \includegraphics[keepaspectratio, height=\paperheight]{../img/acled_africa_map}};
+  \end{tikzpicture}
+\end{frame}
 % ----------------------------------------------------
 \note{[IMAGE PLACEHOLDER] This frame will show a map of Africa with armed conflict event locations (ACLED data), demonstrating spatial clustering of violence in the Sahel, Horn of Africa, and DRC. Describe verbally if the image is not yet available: dots representing individual events, clearly concentrated in certain sub-regions. This visual makes the motivation for spatial analysis immediate and concrete.}
 
