@@ -12,23 +12,11 @@ library(spData)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(modelsummary)
 
 data(world)
 
-# NOTE: Replace this block with real data once conflict_events.csv is available.
-# Synthetic data for solution demonstration purposes.
-set.seed(42)
-n = 500
-events = data.frame(
-  event_id = 1:n,
-  year = sample(2018:2022, n, replace = TRUE),
-  longitude = runif(n, -20, 55),   # Africa bounding box
-  latitude = runif(n, -35, 38),
-  fatalities = rpois(n, lambda = 5),
-  event_type = sample(c("Battles", "Violence against civilians",
-                        "Protests", "Remote violence"), n,
-                      replace = TRUE, prob = c(0.4, 0.3, 0.2, 0.1))
-)
+events = read.csv("https://github.com/franvillamil/AQM2/raw/refs/heads/master/datasets/spatial/conflict_events.csv")
 
 # --------
 ## 1. Converting tabular data to sf
@@ -48,20 +36,26 @@ st_crs(events_sf)
 # b)
 nrow(events_sf)
 table(events_sf$event_type)
-# Battles are the most common event type in this dataset (40% of synthetic
-# events). With real ACLED data, Battles and Violence against civilians
-# typically dominate in active conflict zones.
+# Battles and Violence against civilians typically dominate in active
+# conflict zones.
 
 # c)
-ggplot() +
+map = ggplot() +
   geom_sf(data = world, fill = "grey90", color = "white", linewidth = 0.2) +
   geom_sf(data = events_sf, aes(color = event_type),
           size = 0.5, alpha = 0.4) +
   theme_void() +
   labs(title = "Armed conflict events", color = "Event type")
 ggsave("conflict_events_map.pdf", width = 10, height = 5)
-# Synthetic events are uniformly distributed (including ocean areas).
-# Real ACLED events concentrate in the Sahel, Horn of Africa, DRC, and Nigeria.
+# Events concentrate in the Sahel, Horn of Africa, DRC, and Nigeria.
+
+### Note: you can also limit map using coord_sf(xlim, ylim)
+map = map +
+  coord_sf(
+    xlim = c(-15, 20), # from 15 W to 20 E
+    ylim = c(-10, 30)  # from 10 S to 30 N
+  )
+ggsave("conflict_events_map_reduced.pdf", width = 10, height = 5)
 
 # --------
 ## 2. Spatial join: events to countries
@@ -84,8 +78,7 @@ n_unmatched = sum(is.na(events_joined$name_long))
 n_unmatched
 round(n_unmatched / nrow(events_joined), 3)
 # Two reasons a point may not match any polygon:
-# 1. The point falls in an ocean or sea area outside all country polygons
-#    (common with synthetic uniform coordinates or real at-sea events).
+# 1. The point falls in an ocean or sea area outside all country polygons.
 # 2. The point lies exactly on a border where floating-point gaps between
 #    adjacent polygons prevent assignment to either country.
 
@@ -98,9 +91,7 @@ events_by_country = events_joined %>%
   arrange(desc(n_events))
 
 print(head(st_drop_geometry(events_by_country), 10))
-# Synthetic data: ranking reflects country land area (large countries receive
-# more uniformly random points). Real ACLED data: ranking reflects conflict
-# intensity -- typically Ethiopia, Nigeria, DRC, Somalia, Mali dominate.
+# The ranking reflects documented conflict hotspots in the data.
 
 # --------
 ## 3. Choropleth of conflict intensity
@@ -144,7 +135,58 @@ ggsave("conflict_log_map.pdf", width = 10, height = 5)
 # the bottom of the scale.
 
 # --------
-## 4. Discussion
+## 4. Bonus: Distance to capital in Nigeria
+
+# Filter events in Nigeria using spatial join
+nigeria = events_sf %>%
+  st_join(world[, c("name_long")]) %>%
+  filter(name_long == "Nigeria")
+
+# Quick check
+plot(nigeria[1])
+
+# Create Abuja point (approximately 9 N, 7.5 E)
+abuja = data.frame(city = "abuja", lon = 7.5, lat = 9) %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326)
+
+# Verify CRS match
+st_crs(nigeria)$epsg
+st_crs(abuja)$epsg
+ggplot(nigeria) +
+  geom_sf() +
+  geom_sf(data = abuja, color = "red")
+
+### Calculate distance
+# Transform to UTM projection (zone 32N: https://epsg.io/?q=nigeria+utm)
+nigeria_m = st_transform(nigeria, 32632)
+abuja_m = st_transform(abuja, 32632)
+
+# Distance (in m)
+# First try if it works
+st_distance(nigeria_m[1:3,], abuja_m)
+# Now just save it in the dataframe
+nigeria$dist_abuja = as.numeric(st_distance(nigeria_m, abuja_m))
+
+# Transform
+nigeria = nigeria %>%
+  mutate(log_fatalities = log(fatalities + 1),
+    dist_abuja_log_km = log((dist_abuja + 1) / 1000))
+
+# Models
+m1 = lm(fatalities ~ dist_abuja, data = nigeria)
+m2 = lm(log_fatalities ~ dist_abuja_log_km, data = nigeria)
+m3 = lm(log_fatalities ~ dist_abuja_log_km + event_type,
+    data = nigeria)
+m4 = lm(log_fatalities ~ dist_abuja_log_km * event_type,
+    data = nigeria)
+modelsummary(list(m1, m2, m3, m4), stars = TRUE)
+# Model 1: raw fatalities ~ raw distance. Models 2-4: log-transformed
+# fatalities ~ log distance in km. Model 3 adds event type as control,
+# Model 4 includes the interaction. Results show whether events further
+# from Abuja tend to be more deadly (lower state capacity hypothesis).
+
+# --------
+## 5. Discussion
 
 # a)
 # A key limitation of point-in-polygon spatial joins is that points falling

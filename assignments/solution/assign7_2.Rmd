@@ -24,25 +24,13 @@ library(spData)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(modelsummary)
 
 data(world)
 ```
 
-```{r synthetic-data}
-# NOTE: Replace this block with real data once conflict_events.csv is available.
-# Synthetic data for solution demonstration purposes.
-set.seed(42)
-n = 500
-events = data.frame(
-  event_id = 1:n,
-  year = sample(2018:2022, n, replace = TRUE),
-  longitude = runif(n, -20, 55),   # Africa bounding box
-  latitude = runif(n, -35, 38),
-  fatalities = rpois(n, lambda = 5),
-  event_type = sample(c("Battles", "Violence against civilians",
-                        "Protests", "Remote violence"), n,
-                      replace = TRUE, prob = c(0.4, 0.3, 0.2, 0.1))
-)
+```{r load-data}
+events = read.csv("https://github.com/franvillamil/AQM2/raw/refs/heads/master/datasets/spatial/conflict_events.csv")
 ```
 
 # 1. Converting tabular data to `sf`
@@ -67,12 +55,12 @@ nrow(events_sf)
 table(events_sf$event_type)
 ```
 
-The dataset contains `r nrow(events_sf)` conflict events. In the synthetic data, Battles are the most common event type (assigned 40% probability), followed by Violence against civilians (30%), Protests (20%), and Remote violence (10%). With real ACLED or similar data, Battles and Violence against civilians typically dominate in active conflict zones.
+The dataset contains `r nrow(events_sf)` conflict events. Battles and Violence against civilians typically dominate in active conflict zones.
 
 **c)** Map of conflict events overlaid on the world polygon:
 
 ```{r 1c, fig.height=4}
-ggplot() +
+map = ggplot() +
   geom_sf(data = world, fill = "grey90", color = "white", linewidth = 0.2) +
   geom_sf(data = events_sf, aes(color = event_type),
           size = 0.5, alpha = 0.4) +
@@ -81,7 +69,18 @@ ggplot() +
 ggsave("conflict_events_map.pdf", width = 10, height = 5)
 ```
 
-In the synthetic data, events are uniformly distributed across the Africa bounding box, including ocean areas --- a consequence of using random uniform coordinates rather than real geocoded events. With real ACLED data, events would cluster in active conflict zones: the Sahel region, the Horn of Africa, the Democratic Republic of Congo, and Nigeria.
+The map shows conflict events concentrated in regions with ongoing armed conflicts, such as the Sahel, the Horn of Africa, the Democratic Republic of Congo, and Nigeria.
+
+**Note:** You can also limit the map extent using `coord_sf(xlim, ylim)` to zoom in on a specific region:
+
+```{r 1c-zoom, fig.height=4}
+map +
+  coord_sf(
+    xlim = c(-15, 20), # from 15 W to 20 E
+    ylim = c(-10, 30)  # from 10 S to 30 N
+  )
+ggsave("conflict_events_map_reduced.pdf", width = 10, height = 5)
+```
 
 # 2. Spatial join: events to countries
 
@@ -107,7 +106,7 @@ n_unmatched
 round(n_unmatched / nrow(events_joined), 3)
 ```
 
-Some events have no matching country polygon. Two reasons why a point might not match: (1) the point falls in an ocean, lake, or sea area outside any country polygon (common with synthetic uniform coordinates or real events at sea); (2) the point lies exactly on a country border, where the polygon topology leaves a tiny gap due to floating-point imprecision, so the point falls in neither polygon.
+Some events have no matching country polygon. Two reasons why a point might not match: (1) the point falls in an ocean, lake, or sea area outside any country polygon; (2) the point lies exactly on a country border, where the polygon topology leaves a tiny gap due to floating-point imprecision, so the point falls in neither polygon.
 
 **c)** Count events per country:
 
@@ -122,15 +121,13 @@ events_by_country = events_joined %>%
 print(head(st_drop_geometry(events_by_country), 10))
 ```
 
-The top 10 countries by event count are shown above. Because the synthetic data uses uniform random coordinates across the Africa bounding box, the ranking reflects each country's land area rather than actual conflict intensity. With real ACLED data, the top countries would reflect documented conflict hotspots: typically Ethiopia, Nigeria, DRC, Somalia, and Mali.
+The top 10 countries by event count are shown above. The ranking reflects documented conflict hotspots in the data.
 
 # 3. Choropleth of conflict intensity
 
 **a)** Join event counts back to the world polygon:
 
 ```{r 3a}
-library(tidyr)
-
 events_by_country_df = st_drop_geometry(events_by_country)
 
 world_conflict = world %>%
@@ -155,7 +152,7 @@ ggplot(world_conflict) +
 ggsave("conflict_by_country.pdf", width = 10, height = 5)
 ```
 
-The country-level choropleth aggregates the point pattern from question 1c into national counts. The two maps should show consistent geographic variation: countries that appear event-dense in the dot map will show the darkest shading here. With the synthetic data, large-area African countries dominate; with real data, the same conflict hotspot countries would stand out.
+The country-level choropleth aggregates the point pattern from question 1c into national counts. The two maps should show consistent geographic variation: countries that appear event-dense in the dot map will show the darkest shading here.
 
 **c)** Log-transformed choropleth:
 
@@ -171,7 +168,68 @@ ggsave("conflict_log_map.pdf", width = 10, height = 5)
 
 The log transformation (`log1p` handles zeros cleanly) compresses the right tail of the distribution. In the raw-count map, a few high-conflict countries dominate the colour scale and most others appear near-zero, losing all visual variation. The log map redistributes contrast across the full range of the scale, revealing meaningful variation among low-to-medium conflict countries that the raw map suppressed. `log1p(0) = 0`, so zero-event countries still anchor the bottom of the scale.
 
-# 4. Discussion
+# 4. Bonus: Distance to capital in Nigeria
+
+**a-c)** Filter Nigeria events and create the Abuja reference point:
+
+```{r 4ac, fig.height=4}
+# Filter events in Nigeria using spatial join
+nigeria = events_sf %>%
+  st_join(world[, c("name_long")]) %>%
+  filter(name_long == "Nigeria")
+
+# Quick check
+plot(nigeria[1])
+
+# Create Abuja point (approximately 9 N, 7.5 E)
+abuja = data.frame(city = "abuja", lon = 7.5, lat = 9) %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326)
+
+# Verify CRS match
+st_crs(nigeria)$epsg
+st_crs(abuja)$epsg
+
+ggplot(nigeria) +
+  geom_sf() +
+  geom_sf(data = abuja, color = "red")
+```
+
+**d)** Transform to UTM projection and calculate distance:
+
+```{r 4d}
+# Transform to UTM zone 32N (EPSG:32632, appropriate for Nigeria)
+nigeria_m = st_transform(nigeria, 32632)
+abuja_m = st_transform(abuja, 32632)
+
+# Test distance calculation
+st_distance(nigeria_m[1:3,], abuja_m)
+
+# Calculate distance for all events (in meters)
+nigeria$dist_abuja = as.numeric(st_distance(nigeria_m, abuja_m))
+```
+
+**e-f)** Run linear models with fatalities as outcome and distance from Abuja as predictor:
+
+```{r 4ef}
+# Create transformed variables
+nigeria = nigeria %>%
+  mutate(log_fatalities = log(fatalities + 1),
+    dist_abuja_log_km = log((dist_abuja + 1) / 1000))
+
+# Models
+m1 = lm(fatalities ~ dist_abuja, data = nigeria)
+m2 = lm(log_fatalities ~ dist_abuja_log_km, data = nigeria)
+m3 = lm(log_fatalities ~ dist_abuja_log_km + event_type,
+    data = nigeria)
+m4 = lm(log_fatalities ~ dist_abuja_log_km * event_type,
+    data = nigeria)
+
+modelsummary(list(m1, m2, m3, m4), stars = TRUE, output = "markdown")
+```
+
+Model 1 uses raw fatalities and raw distance; Models 2-4 use log-transformed fatalities and log distance in kilometers. Model 3 adds event type as a control, and Model 4 includes the interaction between distance and event type. The results show whether events further from Abuja (the national capital) tend to be more deadly, which could reflect lower state capacity in peripheral areas.
+
+# 5. Discussion
 
 **a)** One limitation of point-in-polygon spatial joins is that points falling exactly on borders or just outside polygons due to coordinate imprecision will go unmatched (receiving `NA` country attributes). This is particularly problematic for events near coastlines or land borders, where small geocoding errors --- even a few hundred meters --- can place a point in the sea rather than in the correct country. A practical solution is to use `st_nearest_feature()` or a small buffer (`st_buffer()`) to snap near-miss points to the closest polygon, accepting that a modest positional error is preferable to losing the observation entirely.
 
