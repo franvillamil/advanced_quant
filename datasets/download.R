@@ -31,4 +31,6 @@ df = raw %>%
 write.csv(df, "spatial/conflict_events.csv", row.names = FALSE)
 
 
-df = read.csv("spatial/conflict_events.csv")
+
+events = read.csv("https://github.com/franvillamil/AQM2/raw/refs/heads/master/datasets/spatial/conflict_events.csv")
+table(events$event_type)

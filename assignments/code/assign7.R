@@ -31,6 +31,7 @@ st_crs(world)
 unique(st_geometry_type(world))
 
 # d)
+plot(world)
 pdf("world_gdp_base.pdf")
 plot(world["gdpPercap"])
 dev.off()
@@ -99,21 +100,8 @@ ggsave("africa_gdp_borders.pdf", width = 7, height = 6)
 # Part 2: Take-Home (Point Data and Spatial Joins)
 # ==========================================================================
 
-# NOTE: Replace this block with real data once conflict_events.csv is available.
-events = read.csv("conflict_events.csv")
-# Synthetic data for solution demonstration purposes.
-set.seed(42)
-n = 500
-events = data.frame(
-  event_id = 1:n,
-  year = sample(2018:2022, n, replace = TRUE),
-  longitude = runif(n, -20, 55),
-  latitude = runif(n, -35, 38),
-  fatalities = rpois(n, lambda = 5),
-  event_type = sample(c("Battles", "Violence against civilians",
-                        "Protests", "Remote violence"), n,
-                      replace = TRUE, prob = c(0.4, 0.3, 0.2, 0.1))
-)
+events = read.csv("https://github.com/franvillamil/AQM2/raw/refs/heads/master/datasets/spatial/conflict_events.csv")
+
 
 # ----------------------------------------------------------
 ## 1. Converting tabular data to sf
@@ -124,13 +112,16 @@ events_sf = st_as_sf(events,
                      crs = 4326)
 class(events_sf)
 st_crs(events_sf)
+plot(events_sf)
+plot(events_sf["event_id"])
+plot(events_sf["event_id"], pch = ".", col = "black")
 
 # b)
 nrow(events_sf)
 table(events_sf$event_type)
 
 # c)
-ggplot() +
+map = ggplot() +
   geom_sf(data = world, fill = "grey90", color = "white", linewidth = 0.2) +
   geom_sf(data = events_sf, aes(color = event_type),
           size = 0.5, alpha = 0.4) +
@@ -138,13 +129,22 @@ ggplot() +
   labs(title = "Armed conflict events", color = "Event type")
 ggsave("conflict_events_map.pdf", width = 10, height = 5)
 
+### Note: you can also limit map using coord_sf(xlim, ylim)
+map = map +
+  coord_sf(
+    xlim = c(-15, 20), # from 15ºW to 20ºE
+    ylim = c(-10, 30) # from 10ºS to 30ºN
+  )
+ggsave("conflict_events_map_reduced.pdf", width = 10, height = 5)
+
 # ----------------------------------------------------------
 ## 2. Spatial join: events to countries
 
 # a)
 st_crs(events_sf) == st_crs(world)
 
-events_joined = st_join(events_sf, world[, c("name_long", "continent", "gdpPercap")])
+events_joined = st_join(events_sf,
+  world[, c("name_long", "continent", "gdpPercap")])
 
 nrow(events_joined)
 nrow(events_sf)
@@ -194,3 +194,51 @@ ggplot(world_conflict) +
   theme_void() +
   labs(title = "Armed conflict events by country (log scale)")
 ggsave("conflict_log_map.pdf", width = 10, height = 5)
+
+# ----------------------------------------------------------
+## 4. Bonus, optional: calculate distance to capital in Nigeria and run lm
+
+# from scratch
+nigeria = events_sf %>% 
+  st_join(world[, c("name_long")]) %>%
+  filter(name_long == "Nigeria")
+
+# quick check
+plot(nigeria[1])
+
+# we first need to locate Abuja
+abuja = data.frame(city = "abuja", lon = 7.5, lat = 9) %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326)
+
+# let's check
+st_crs(nigeria)$epsg
+st_crs(abuja)$epsg
+ggplot(nigeria) +
+  geom_sf() +
+  geom_sf(data = abuja, color = "red")
+
+### calculate distance
+# transform to UTM projection (zone 32N: https://epsg.io/?q=nigeria+utm)
+nigeria_m = st_transform(nigeria, 32632)
+abuja_m = st_transform(abuja, 32632)
+
+# distance (in m)
+# first try if it works
+st_distance(nigeria_m[1:3,], abuja_m)
+# now just save it in the dataframe
+nigeria$dist_abuja = as.numeric(st_distance(nigeria_m, abuja_m))
+
+# transform
+nigeria = nigeria %>%
+  mutate(log_fatalities = log(fatalities + 1),
+    dist_abuja_log_km = log((dist_abuja+1)/1000))
+
+# models
+m1 = lm(fatalities ~ dist_abuja, data = nigeria)
+m2 = lm(log_fatalities ~ dist_abuja_log_km, data = nigeria)
+m3 = lm(log_fatalities ~ dist_abuja_log_km + event_type,
+    data = nigeria)
+m4 = lm(log_fatalities ~ dist_abuja_log_km * event_type,
+    data = nigeria)
+library(modelsummary)
+modelsummary(list(m1,m2,m3,m4),stars=TRUE)

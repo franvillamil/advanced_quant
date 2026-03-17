@@ -180,6 +180,20 @@ Load it with \code{events = read.csv("conflict\_events.csv")}. Key variables:
 \end{enumerate}
 
 % --------------------------------------------------------------------------
+\subsection{Bonus (optional): Are events far from the capital city more deadly?}
+% --------------------------------------------------------------------------
+
+\begin{enumerate}[label=\alph*)]
+  \item You want to know if events that take place away from the country capital have more fatalities (presumably because of lower state capacity). Let's explore this in Nigeria.
+  \item Create a subset of the events in Nigeria.
+  \item Create another dataframe with latitude and longitude for capitals. It's fine if it only has one row for Abuja. Hint: Abuja is approximately at 9ºN and 7º30ºE: \url{https://www.google.com/maps/search/9,7.5}. Transform that object into a spatial one using \code{st\_as\_sf}.
+  \item Transform both spatial objects to UTM projection. Use this one: \url{https://epsg.io/32632}
+  \item Calculate distance between the events data frame and the Abuja data frame, using \code{st\_distance}. Add this to the events data frame.
+  \item Run linear regression models where your outcome is fatalities and your main independent variable is distance from the national capital. Try using fatalities in logarithmic scale, and distance in log of kilometers. Also, try also controlling for and interacting with event type.
+  \item What are the results? Are events away from the capital more deadly?
+\end{enumerate}
+
+% --------------------------------------------------------------------------
 \subsection{Discussion}
 % --------------------------------------------------------------------------
 
