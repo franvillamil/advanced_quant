@@ -345,9 +345,9 @@ Sevilla     &   690,566 & 0.41 & 24,800 & POLYGON((-6.0 37.3, \ldots)) \\
   \draw[accent2, dashed, thin] (0, 0.9) -- (0.55, 0.9);
   \node[accent2, font=\scriptsize, anchor=west] at (0.62, 1.05) {Madrid};
   \node[accent2, font=\scriptsize, anchor=west] at (0.62, 0.72) {lon: $-3.7$\textdegree, lat: $40.4$\textdegree};
-  % Axes labels
-  \node[asher, font=\scriptsize] at (-2.6, 0.5) {$+90$\textdegree N};
-  \node[asher, font=\scriptsize] at (-2.6,-0.5) {$-90$\textdegree S};
+  % % Axes labels
+  % \node[asher, font=\scriptsize] at (-2.6, 0.5) {$+90$\textdegree N};
+  % \node[asher, font=\scriptsize] at (-2.6,-0.5) {$-90$\textdegree S};
 \end{tikzpicture}
 
 \vspace{4pt}
@@ -507,6 +507,7 @@ Sevilla     &   690,566 & 0.41 & 24,800 & POLYGON((-6.0 37.3, \ldots)) \\
 
 \vspace{6pt}
 
+\only<1>{
 \begin{block}{From a shapefile or GeoPackage}
 \texttt{library(sf)}\\
 \texttt{world = st\_read("data/world.shp")}\\
@@ -515,6 +516,15 @@ Sevilla     &   690,566 & 0.41 & 24,800 & POLYGON((-6.0 37.3, \ldots)) \\
 
 \vspace{8pt}
 
+\begin{itemize}[<+->]
+\item \texttt{st\_read()} handles: shapefiles (.shp), GeoPackage (.gpkg), GeoJSON, and more
+\item Always check CRS immediately after reading: \texttt{st\_crs(world)}
+\end{itemize}
+
+}
+
+
+\only<2->{
 \begin{block}{From a CSV with coordinate columns}
 \texttt{df = read.csv("events.csv")}\\
 \texttt{\# df has columns: lon, lat, event\_type, casualties}\\
@@ -522,13 +532,7 @@ Sevilla     &   690,566 & 0.41 & 24,800 & POLYGON((-6.0 37.3, \ldots)) \\
 \texttt{\hspace{20pt}coords = c("lon", "lat"),}\\
 \texttt{\hspace{20pt}crs = 4326)}
 \end{block}
-
-\vspace{8pt}
-
-\begin{itemize}[<+->]
-\item \texttt{st\_read()} handles: shapefiles (.shp), GeoPackage (.gpkg), GeoJSON, and more
-\item Always check CRS immediately after reading: \texttt{st\_crs(world)}
-\end{itemize}
+}
 
 \end{frame}
 % ----------------------------------------------------
@@ -568,9 +572,7 @@ Sevilla     &   690,566 & 0.41 & 24,800 & POLYGON((-6.0 37.3, \ldots)) \\
 
 \vspace{6pt}
 
-\begin{itemize}
-\item[] \texttt{library(dplyr)}
-\item[] \phantom{x}
+\begin{itemize}\footnotesize
 \item[] \texttt{\# Filter to European countries}
 \item[] \texttt{europe = world \%>\% filter(continent == "Europe")}
 \item[] \phantom{x}
@@ -669,9 +671,9 @@ Sevilla     &   690,566 & 0.41 & 24,800 & POLYGON((-6.0 37.3, \ldots)) \\
 \item Default: \texttt{st\_intersects} (any overlap)
 \item \texttt{st\_within}: point must fall \textit{inside} the polygon
   \begin{itemize}
-  \item Passed as a function object --- no \texttt{()} --- \texttt{join = st\_within}, not \texttt{st\_within()}
+  \item Passed as a function object: \texttt{join = st\_within}, not \texttt{st\_within()}
   \end{itemize}
-\item \texttt{st\_nearest\_feature}: attach the nearest polygon (even if no overlap)
+\item \texttt{st\_nearest\_feature}: attach nearest polygon (even if no overlap)
 \item Result: \texttt{events} data frame + municipality attributes appended
 \item Use case: ``which district does each conflict event belong to?''
 \end{itemize}
@@ -685,9 +687,7 @@ Sevilla     &   690,566 & 0.41 & 24,800 & POLYGON((-6.0 37.3, \ldots)) \\
 \frametitle{Worked example: events per municipality}
 \centering
 
-\vspace{4pt}
-
-\begin{itemize}
+\begin{itemize}\footnotesize
 \item[] \texttt{\# 1. Ensure same CRS}
 \item[] \texttt{events = st\_transform(events, crs = 3035)}
 \item[] \texttt{munis  = st\_transform(munis,  crs = 3035)}
@@ -720,11 +720,9 @@ Sevilla     &   690,566 & 0.41 & 24,800 & POLYGON((-6.0 37.3, \ldots)) \\
 
 \vspace{6pt}
 
-\begin{block}{Basic map of world countries}
+\begin{block}{Basic map of world countries}\footnotesize
 \texttt{library(ggplot2)}\\
-\texttt{ggplot(world) +}\\
-\texttt{\hspace{12pt}geom\_sf() +}\\
-\texttt{\hspace{12pt}theme\_void()}
+\texttt{ggplot(world) + geom\_sf() + theme\_void()}
 \end{block}
 
 \vspace{8pt}
@@ -751,7 +749,7 @@ Sevilla     &   690,566 & 0.41 & 24,800 & POLYGON((-6.0 37.3, \ldots)) \\
 
 \vspace{6pt}
 
-\begin{block}{Countries colored by GDP per capita}
+\begin{block}{Countries colored by GDP per capita}\footnotesize
 \texttt{ggplot(world) +}\\
 \texttt{\hspace{12pt}geom\_sf(aes(fill = gdp\_pc), color = "white", size = 0.1) +}\\
 \texttt{\hspace{12pt}scale\_fill\_viridis\_c(}\\
@@ -781,7 +779,7 @@ Sevilla     &   690,566 & 0.41 & 24,800 & POLYGON((-6.0 37.3, \ldots)) \\
 
 \vspace{6pt}
 
-\begin{block}{Country outlines + conflict event locations}
+\begin{block}{Country outlines + conflict event locations}\footnotesize
 \texttt{ggplot() +}\\
 \texttt{\hspace{12pt}geom\_sf(data = world,}\\
 \texttt{\hspace{24pt}fill = "grey90", color = "white", size = 0.2) +}\\
@@ -810,9 +808,7 @@ Sevilla     &   690,566 & 0.41 & 24,800 & POLYGON((-6.0 37.3, \ldots)) \\
 \frametitle{A complete example: European unemployment}
 \centering
 
-\vspace{6pt}
-
-\begin{itemize}
+\begin{itemize}\footnotesize
 \item[] \texttt{library(sf); library(dplyr); library(ggplot2)}
 \item[] \phantom{x}
 \item[] \texttt{\# Read NUTS-2 regions (Eurostat shapefile)}
@@ -844,21 +840,19 @@ Sevilla     &   690,566 & 0.41 & 24,800 & POLYGON((-6.0 37.3, \ldots)) \\
 \vspace{8pt}
 
 \begin{itemize}[<+->]
-\item \textbf{Color scales for continuous data}:
+\item \textbf{Color scales for continuous data}, some options:
   \begin{itemize}
-  \item Sequential: \texttt{scale\_fill\_viridis\_c()} --- for one-direction variables
-  \item Diverging: \texttt{scale\_fill\_distiller(type = "div")} --- for +/- variables
+  \item Sequential: \texttt{scale\_fill\_viridis\_c()} for one-direction variables
+  \item Diverging: \texttt{scale\_fill\_distiller(type = "div")} for +/- variables
   \end{itemize}
 \vspace{8pt}
-\item \textbf{Borders}: \texttt{color = "white", linewidth = 0.1} for subtle borders
+\item \textbf{Borders}, subtle: \texttt{color = "white", linewidth = 0.1}
 \vspace{8pt}
 \item \textbf{Theme}: \texttt{theme\_void()} for clean maps; add \texttt{theme(legend.position = "bottom")}
 \vspace{8pt}
 \item \textbf{Missing data}: always set \texttt{na.value = "grey80"} in scale
 \vspace{8pt}
-\item \textbf{Projection}: use \texttt{coord\_sf(crs = 3035)} for Europe without reprojecting data
-\vspace{8pt}
-\item \textbf{Saving}: \texttt{ggsave("map.pdf", width = 8, height = 6)}
+\item \textbf{Projection}, some are useful: e.g. use \texttt{coord\_sf(crs = 3035)} for Europe without reprojecting data
 \end{itemize}
 
 \end{frame}
