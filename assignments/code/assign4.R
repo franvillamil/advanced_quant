@@ -1,6 +1,3 @@
-# setwd("~/Documents/AQM2")
-options(stringsAsFactors = FALSE)
-
 # ============================================================
 # Assignment 4: Model Interpretation and Diagnostics
 # Applied Quantitative Methods II, UC3M

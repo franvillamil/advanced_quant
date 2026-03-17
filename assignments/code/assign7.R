@@ -1,6 +1,3 @@
-# setwd("~/Documents/AQM2")
-options(stringsAsFactors = FALSE)
-
 # ============================================================
 # Assignment 7: Spatial Data I
 # Applied Quantitative Methods for the Social Sciences II
@@ -42,7 +39,10 @@ dev.off()
 ## 2. Attribute operations
 
 # a)
-africa = filter(world, continent == "Africa")
+africa = world %>% filter(continent == "Africa")
+# or: filter(world, continent == "Africa")
+# or: subset(world, continent == "Africa")
+
 nrow(africa)
 pdf("africa_gdp_base.pdf")
 plot(africa["gdpPercap"])
@@ -100,7 +100,7 @@ ggsave("africa_gdp_borders.pdf", width = 7, height = 6)
 # ==========================================================================
 
 # NOTE: Replace this block with real data once conflict_events.csv is available.
-# events = read.csv("conflict_events.csv")
+events = read.csv("conflict_events.csv")
 # Synthetic data for solution demonstration purposes.
 set.seed(42)
 n = 500

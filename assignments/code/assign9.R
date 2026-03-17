@@ -1,13 +1,3 @@
-options(stringsAsFactors = FALSE)
-
-library(carData)
-library(MASS)
-library(nnet)
-library(pscl)
-library(AER)
-library(marginaleffects)
-library(ggplot2)
-
 # ==========================================================================
 # Part 1: Ordinal and Multinomial Outcomes (BEPS)
 # ==========================================================================

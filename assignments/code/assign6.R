@@ -1,6 +1,3 @@
-# setwd("~/Documents/AQM2")
-options(stringsAsFactors = FALSE)
-
 # ============================================================
 # Assignment 6: Panel Data II
 # Applied Quantitative Methods for the Social Sciences II

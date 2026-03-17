@@ -15,4 +15,5 @@ TRASH/
 *.fdb_latexmk
 *.fls
 *.synctex.gz
+.Rapp.history
 myrefs/

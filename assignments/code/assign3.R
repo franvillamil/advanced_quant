@@ -1,5 +1,3 @@
-# setwd("~/Documents/AQM2")
-
 # ============================================================
 # Assignment 3: Binary Outcomes
 # Applied Quantitative Methods II, UC3M
