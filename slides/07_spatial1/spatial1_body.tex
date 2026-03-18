@@ -143,13 +143,15 @@ What data would you need --- points, lines, or polygons?}
 \vspace{8pt}
 
 \begin{itemize}[<+->]
-\item Today: \textbf{vector} data only (by far the most common in social science)
-\item Raster: briefly in Session 10 (Spatial data II)
+\item Today we'll focus more on \textbf{vector} data and how to work with it (more common in social science)
 \end{itemize}
 
 \end{frame}
 % ----------------------------------------------------
 \note{Set expectations clearly: we focus on vector data today. Raster data is important (nighttime lights as a proxy for economic activity, precipitation data for agricultural analysis, land cover for environmental studies) but it requires different tools and is covered in Session 10. The key conceptual distinction is discrete vs.\ continuous: vector data represents identifiable objects (a city, a border, a district), while raster data represents a field that varies continuously across space (temperature measured at every point on the Earth's surface). Most political science and sociology research uses vector data, because we are interested in units (countries, municipalities, people) rather than continuous surfaces.}
+
+
+
 
 % ----------------------------------------------------
 \begin{frame}
@@ -200,8 +202,23 @@ What data would you need --- points, lines, or polygons?}
 \note{Walk through each geometry type with a political science example. Points: conflict events in ACLED, city locations, household survey respondents. Lines: trade routes, rivers that serve as borders, road networks for accessibility research. Polygons: the workhorse of political science spatial data --- country boundaries, municipality boundaries, electoral constituencies, census tracts. Each geometry type can carry an arbitrary number of attribute columns (population, vote share, GDP). The geometry is just one more column in the data frame. Spend about 1 minute on each type and ask students to suggest examples from their own research interests.}
 
 % ----------------------------------------------------
+\imageframe{../img/vectorexample1}
+% ----------------------------------------------------
+\note{vector types}
+
+% ----------------------------------------------------
+\imageframe{../img/vectorexample2}
+% ----------------------------------------------------
+\note{vector types}
+
+% ----------------------------------------------------
+\imageframe{../img/vectorexample3}
+% ----------------------------------------------------
+\note{vector types}
+
+% ----------------------------------------------------
 \begin{frame}
-\frametitle{Vector data: geometry + attributes}
+\frametitle{How does it look internally: geometry + attributes}
 \centering
 
 \vspace{6pt}
@@ -281,7 +298,7 @@ Sevilla     &   690,566 & 0.41 & 24,800 & POLYGON((-6.0 37.3, \ldots)) \\
 \vspace{6pt}
 
 \begin{itemize}
-\item Grid of equal-size cells, each storing a value (elevation, precipitation, \ldots)
+\item Grid of equal-size cells, each storing a value (elevation, precipitation, \ldots), which are \textbf{georeferenced}
 \item \textbf{Continuous surface}: the entire area is covered
 \item In R: \texttt{terra} package (\texttt{rast()} objects)
 \end{itemize}
@@ -289,6 +306,76 @@ Sevilla     &   690,566 & 0.41 & 24,800 & POLYGON((-6.0 37.3, \ldots)) \\
 \end{frame}
 % ----------------------------------------------------
 \note{Keep this slide brief --- it is a preview only. The raster grid shows the key difference: every cell in the grid has a value, so the entire geographic surface is represented. Compare this with polygon data, where only the interior of each polygon has attributes. Raster data is used in political science mainly when the variable of interest is inherently continuous: nighttime light intensity (a proxy for economic development), precipitation (affecting agricultural productivity and potentially conflict), land cover type (forest, urban, agricultural). The \texttt{terra} package has largely replaced the older \texttt{raster} package. We will come back to raster data in Session 10.}
+
+% ----------------------------------------------------
+\imageframe{../img/raster-concept}
+% ----------------------------------------------------
+\note{explain more stuff on raster data}
+
+% ----------------------------------------------------
+\imageframe{../img/raster_bands}
+% ----------------------------------------------------
+\note{explain more stuff on raster data}
+
+% ----------------------------------------------------
+\imageframe{../img/spain_raster1}
+% ----------------------------------------------------
+\note{explain more stuff on raster data}
+
+% ----------------------------------------------------
+\imageframe{../img/spain_raster2}
+% ----------------------------------------------------
+\note{explain more stuff on raster data}
+
+% ----------------------------------------------------
+\imageframe{../img/spain_raster1}
+% ----------------------------------------------------
+\note{explain more stuff on raster data}
+
+% ----------------------------------------------------
+\imageframe{../img/spain_raster3}
+% ----------------------------------------------------
+\note{explain more stuff on raster data}
+
+% ----------------------------------------------------
+\imageframe{../img/spain_raster4}
+% ----------------------------------------------------
+\note{explain more stuff on raster data}
+
+% ----------------------------------------------------
+\imageframe{../img/spain_raster5}
+% ----------------------------------------------------
+\note{explain more stuff on raster data}
+
+% ----------------------------------------------------
+\imageframe{../img/spain_raster6}
+% ----------------------------------------------------
+\note{explain more stuff on raster data}
+
+% ----------------------------------------------------
+\imageframe{../img/qgis}
+% ----------------------------------------------------
+\note{explain more stuff on raster data}
+
+% ----------------------------------------------------
+\imageframe{../img/hunziker1}
+% ----------------------------------------------------
+\note{explain more stuff on raster data}
+
+% ----------------------------------------------------
+\imageframe{../img/hunziker2}
+% ----------------------------------------------------
+\note{explain more stuff on raster data}
+
+% ----------------------------------------------------
+\imageframe{../img/hunziker3}
+% ----------------------------------------------------
+\note{explain more stuff on raster data}
+
+% ----------------------------------------------------
+\imageframe{../img/hunziker4}
+% ----------------------------------------------------
+\note{explain more stuff on raster data}
 
 % ====================================================
 \section{Coordinate Reference Systems}
