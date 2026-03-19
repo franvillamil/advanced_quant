@@ -75,7 +75,8 @@ ggplot(world) +
   scale_fill_viridis_c(option = "plasma", na.value = "grey80",
                        name = "GDP per capita") +
   theme_void() +
-  labs(title = "GDP per capita by country")
+  labs(title = "GDP per capita by country") +
+  coord_sf(crs = "+proj=laea +y_0=0 +lon_0=155 +lat_0=-90 +ellps=WGS84 +no_defs")
 ggsave("world_gdp.pdf", width = 10, height = 5)
 
 # b)
@@ -95,6 +96,10 @@ ggplot(africa) +
   theme_void() +
   labs(title = "GDP per capita -- Africa (with borders)")
 ggsave("africa_gdp_borders.pdf", width = 7, height = 6)
+
+
+centroids = st_centroid(world)
+
 
 # ==========================================================================
 # Part 2: Take-Home (Point Data and Spatial Joins)

@@ -86,7 +86,7 @@ for(i in 1:3){
 # shapefile
 spainshp = rnaturalearth::ne_states("Spain", returnclass = "sf")
 spainshp = spainshp[-which(spainshp$region == "Canary Is."), ]
-
+    
 # raster and crop
 spainr = geodata::worldclim_country(country = "Spain",
     var = "tavg", res = 5, path = tempdir())
