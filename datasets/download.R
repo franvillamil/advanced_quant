@@ -4,6 +4,7 @@ library(terra)
 library(geodata)
 library(rnaturalearth)
 library(ggplot2)
+library(sf)
 library(tidyterra)
 
 ## UCDP GED ##
